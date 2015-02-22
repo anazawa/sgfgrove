@@ -1,0 +1,19 @@
+{
+  "author": "anazawa <anazawa@cpan.org>",
+  "name": "sgf",
+  "description": "SGF in JavaScript",
+  "version": "0.0.1",
+  "homepage": "https://github.com/anazawa/sgf.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/anazawa/sgf.js"
+  },
+  "main": "lib/sgf.js",
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": "*"
+  }
+}
