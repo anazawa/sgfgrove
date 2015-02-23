@@ -1,7 +1,7 @@
 {
   "author": "anazawa <anazawa@cpan.org>",
   "name": "sgf",
-  "description": "SGF in JavaScript",
+  "description": "Type-aware SGF parser/stringifier that supports FF[1], FF[3] and FF[4]",
   "version": "0.0.1",
   "homepage": "https://github.com/anazawa/sgf.js",
   "repository": {
@@ -10,7 +10,7 @@
   },
   "main": "lib/sgf.js",
   "scripts": {
-    "test": "node test/test.js"
+    "test": "node test/all.js"
   },
   "license": "MIT",
   "engines": {
