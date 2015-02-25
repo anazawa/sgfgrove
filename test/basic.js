@@ -60,3 +60,11 @@ assert.equal(
   'SGF.stringify: toSGF method should be invoked'
 );
 
+assert.throws(
+  function () {
+    SGF.parse('(;FF[5])');
+  },
+  Error,
+  'SGF.parse: unsupported'
+);
+
