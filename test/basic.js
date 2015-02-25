@@ -29,11 +29,8 @@ var sgf = [[
   ]]
 ]];
 
-assert.deepEqual(
-  SGF.parse(text),
-  sgf,
-  'SGF.parse(text)'
-);
+assert.deepEqual( SGF.parse(text), sgf, 'SGF.parse' );
+assert.equal( SGF.stringify(sgf), text, 'SGF.stringify' );
 
 assert.deepEqual(
   SGF.parse('(;FF[4])', function (k, v) {
@@ -43,13 +40,7 @@ assert.deepEqual(
     { FF: 'FF[4]' },
     []
   ]],
-  'SGF.parse(): reviver should be called'
-);
-
-assert.equal(
-  SGF.stringify(sgf),
-  text,
-  'SGF.stringify()'
+  'SGF.parse: reviver should be called'
 );
 
 assert.equal(
@@ -66,6 +57,6 @@ assert.equal(
     []
   ]]),
   '(;FF[4]FOO[baz])',
-  'SGF.stringify(): .toSGF() method should be invoked'
+  'SGF.stringify: toSGF method should be invoked'
 );
 
