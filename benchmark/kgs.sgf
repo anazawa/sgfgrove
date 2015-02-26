@@ -1,0 +1,303 @@
+(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]
+RU[Japanese]SZ[19]KM[6.50]TM[0]OT[80x10 byo-yomi]
+PW[twoeye]PB[waage]WR[6d]BR[6d]DT[2015-02-26]PC[The KGS Go Server at http://www.gokgs.com/]RE[B+Resign]
+;B[pd]BL[10]OB[80]C[twoeye [6d\]: hi
+waage [6d\]: hi
+]
+;W[qp]WL[10]OW[80]
+;B[cd]BL[10]OB[80]
+;W[dp]WL[10]OW[80]
+;B[ic]BL[10]OB[80]
+;W[dg]WL[10]OW[80]
+;B[ed]BL[10]OB[80]
+;W[cj]WL[10]OW[80]
+;B[fq]BL[10]OB[80]
+;W[dn]WL[10]OW[80]
+;B[dr]BL[10]OB[80]
+;W[cq]WL[10]OW[80]
+;B[iq]BL[10]OB[80]
+;W[qf]WL[10]OW[80]
+;B[nd]BL[10]OB[80]
+;W[qc]WL[10]OW[80]
+;B[qd]BL[10]OB[80]
+;W[rd]WL[10]OW[80]
+;B[pc]BL[10]OB[80]
+;W[rb]WL[10]OW[80]
+;B[qb]BL[10]OB[80]
+;W[rc]WL[10]OW[80]
+;B[oq]BL[10]OB[80]
+;W[po]WL[10]OW[80]
+;B[mp]BL[10]OB[80]
+;W[pq]WL[10]OW[80]
+;B[op]BL[10]OB[80]
+;W[kc]WL[10]OW[78]
+;B[ie]BL[10]OB[79]
+;W[ke]WL[10]OW[78]
+;B[ld]BL[10]OB[79]
+;W[kd]WL[10]OW[78]
+;B[ng]BL[10]OB[79]
+;W[kg]WL[10]OW[78]
+;B[ig]BL[10]OB[79]
+;W[ki]WL[10]OW[78]
+;B[dm]BL[10]OB[79]
+;W[cm]WL[10]OW[78]
+;B[cl]BL[10]OB[79]
+;W[dl]WL[10]OW[78]
+;B[em]BL[10]OB[79]
+;W[el]WL[10]OW[78]
+;B[cn]BL[10]OB[79]
+;W[bm]WL[10]OW[78]
+;B[fl]BL[10]OB[79]
+;W[en]WL[10]OW[78]
+;B[fm]BL[10]OB[79]
+;W[ej]WL[10]OW[78]C[serpi [?\]: Is the cat alive?
+]
+;B[fn]BL[10]OB[79]
+;W[fp]WL[10]OW[78]
+;B[co]BL[10]OB[78]
+;W[bl]WL[10]OW[77]
+;B[dq]BL[10]OB[77]C[Mongoose11 [7k\]: where?
+]
+;W[cp]WL[10]OW[77]
+;B[eo]BL[10]OB[77]
+;W[do]WL[10]OW[77]
+;B[ep]BL[10]OB[77]
+;W[jl]WL[10]OW[73]
+;B[cr]BL[10]OB[77]
+;W[br]WL[10]OW[73]
+;B[jh]BL[10]OB[76]
+;W[kh]WL[10]OW[73]
+;B[jj]BL[10]OB[74]
+;W[kj]WL[10]OW[73]
+;B[jk]BL[10]OB[74]
+;W[kk]WL[10]OW[73]
+;B[kl]BL[10]OB[74]
+;W[il]WL[10]OW[73]
+;B[hk]BL[10]OB[74]
+;W[jq]WL[10]OW[73]
+;B[ll]BL[10]OB[74]
+;W[gq]WL[10]OW[73]
+;B[ip]BL[10]OB[74]
+;W[ir]WL[10]OW[73]
+;B[hr]BL[10]OB[74]C[luoxiang [13k\]: of course it has two eyes in the picture 
+]
+;W[gr]WL[10]OW[73]
+;B[jr]BL[10]OB[73]
+;W[fo]WL[10]OW[73]
+;B[eq]BL[10]OB[73]C[OneStone [6d\]: g4 is adament
+OneStone [6d\]: what is B thinking?
+luoxiang [13k\]: g4 looks good...
+]
+;W[fr]WL[10]OW[71]
+;B[bq]BL[10]OB[73]
+;W[bp]WL[10]OW[71]
+;B[ar]BL[10]OB[73]
+;W[aq]WL[10]OW[71]
+;B[bs]BL[10]OB[73]
+;W[as]WL[10]OW[71]
+;B[gp]BL[10]OB[73]
+;W[go]WL[10]OW[71]
+;B[ar]BL[10]OB[73]
+;W[hp]WL[10]OW[71]
+;B[bq]BL[10]OB[73]
+;W[bo]WL[10]OW[70]C[Mongoose11 [7k\]: I'm pretty sure b was just pretty clever
+]
+;B[ap]BL[10]OB[72]
+;W[io]WL[10]OW[70]
+;B[jp]BL[10]OB[72]
+;W[hl]WL[10]OW[70]
+;B[gk]BL[10]OB[72]C[n9 [1d\]: b3 a2 is a good tesuji to know
+]
+;W[hq]WL[10]OW[70]
+;B[is]BL[10]OB[72]C[n9 [1d\]: I like to call it a desperation ko :)
+]
+;W[jo]WL[10]OW[69]
+;B[mj]BL[10]OB[72]
+;W[if]WL[10]OW[67]
+;B[hf]BL[10]OB[70]
+;W[jf]WL[10]OW[67]
+;B[hg]BL[10]OB[70]
+;W[mi]WL[10]OW[67]
+;B[ni]BL[10]OB[70]
+;W[mh]WL[10]OW[67]
+;B[nh]BL[10]OB[70]
+;W[mk]WL[10]OW[67]
+;B[lk]BL[10]OB[69]
+;W[lj]WL[10]OW[67]
+;B[nj]BL[10]OB[69]
+;W[mc]WL[10]OW[66]
+;B[md]BL[10]OB[68]
+;W[ib]WL[10]OW[66]
+;B[hb]BL[10]OB[68]
+;W[jb]WL[10]OW[66]
+;B[lf]BL[10]OB[68]
+;W[je]WL[10]OW[62]
+;B[hd]BL[10]OB[68]C[shihu [8k?\]: srong arm of the law
+]
+;W[nb]WL[10]OW[62]
+;B[ob]BL[10]OB[68]
+;W[qh]WL[10]OW[60]C[OneStone [6d\]: W is alive
+OneStone [6d\]: m18 m17 n18 o17 o19 n19 m19 l19 p19 j19 lives
+]
+;B[qn]BL[10]OB[66]C[OneStone [6d\]:  B overattacked
+]
+;W[pr]WL[10]OW[60]C[AndEdhel [4k\]: despera-ko ? like they often do in Go in the western part of the world?
+OneStone [6d\]: B b13 is large too
+]
+;B[rp]BL[10]OB[65]
+;W[rq]WL[10]OW[60]C[OneStone [6d\]: s4 is a great tesuji
+]
+;B[ro]BL[10]OB[65]
+;W[pn]WL[10]OW[60]
+;B[ql]BL[10]OB[65]
+;W[qj]WL[10]OW[60]C[OneStone [6d\]: W has no eyes locally
+AndEdhel [4k\]: m18?
+]
+;B[ol]BL[10]OB[65]
+;W[or]WL[10]OW[60]
+;B[nr]BL[10]OB[65]C[OneStone [6d\]: Looks above AndEd
+OneStone [6d\]: Look above
+hamham: c14 
+TigerEyes [1d\]: Ty for the variation One Stone
+]
+;W[mm]WL[10]OW[58]C[OneStone [6d\]: q4 r5 s6 and W is dead locally
+]
+;B[ml]BL[10]OB[64]
+;W[km]WL[10]OW[58]
+;B[lm]BL[10]OB[63]
+;W[ln]WL[10]OW[58]
+;B[nl]BL[10]OB[63]C[OneStone [6d\]: m7 m6 o8 is probablyok
+AndEdhel [4k\]: thx one stone (on android ibcant keep up while typing ^^)
+OneStone [6d\]: if o6 l6 l5 k7 l3 will be a problem for B
+]
+;W[nn]WL[10]OW[56]
+;B[mo]BL[10]OB[61]
+;W[mn]WL[10]OW[56]
+;B[rg]BL[10]OB[60]C[OneStone [6d\]: ???
+]
+;W[qg]WL[10]OW[54]
+;B[ra]BL[10]OB[59]
+;W[qe]WL[10]OW[54]
+;B[ao]BL[10]OB[59]C[OneStone [6d\]: s11 s10 r11 q11 s12 is a bit of a problem but not enough
+]
+;W[bn]WL[10]OW[54]C[OneStone [6d\]: now s13 is mochikomi
+OneStone [6d\]: b13 
+]
+;B[bg]BL[10]OB[58]C[OneStone [6d\]: ok
+]
+;W[ge]WL[10]OW[54]C[OneStone [6d\]: f14 
+]
+;B[he]BL[10]OB[56]C[AndEdhel [4k\]: mochikomi?
+shihu [8k?\]: not a great move 
+OneStone [6d\]: f17 f16 g17 h17 g16 f14 
+]
+;W[bd]WL[10]OW[53]C[OneStone [6d\]: mochikomi = loss without compensation
+AndEdhel [4k\]: thx!
+hamham: b played s19 in sente ?
+OneStone [6d\]: if c15 c17 d17 c18 and W is alive
+]
+;B[be]BL[10]OB[52]
+;W[cc]WL[10]OW[53]C[enufo3 [1k\]: mochi = without?
+OneStone [6d\]: yes, but he lost 2-3 points
+]
+;B[dd]BL[10]OB[51]
+;W[gb]WL[10]OW[53]
+;B[ia]BL[10]OB[51]C[OneStone [6d\]: j19 changes the status of l17 
+]
+;W[ja]WL[10]OW[52]
+;B[ha]BL[10]OB[51]
+;W[gc]WL[10]OW[52]
+;B[hc]BL[10]OB[51]C[AndEdhel [4k\]: er..
+]
+;W[nf]WL[10]OW[50]C[TigerEyes [1d\]: Seki now?
+OneStone [6d\]: but now m18 m17 n18 o17 o19 p15 p16 n14 could become a problem
+OneStone [6d\]: p14 p15 q15 
+]
+;B[of]BL[10]OB[49]
+;W[oe]WL[10]OW[49]C[AndEdhel [4k\]: w m18, come on ^^
+]
+;B[pe]BL[10]OB[48]
+;W[pf]WL[10]OW[48]
+;B[og]BL[10]OB[48]C[melmak: l17 group has an eye at m11
+OneStone [6d\]: W misread
+]
+;W[mf]WL[10]OW[43]
+;B[mg]BL[10]OB[48]
+;W[lg]WL[10]OW[42]C[OneStone [6d\]: he needs n14 n13 m15 n15 BUT then m18 m17 o19 n19 m12 kills
+loiar: no like wen game finish by time
+]
+;B[ne]BL[10]OB[45]C[AndEdhel [4k\]: m15 cap is false eye?
+TigerEyes [1d\]: B18?
+]
+;W[nc]WL[10]OW[40]C[jakontin [1d\]: e18
+]
+;B[na]BL[10]OB[43]C[AlinB [2d\]: d18
+]
+;W[ma]WL[10]OW[40]C[TigerEyes [1d\]: No tone for b18 huh?
+]
+;B[oa]BL[10]OB[43]C[TigerEyes [1d\]: Time
+kalzar: no like wen game finish by time
+]
+;W[gd]WL[10]OW[38]C[wry [1d\]: kiiiiiiiiillllllllllllllllll
+AlinB [2d\]: no
+AndEdhel [4k\]: lol
+TigerEyes [1d\]: B p19???
+]
+;B[ff]BL[10]OB[40]
+;W[eb]WL[10]OW[38]
+;B[dc]BL[10]OB[40]
+;W[db]WL[10]OW[38]C[AlinB [2d\]: w live
+]
+;B[cb]BL[10]OB[38]
+;W[gf]WL[10]OW[38]
+;B[gg]BL[10]OB[38]
+;W[fg]WL[10]OW[38]
+;B[fh]BL[10]OB[38]
+;W[eg]WL[10]OW[38]C[TigerEyes [1d\]: W still dead?
+]
+;B[fe]BL[10]OB[38]
+;W[ji]WL[10]OW[38]
+;B[ii]BL[10]OB[38]C[AlinB [2d\]: L17 w group is live
+wry [1d\]: b following my insightful advice
+]
+;W[fk]WL[10]OW[36]C[AndEdhel [4k\]: why not m18? why?
+]
+;B[fj]BL[10]OB[38]
+;W[ek]WL[10]OW[36]
+;B[gi]BL[10]OB[38]
+;W[jg]WL[10]OW[36]C[TigerEyes [1d\]: The lizard sheds his tail!!
+AlinB [2d\]: m18 M17 n18 M15
+AlinB [2d\]: 2 eye
+]
+;B[ei]BL[10]OB[34]
+;W[ih]WL[10]OW[36]
+;B[hi]BL[10]OB[34]
+;W[di]WL[10]OW[36]
+;B[eh]BL[10]OB[34]C[AndEdhel [4k\]: after m15, n15?
+AlinB [2d\]: and p16 capture all black
+twoeye [6d\]: thx
+waage [6d\]: tx
+AndEdhel [4k\]: ??
+wry [1d\]: AlinB makes no sense
+brutosB [2k\]: go doesnt work like that
+wry [1d\]: :D
+AlinB [2d\]: n15 will be auto atari
+AndEdhel [4k\]: thx, wry ^^ 
+AndEdhel [4k\]: i was wondering
+wry [1d\]: m18 just kills
+AlinB [2d\]: no
+AndEdhel [4k\]: n15 captures 2 w stones, alinB...
+AlinB [2d\]: man
+wurfmaul [1d\]: m18 M17 n18 m15 n15 p16 p17?
+comodoao [2d\]: m18 kill
+AlinB [2d\]: after w m17 and w m15 black can't play n15 because is autoatari
+AlinB [2d\]: no m18 don't kill
+AndEdhel [4k\]: it is a capture. 
+wry [1d\]: I think you need to count n14 libs
+comodoao [2d\]: alinb lol
+sasul [3d\]: do ypu see 2 w stones in atari there Alin?
+AndEdhel [4k\]: alinb, when n15, b captures 2
+wry [1d\]: oops, I meant counting n14 lib
+AlinB [2d\]: ok
+takku [9k\]: higg
+])
