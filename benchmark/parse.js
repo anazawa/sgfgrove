@@ -141,12 +141,6 @@ var parse = (function () {
 var parseRegexp = (function () {
     var text, pos;
 
-    var startOfGameTree = /^\s*\(\s*/g;
-    var endOfGameTree = /^\)\s*/g;
-    var startOfNode = /^;\s*/g;
-    var property = /^([a-zA-Z\d]+)\s*((?:\[(?:\\]|[^\]])*\]\s*)+)/g;
-    var propValue = /\[((?:\\]|[^\]])*)\]/g;
-
     var test = function (regexp) {
       regexp.lastIndex = 0;
       var bool = regexp.test(text.slice(pos));
@@ -167,7 +161,7 @@ var parseRegexp = (function () {
       text = t;
       pos = 0;
 
-      while ( test(startOfGameTree) ) {
+      while ( test(/^\s*\(\s*/g) ) {
         trees.push( gameTree() );
       }
 
@@ -183,7 +177,7 @@ var parseRegexp = (function () {
       var tree = [];
       var subtrees = [];
 
-      while ( test(startOfNode) ) {
+      while ( test(/^;\s*/g) ) {
         tree.push( node() );
       }
 
@@ -191,13 +185,13 @@ var parseRegexp = (function () {
         throw new SyntaxError( 'GameTree must contain at least one Node' );
       }
 
-      while ( test(startOfGameTree) ) {
+      while ( test(/^\(\s*/g) ) {
         subtrees.push( gameTree() );
       }
 
       tree.push( subtrees );
 
-      if ( !test(endOfGameTree) ) {
+      if ( !test(/^\)\s*/g) ) {
         test(/^\s*/);
         throw new SyntaxError( "Unexpected token '"+text.charAt(pos)+"'" );
       }
@@ -207,27 +201,25 @@ var parseRegexp = (function () {
 
     var node = function () {
       var props = {};
-      var ident, value, values, vals;
-      var prop;
+      var ident, value, values;
 
-      while ( prop = exec(property) ) {
-        ident = prop[1];
-        values = prop[2];
-        vals = [];
+      while ( ident = exec(/^([a-zA-Z\d]+)\s*/g) ) {
+        ident = ident[1];
+        values = [];
 
         if ( props.hasOwnProperty(ident) ) {
           throw new SyntaxError( "Property '"+ident+"' already exists" );
         }
 
-        while ( value = propValue.exec(values) ) {
-          vals.push( value[1] );
+        while ( value = exec(/^\[((?:\\]|[^\]])*)\]\s*/g) ) {
+          values.push( value[1] );
         }
 
         if ( !values.length ) {
           throw new SyntaxError( 'PropValue is missing: '+ident );
         }
 
-        props[ident] = vals;
+        props[ident] = values;
       }
 
       return props;
