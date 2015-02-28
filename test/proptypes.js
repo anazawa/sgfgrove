@@ -246,3 +246,10 @@ assert.throws(
   TypeError
 );
 
+/*
+ * FF[4]GM[1] Move
+ */
+
+assert.equal( FF4_1.Move.name, 'Move' );
+assert.equal( FF4_1.Move.parse(['']), '' ); // Pass
+assert.deepEqual( FF4_1.Move.stringify(''), [''] ); // Pass

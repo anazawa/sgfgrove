@@ -34,7 +34,7 @@ assert.equal( SGF.stringify(sgf), text, 'SGF.stringify' );
 
 assert.deepEqual(
   SGF.parse('(;FF[4])', function (k, v) {
-    return k+'['+v+']';
+    return /^[A-Z]/.test(k) ? k+'['+v+']' : v;
   }),
   [[
     { FF: 'FF[4]' },
@@ -67,4 +67,3 @@ assert.throws(
   Error,
   'SGF.parse: unsupported'
 );
-
