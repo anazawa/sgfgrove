@@ -67,3 +67,4 @@ assert.throws(
   Error,
   'SGF.parse: unsupported'
 );
+
