@@ -45,8 +45,8 @@ assert.throws(
  */
 
 assert.equal( FF1.None.name, 'None' );
-assert.equal( FF1.None.parse(['']), '' );
-assert.deepEqual( FF1.None.stringify(''), [''] );
+assert.equal( FF1.None.parse(['']), null );
+assert.deepEqual( FF1.None.stringify(null), [''] );
 
 assert.throws(
   function () {
