@@ -1,16 +1,20 @@
 {
-  "author": "anazawa <anazawa@cpan.org>",
   "name": "sgf",
+  "author": "anazawa <anazawa@cpan.org>",
   "description": "Type-aware SGF parser/stringifier that supports FF[1], FF[3] and FF[4]",
   "version": "0.0.1",
   "homepage": "https://github.com/anazawa/sgf.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/anazawa/sgf.js"
+    "url": "git://github.com/anazawa/sgf.js.git"
   },
-  "main": "lib/sgf.js",
+  "main": "sgf.js",
+  "dependencies": {},
+  "devDependencies": {
+    "tape": "^3.0.3"
+  },
   "scripts": {
-    "test": "node test/all.js"
+    "test": "tape test/test.*.js"
   },
   "license": "MIT",
   "engines": {

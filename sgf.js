@@ -5,7 +5,7 @@
  * @license MIT
  * @see http://www.red-bean.com/sgf/
  */
-(function (window) {
+(function () {
   'use strict';
 
   var keys = Object.keys || function (object) {
@@ -1316,7 +1316,12 @@
     };
   }());
 
-  window.SGF = SGF;
+  if ( typeof exports !== 'undefined' ) {
+    module.exports = SGF;
+  }
+  else {
+    window.SGF = SGF;
+  }
 
-}(this));
+}());
 

@@ -1,6 +1,6 @@
 NAME
 
-  SGF.js - Type-aware SGF parser/stringifier that supports FF[1], FF[2] and FF[4]
+  SGF.js - Type-aware SGF parser/stringifier that supports FF[1], FF[3] and FF[4]
 
 SYNOPSIS
 
@@ -10,19 +10,19 @@ SYNOPSIS
 
   In your JavaScript:
 
-    // SGF.parse
-
     SGF.parse("(;FF[4]B[pd];W[qp])");
-    /* => [[
-     *   { FF: 4, B: "pd" },
-     *   { W: "qp" },
-     *   []
-     * ]]
-     */
+    // => [[
+    //   { FF: 4, B: "pd" },
+    //   { W: "qp" },
+    //   []
+    // ]]
  
-    // SGF.stringify
-
-    SGF.stringify([[{ FF: 4 }, []]]); // => "(;FF[4])"
+    SGF.stringify([[
+      { FF: 4, B: "pd" },
+      { W: "qp" },
+      []
+    ]]);
+    // => "(;FF[4]B[pd];W[qp])"
 
 DESCRIPTION
 
