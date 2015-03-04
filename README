@@ -1,6 +1,6 @@
 NAME
 
-  SGF.js - Type-aware SGF parser/stringifier that supports FF[1], FF[3] and FF[4]
+  SGF.js - Type-aware SGF parser/stringifier that supports FF[1]-FF[4]
 
 SYNOPSIS
 
@@ -26,6 +26,25 @@ SYNOPSIS
 
 DESCRIPTION
 
+  This module allows you to parse SGF, Smart Game Format, into a simple
+  JavaScript data structure and back again. The data structure follows
+  the original format very closely. You can also convert the strucuture into
+  JSON by using JSON.stringify without any modifications.
+
+  The supported SGF versions are as follows:
+
+    - FF[1]
+    - FF[2], treated as FF[1]
+    - FF[3]
+    - FF[4]
+
+  The supported game types are as follows:
+
+    - GM[1] (Go)
+
+  SGF defines various types of property values. This module maps the type into
+  the appropriate JavaScript type. See "SGF PROPERTIES" for details.
+
   METHODS
 
     array = SGF.parse( string[, reviver] )
@@ -38,12 +57,12 @@ DESCRIPTION
       property value. If the callback returns `undefined`, then the property
       will be deleted.
 
-      A SGF collection is represented by an array containing SGF
-      game trees. Each game tree is again an array of SGF nodes.
-      Each node is simply an object. Each SGF property is stored in the object
-      with the property name as the key, and the property value(s) for the
-      value. The last element of a game tree array always refers to an array
-      containing sub game trees, called variations.
+      A SGF collection is represented by an array containing SGF game trees.
+      Each game tree is again an array of SGF nodes. Each node is simply an
+      object. Each SGF property is stored in the object with the property name
+      as the key, and the property value(s) for the value. The last element
+      of a game tree array always refers to an array containing sub game trees,
+      called variations.
 
         Collection:
 
@@ -110,12 +129,11 @@ DESCRIPTION
               return value;
             }
           });
-          /* => [[
-           *   { FF: 4, B: [0, 1] },
-           *   { W: [1, 0] },
-           *   []
-           * ]]
-           */
+          // => [[
+          //   { FF: 4, B: [0, 1] },
+          //   { W: [1, 0] },
+          //   []
+          // ]]
 
         Remove Comments
 
@@ -124,12 +142,66 @@ DESCRIPTION
               return value;
             }
           });
-          /* => [[
-           *   { FF: 4 },
-           *   []
-           * ]]
-           */
+          // => [[
+          //   { FF: 4 },
+          //   []
+          // ]]
 
+        GameTree Traversal
+
+          var trees = SGF.parse('(;FF[4])'); // => [Collection]
+          var nodeId = 0;
+
+          (function walk (subtrees) {
+            subtrees;
+            // => [
+            //   [GameTree],
+            //   [GameTree],
+            //   ...
+            //   [GameTree]
+            // ]
+   
+            for ( var i = 0; i < subtrees.length; i++ ) {
+              var subtree = subtrees[i];
+              // => [
+              //   {Node},
+              //   {Node},
+              //   ...
+              //   {Node},
+              //   [[GameTree], [GameTree], ..., [GameTree]]
+              // ]
+   
+              if ( subtrees === trees ) {
+                // 'subtree' is the direct descendant of Collection,
+                // not trees within other trees
+   
+                // one of root nodes
+                subtree[0];
+                // => {
+                //   FF: 4
+                // }
+              }
+   
+              // NOTE: exclude the last element of 'subtree'
+              for ( var j = 0; j < subtree.length-1; j++ ) {
+                var node = subtree[j];
+   
+                node.id = nodeId; // assign node id
+   
+                node; 
+                // => {
+                //   id: 0,
+                //   FF: 4
+                // }
+   
+                nodeId += 1;
+              }
+   
+              // the last element of 'subtree' always refers to sub subtrees
+              walk( subtree[subtree.length-1] );
+            }
+          }(trees));
+ 
     string = SGF.stringify( array[, replacer] )
 
       Given an array representing a SGF collection, returns a SGF string.
@@ -202,7 +274,7 @@ DESCRIPTION
           });
           // => "(;FF[4]B[ab];W[ba])"
 
-  PROPERTIES
+  SGF PROPERTIES
 
     FF[4]
 
@@ -244,7 +316,7 @@ DESCRIPTION
       RU[rules]           "rules"
       SO[source]          "source"
       ST[0]-ST[3]         0-3
-      SZ[1]-              1-
+      SZ[1]-, SZ[12:34]   1-, [12, 34]
       TE[1], TE[2]        1, 2
       UC[1], UC[2]        1, 2
       US[user]            "user"
@@ -256,29 +328,32 @@ DESCRIPTION
 
       SGF                 JavaScript          Notes
       ------------------------------------------------------------
-      AB[aa][bb]          ["aa", "bb"]        [compressible]
-      AE[aa][bb]          ["aa", "bb"]        [compressible]
+      AB[aa][bb]          ["aa", "bb"]        compressible
+      AE[aa][bb]          ["aa", "bb"]        compressible
       AR[aa:bb]           [["aa", "bb"]]
-      AW[aa][bb]          ["aa", "bb"]        [compressible]
+      AW[aa][bb]          ["aa", "bb"]        compressible
       B[aa]-B[ZZ], B[]    "aa"-"ZZ", null
-      CR[aa][bb]          ["aa", "bb"]        [compressible]
-      DD[], DD[aa][bb]    [], ["aa", "bb"]    [compressible]
+      CR[aa][bb]          ["aa", "bb"]        compressible
+      DD[], DD[aa][bb]    [], ["aa", "bb"]    compressible
       HA[2]-              2-
       KM[6.5]             6.5
-      LB[aa:any]          [["aa", "any"]]      
+      LB[aa:label]        [["aa", "label"]]      
       LN[aa:bb]           [["aa", "bb"]]    
-      MA[aa][bb]          ["aa", "bb"]        [compressible]
-      SL[aa][bb]          ["aa", "bb"]        [compressible]
-      SQ[aa][bb]          ["aa", "bb"]        [compressible]
-      TB[], TB[aa][bb]    [], ["aa", "bb"]    [compressible]
-      TR[aa][bb]          ["aa", "bb"]        [compressible]
-      TW[], TW[aa][bb]    [], ["aa", "bb"]    [compressible]
-      VW[], VW[aa][bb]    [], ["aa", "bb"]    [compressible]
+      MA[aa][bb]          ["aa", "bb"]        compressible
+      SL[aa][bb]          ["aa", "bb"]        compressible
+      SQ[aa][bb]          ["aa", "bb"]        compressible
+      TB[], TB[aa][bb]    [], ["aa", "bb"]    compressible
+      TR[aa][bb]          ["aa", "bb"]        compressible
+      TW[], TW[aa][bb]    [], ["aa", "bb"]    compressible
+      VW[], VW[aa][bb]    [], ["aa", "bb"]    compressible
       W[aa]-W[ZZ], W[]    "aa"-"ZZ", null
 
-      [compressible]:
-        Compressed point lists are expanded by SGF.js automatically, i.e.
-        AB[aa:bb][cc] is converted to ["aa", "ba", "ab", "bb", "cc"].
+      compressible:
+        Compressed point lists are expanded by the parse method automatically,
+        i.e. AB[aa:bb][cc] is converted to ["aa", "ba", "ab", "bb", "cc"].
+        NOTE: The stringify method does not compress the expanded point      
+        lists at this time (even if it's not compressed, that SGF does not
+        violate the SGF specification).
 
     FF[1]
     FF[1]GM[1]
@@ -300,6 +375,7 @@ HISTORY
 SEE ALSO
 
   SGF Specification: http://www.red-bean.com/sgf/
+  smartgame: https://github.com/neagle/smartgame
 
 AUTHOR
 
