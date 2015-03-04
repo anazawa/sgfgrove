@@ -202,6 +202,91 @@ DESCRIPTION
           });
           // => "(;FF[4]B[ab];W[ba])"
 
+  PROPERTIES
+
+    FF[4]
+
+      SGF                 JavaScript          Notes
+      ------------------------------------------------------------
+      AN[annotation]      "annotation"
+      AP[app:version]     ["app", "version"]
+      BM[1], BM[2]        1, 2
+      BR[black rank]      "black rank"
+      BT[black team]      "black team"
+      C[comment]          "comment"
+      CA[charset]         "charset"
+      CP[copyright]       "copyright"
+      DM[1], DM[2]        1, 2
+      DO[]                null
+      DT[YYYY-MM-DD]      "YYYY-MM-DD"
+      EV[event]           "event"
+      FF[1]-FF[4]         1-4
+      FG[], FG[257:fig]   null, [257, "fig"]
+      GB[1], GB[2]        1, 2
+      GC[game comment]    "game comment"
+      GM[1]-              1-
+      GN[game name]       "game name"
+      GW[1], GW[2]        1, 2
+      HO[1], HO[2]        1, 2
+      IT[]                null
+      KO[]                null
+      MN[123]             123
+      N[node name]        "node name"
+      ON[opening]         "opening"
+      OT[overtime]        "overtime"
+      PB[black player]    "black player"
+      PC[place]           "place"
+      PL[B], PL[W]        "B", "W"
+      PM[0]-PM[2]         0-2
+      PW[white player]    "white player"
+      RE[result]          "result"
+      RO[round]           "round"
+      RU[rules]           "rules"
+      SO[source]          "source"
+      ST[0]-ST[3]         0-3
+      SZ[1]-              1-
+      TE[1], TE[2]        1, 2
+      UC[1], UC[2]        1, 2
+      US[user]            "user"
+      V[1.23]             1.23
+      WR[white rank]      "white rank"
+      WT[white team]      "white team"
+
+    FF[4]GM[1] (Go)
+
+      SGF                 JavaScript          Notes
+      ------------------------------------------------------------
+      AB[aa][bb]          ["aa", "bb"]        [compressible]
+      AE[aa][bb]          ["aa", "bb"]        [compressible]
+      AR[aa:bb]           [["aa", "bb"]]
+      AW[aa][bb]          ["aa", "bb"]        [compressible]
+      B[aa]-B[ZZ], B[]    "aa"-"ZZ", null
+      CR[aa][bb]          ["aa", "bb"]        [compressible]
+      DD[], DD[aa][bb]    [], ["aa", "bb"]    [compressible]
+      HA[2]-              2-
+      KM[6.5]             6.5
+      LB[aa:any]          [["aa", "any"]]      
+      LN[aa:bb]           [["aa", "bb"]]    
+      MA[aa][bb]          ["aa", "bb"]        [compressible]
+      SL[aa][bb]          ["aa", "bb"]        [compressible]
+      SQ[aa][bb]          ["aa", "bb"]        [compressible]
+      TB[], TB[aa][bb]    [], ["aa", "bb"]    [compressible]
+      TR[aa][bb]          ["aa", "bb"]        [compressible]
+      TW[], TW[aa][bb]    [], ["aa", "bb"]    [compressible]
+      VW[], VW[aa][bb]    [], ["aa", "bb"]    [compressible]
+      W[aa]-W[ZZ], W[]    "aa"-"ZZ", null
+
+      [compressible]:
+        Compressed point lists are expanded by SGF.js automatically, i.e.
+        AB[aa:bb][cc] is converted to ["aa", "ba", "ab", "bb", "cc"].
+
+    FF[1]
+    FF[1]GM[1]
+    FF[3]
+    FF[3]GM[1]
+
+      See the test cases.
+
 HISTORY
 
   The data structure of a SGF collection is based on Games::Go::SGF::Grove,
