@@ -202,9 +202,19 @@ DESCRIPTION
           });
           // => "(;FF[4]B[ab];W[ba])"
 
+HISTORY
+
+  The data structure of a SGF collection is based on Games::Go::SGF::Grove,
+  a Perl module on CPAN:
+
+    https://metacpan.org/pod/Games::Go::SGF::Grove
+
+  Some modifications were made to the original structure by the author,
+  and so this module is not compatible with Perl one.
+
 SEE ALSO
 
-  http://www.red-bean.com/sgf/
+  SGF Specification: http://www.red-bean.com/sgf/
 
 AUTHOR
 

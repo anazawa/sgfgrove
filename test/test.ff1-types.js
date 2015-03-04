@@ -125,14 +125,14 @@ test('FF[1] Color', function (t) {
 
   t.throws(
     function () {
-      Color.parse(['BLACK']);
+      Color.parse(['b']);
     },
     TypeError
   );
 
   t.throws(
     function () {
-      Color.stringify('BLACK');
+      Color.stringify('b');
     },
     TypeError
   );
@@ -144,7 +144,7 @@ test('FF[1] Text', function (t) {
   var Text = FF[1].TYPES.Text;
 
   t.equal( Text.name, 'Text' );
-  t.equal( Text.parse(['\\]\\']), ']\\' );
+  t.equal( Text.parse(['\\]\\\\']), ']\\' );
   t.deepEqual( Text.stringify(']\\'), ['\\]\\\\'] );
 
   t.throws(
@@ -174,83 +174,24 @@ test('FF[1] Unknown', function (t) {
   t.end();
 });
 
-test('FF[4] SimpleText', function (t) {
-  var SimpleText = FF[4].TYPES.SimpleText;
-
-  t.equal( SimpleText.name, 'SimpleText' );
-
-  t.equal( SimpleText.parse(['\\]\\:\\\\']), ']:\\' );
-  t.equal( SimpleText.parse(['\n|\r|\t|\v']), ' | | | ' );
-  t.equal( SimpleText.parse(['\\\n|\\\n\r|\\\r|\\\r\n']), '|||' );
-
-  t.deepEqual( SimpleText.stringify(']:\\'), ['\\]\\:\\\\'] );
-
-  t.throws(
-    function () {
-      SimpleText.parse(['item1', 'item2']);
-    },
-    TypeError
-  );
-
-  t.throws(
-    function () {
-      SimpleText.stringify(123);
-    },
-    TypeError
-  );
-
-  t.end();
-});
-
-test('FF[4] Text', function (t) {
-  var Text = FF[4].TYPES.Text;
-
-  t.equal( Text.name, 'Text' );
-
-  t.equal( Text.parse(['\\]\\:\\\\']), ']:\\' );
-  t.equal( Text.parse(['\n|\r|\t|\v']), '\n|\r| | ' );
-  t.equal( Text.parse(['\\\n|\\\n\r|\\\r|\\\r\n']), '|||' );
-
-  t.deepEqual( Text.stringify(']:\\'), ['\\]\\:\\\\'] );
-
-  t.throws(
-    function () {
-      Text.parse(['item1', 'item2']);
-    },
-    TypeError
-  );
-
-  t.throws(
-    function () {
-      Text.stringify(123);
-    },
-    TypeError
-  );
-
-  t.end();
-});
-
-test('FF[4]GM[1] Point', function (t) {
-  var Point = FF[4][1].TYPES.Point;
+test('FF[1]GM[1] Point', function (t) {
+  var Point = FF[1][1].TYPES.Point;
 
   t.equal( Point.name, 'Point' );
 
   t.equal( Point.parse(['aa']), 'aa' );
-  t.equal( Point.parse(['AA']), 'AA' );
-
   t.deepEqual( Point.stringify('aa'), ['aa'] );
-  t.deepEqual( Point.stringify('AA'), ['AA'] );
 
   t.throws(
     function () {
-      Point.parse(['aa', 'bb']);
+      Point.parse(['tt']);
     },
     TypeError
   );
 
   t.throws(
     function () {
-      Point.stringify([0, 0]);
+      Point.stringify('tt');
     },
     TypeError
   );
@@ -258,12 +199,73 @@ test('FF[4]GM[1] Point', function (t) {
   t.end();
 });
 
-test('FF[4]GM[1] Move', function (t) {
-  var Move = FF[4][1].TYPES.Move;
+test('FF[1]GM[1] Move', function (t) {
+  var Move = FF[1][1].TYPES.Move;
 
   t.equal( Move.name, 'Move' );
-  t.equal( Move.parse(['']), '' ); // Pass
-  t.deepEqual( Move.stringify(''), [''] ); // Pass
+
+  t.equal( Move.parse(['aa']), 'aa' );
+  t.deepEqual( Move.stringify('aa'), ['aa'] );
+
+  t.equal( Move.parse(['tt']), 'tt', 'FF[1] pass' );
+  t.deepEqual( Move.stringify('tt'), ['tt'], 'FF[1] pass' );
+
+  t.throws(
+    function () {
+      Move.parse(['']);
+    },
+    TypeError,
+    'FF[4] pass'
+  );
+
+  t.throws(
+    function () {
+      Move.stringify('');
+    },
+    TypeError,
+    'FF[4] pass'
+  );
+
+  t.end();
+});
+
+test('FF[1]GM[1] elist of Point', function (t) {
+  var elistOfPoint = FF[1][1].TYPES.elistOf( FF[1][1].TYPES.Point );
+
+  t.equal( elistOfPoint.name, 'elist of Point' );
+
+  t.deepEqual( elistOfPoint.parse(['aa', 'bb']), ['aa', 'bb'] );
+  t.deepEqual( elistOfPoint.stringify(['aa', 'bb']), ['aa', 'bb'] );
+
+  t.deepEqual( elistOfPoint.parse(['']), [], 'can be empty' );
+  t.deepEqual( elistOfPoint.stringify([]), [''], 'can be empty' );
+
+  t.end();
+});
+
+test('FF[1]GM[1] list of Point', function (t) {
+  var listOfPoint = FF[1][1].TYPES.listOf( FF[1][1].TYPES.Point );
+
+  t.equal( listOfPoint.name, 'list of Point' );
+
+  t.deepEqual( listOfPoint.parse(['aa', 'bb']), ['aa', 'bb'] );
+  t.deepEqual( listOfPoint.stringify(['aa', 'bb']), ['aa', 'bb'] );
+
+  t.throws(
+    function () {
+      listOfPoint.parse(['']);
+    },
+    TypeError,
+    'can not be empty'
+  );
+
+  t.throws(
+    function () {
+      listOfPoint.stringify([]);
+    },
+    TypeError,
+    'can not be empty'
+  );
 
   t.end();
 });

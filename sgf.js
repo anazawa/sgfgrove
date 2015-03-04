@@ -141,14 +141,19 @@
 
     // for "point list", while "list of" is introduced in FF[4]
     FF1.TYPES.listOf = function (type, args) {
+      var canBeEmpty = args && args.canBeEmpty === true;
+
       return type && {
-        name: 'list of '+type.name,
-        canBeEmpty: args && args.canBeEmpty === true,
+        name: (canBeEmpty ? 'elist of ' : 'list of ')+type.name,
+        canBeEmpty: canBeEmpty,
         parse: function (values) {
           var vals = [];
 
-          if ( !this.canBeEmpty && values.length === 1 && values[0] === '' ) {
-            throw new TypeError( this.name+' expected, got None' );
+          if ( values.length === 1 && values[0] === '' ) {
+            if ( this.canBeEmpty ) {
+              return vals;
+            }
+            throw new TypeError( this.name+' expected, got '+dump(values) );
           }
 
           for ( var i = 0; i < values.length; i++ ) {
@@ -164,13 +169,17 @@
             throw new TypeError( 'array expected, got '+dump(values) );
           }
 
-          if ( !this.canBeEmpty && !values.length ) {
+          if ( values.length ) {
+            for ( var i = 0; i < values.length; i++ ) {
+              vals.push( type.stringify(values[i])[0] );
+            }
+          }
+          else if ( this.canBeEmpty ) {
+            vals.push('');
+          }
+          else {
             throw new TypeError( this.name+' expected, got None' );
-          }
-
-          for ( var i = 0; i < values.length; i++ ) {
-            vals.push( type.stringify(values[i])[0] );
-          }
+          } 
 
           return vals;
         }
@@ -693,7 +702,12 @@
 
     TYPES.Move = FF.TYPES.scalar({
       name: 'Move',
-      like: /^(?:[a-zA-Z]{2})?$/
+      like: /^(?:[a-zA-Z]{2})?$/,
+      isa: function (v) {
+        return v === null || (isString(v) && /^[a-zA-Z]{2}$/.test(v));
+      },
+      parse: function (v) { return v === '' ? null : v; },
+      stringify: function (v) { return v === null ? '' : v; }
     });
 
     TYPES.listOfPoint = {
