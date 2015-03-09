@@ -12,7 +12,7 @@ test('basic', function (t) {
           '(;C[j])))';
 
   var sgf = [[
-    { FF: 4, C: 'root' },
+    [{ FF: 4, C: 'root' }],
     [[
       { C: 'a' }, { C: 'b' },
       [
@@ -20,7 +20,7 @@ test('basic', function (t) {
         [{ C: 'd' }, { C: 'e' }, []],
       ]
     ], [
-      { C: 'f' },
+      [{ C: 'f' }],
       [
         [{ C: 'g' }, { C: 'h' }, { C: 'i' }, []],
         [{ C: 'j' }, []]
@@ -36,7 +36,7 @@ test('basic', function (t) {
       return /^[A-Z]/.test(k) ? k+'['+v+']' : v;
     }),
     [[
-      { FF: 'FF[4]' },
+      [{ FF: 'FF[4]' }],
       []
     ]],
     'SGF.parse: reviver should be called'
@@ -44,7 +44,7 @@ test('basic', function (t) {
 
   t.equal(
     SGF.stringify([[
-      {
+      [{
         FF: 4,
         FOO: {
           bar: 'baz',
@@ -52,7 +52,7 @@ test('basic', function (t) {
             return [this.bar];
           }
         }
-      },
+      }],
       []
     ]]),
     '(;FF[4]FOO[baz])',

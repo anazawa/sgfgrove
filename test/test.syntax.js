@@ -4,7 +4,7 @@ var SGF = require('../sgf.js');
 test('SGF.parse: Syntax', function (t) {
   t.deepEqual(
     SGF.parse(' (\n ;\t FF\r\n [4]  \n\r)\v'),
-    [[{ FF: 4 }, []]],
+    [[[{ FF: 4 }], []]],
     'white spaces are ignored'
   );
 
