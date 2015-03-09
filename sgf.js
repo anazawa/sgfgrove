@@ -1330,66 +1330,6 @@
     };
   }());
 
-  SGF.GameTree = (function () {
-    var GameTree = function (tree) {
-      this.tree = tree;
-    };
-
-    GameTree.prototype.accept = function (visitor) {
-      if ( visitor && typeof visitor === 'object' &&
-           typeof visitor.visit === 'function' ) {
-        visitor.visit( this );
-        return;
-      }
-      throw new Error('error');
-    };
-
-    GameTree.prototype.each = function (callback) {
-      var tree = this.tree;
-      var index = 0;
-
-      (function walk (subtree) {
-        var i, subtrees = subtree[subtree.length-1];
-        for ( i = 0; i < subtree.length-1; i++ ) {
-          callback.call( subtree[i], index++ );
-        }
-        for ( i = 0; i < subtrees.length; i++ ) {
-          walk( subtrees[i] );
-        }
-      }(tree));
-
-      return;
-    };
-
-    return GameTree;
-  }());
-
-  SGF.Visitor = function () {};
-
-  SGF.Visitor.MainLine = (function() {
-    var MainLine = function () {
-      this.result = null;
-    };
-
-    MainLine.prototype.visit = function (gameTree) {
-      var tree = gameTree.tree;
-      var nodes = [];
-
-      (function walk (subtree) {
-        var sequence = subtree.slice(0);
-        var subtrees = sequence.pop();
-        nodes = nodes.concat( sequence );
-        if ( subtrees.length ) { walk(subtrees[0]); }
-      }(tree));
-
-      this.result = nodes;
-
-      return;
-    };
-
-    return MainLine;
-  }());
-
   if ( typeof exports !== 'undefined' ) {
     module.exports = SGF;
   }
