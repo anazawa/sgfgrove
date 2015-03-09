@@ -977,8 +977,8 @@
     };
 
     var gameTree = function () {
-      var tree = [];
-      var subtrees = [], subtree;
+      var sequence = [];
+      var variations = [], variation;
       var node, ident, values, val;
 
       if ( !test(/^\s*\(\s*/g) ) { // start of GameTree
@@ -1007,24 +1007,25 @@
           node[ident] = values;
         }
 
-        tree.push( node );
+        sequence.push( node );
       }
 
-      if ( !tree.length ) {
+      if ( !sequence.length ) {
         error( 'GameTree must contain at least one Node' );
       }
 
-      while ( subtree = gameTree() ) {
-        subtrees.push( subtree );
+      while ( variation = gameTree() ) {
+        variations.push( variation );
       }
 
       if ( !test(/^\)\s*/g) ) { // end of GameTree
         error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
       }
 
-      tree.push( subtrees );
-
-      return tree;
+      return [
+        sequence,
+        variations
+      ];
     };
 
     var finalize = function (trees, collection, ff, PROPS, nodeId) {
@@ -1039,7 +1040,7 @@
         tree = trees[i];
 
         if ( trees === collection ) {
-          root = tree[0];
+          root = tree[0][0];
 
           try {
             ff = root.FF ? Num.parse(root.FF) : 1;
@@ -1057,8 +1058,8 @@
           PROPS = FF[ff][gm] ? FF[ff][gm].PROPERTIES : FF[ff].properties();
         }
 
-        for ( j = 0; j < tree.length-1; j++ ) {
-          node = tree[j];
+        for ( j = 0; j < tree[0].length; j++ ) {
+          node = tree[0][j];
           idents = keys(node); // to rename
 
           for ( k = 0; k < idents.length; k++ ) {
@@ -1102,7 +1103,7 @@
           nodeId += 1;
         }
 
-        finalize( tree[tree.length-1], collection, ff, PROPS, nodeId );
+        finalize( tree[1], collection, ff, PROPS, nodeId );
       }
     };
 
@@ -1232,7 +1233,7 @@
           throw new TypeError( 'Array expected, got '+tree );
         }
 
-        if ( tree.length <= 1 ) {
+        if ( tree[0].length === 0 ) {
           throw new TypeError( 'GameTree must contain at least one Node' );
         }
 
@@ -1240,9 +1241,9 @@
 
         text += '('; // open GameTree
 
-        for ( j = 0; j < tree.length-1; j++ ) {
-          node = toSGF( tree[j] );
-          node = replacer ? replacer.call(tree, j, node) : node;
+        for ( j = 0; j < tree[0].length; j++ ) {
+          node = toSGF( tree[0][j] );
+          node = replacer ? replacer.call(tree[0], j, node) : node;
 
           if ( !node || typeof node !== 'object' ) {
             throw new TypeError( 'Object expected, got '+node );
@@ -1297,7 +1298,7 @@
           root = undefined;
         }
 
-        subtrees = toSGF( tree[tree.length-1] );
+        subtrees = toSGF( tree[1] );
         subtrees = replacer ? replacer.call(tree, tree.length-1, subtrees) : subtrees;
 
         text += stringify( subtrees, replacer, select, collection, ff, PROPS );
