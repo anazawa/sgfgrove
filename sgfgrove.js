@@ -82,19 +82,20 @@
   }());
 
   /**
-   * Original File Format
+   * File Format (;FF[4])
    * @namespace
    * @memberof SGF
-   * @see http://www.red-bean.com/sgf/ff1_3/ff1.html
+   * @see http://www.red-bean.com/sgf/sgf4.html
+   * @see http://www.red-bean.com/sgf/properties.html
    */
-  SGF.FF[1] = (function () {
+  SGF.FF[4] = (function () {
     var FF = SGF.FF;
-    var FF1 = {};
+    var FF4 = {};
 
-    FF1.TYPES = {};
+    FF4.TYPES = {};
 
     // Number = ["+"|"-"] Digit {Digit}
-    FF1.TYPES.Number = FF.TYPES.scalar({
+    FF4.TYPES.Number = FF.TYPES.scalar({
       name: 'Number',
       like: /^[+-]?\d+$/,
       isa: function (v) { return isNumber(v) && Math.floor(v) === v; },
@@ -102,36 +103,21 @@
     });
 
     // Color = ("B" | "W")
-    FF1.TYPES.Color = FF.TYPES.scalar({
+    FF4.TYPES.Color = FF.TYPES.scalar({
       name: 'Color',
       like: /^[BW]$/
     });
 
     // Triple = ("1" | "2")
-    FF1.TYPES.Triple = FF.TYPES.scalar({
+    FF4.TYPES.Triple = FF.TYPES.scalar({
       name: 'Triple',
       like: /^[12]$/,
       isa: function (v) { return v === 1 || v === 2; },
       parse: function (v) { return parseInt(v, 10); }
     });
 
-    // Real = Number ["." {Digit}]
-    FF1.TYPES.Real = FF.TYPES.scalar({
-      name: 'Real',
-      like: /^[+-]?\d+(?:\.\d*)?$/,
-      isa: isNumber,
-      parse: parseFloat
-    });
-
-    // Text = { any charcter; "\]" = "]", "\\" = "\"}
-    FF1.TYPES.Text = FF.TYPES.scalar({
-      name: 'Text',
-      parse: function (v) { return v.replace(/\\([\]\\])/g, '$1'); },
-      stringify: function (v) { return v.replace(/([\]\\])/g, '\\$1'); }
-    });
-
     // for FG, while None is introduced in FF[4]
-    FF1.TYPES.None = FF.TYPES.scalar({
+    FF4.TYPES.None = FF.TYPES.scalar({
       name: 'None',
       like: /^$/,
       isa: function (v) { return v === null; },
@@ -139,8 +125,36 @@
       stringify: function (v) { return ''; }
     });
 
+    FF4.TYPES.Compose = function (left, right) {
+      return left && right && {
+        name: 'composed '+left.name+' ":" '+right.name,
+        parse: function (values) {
+          var value = values[0].match(/^((?:\\:|[^:])*):(.*)$/);
+
+          if ( values.length > 1 || !value ) {
+            throw new TypeError( this.name+' expected, got '+dump(values) );
+          }
+
+          return [
+             left.parse( [value[1]] ),
+            right.parse( [value[2]] )
+          ];
+        },
+        stringify: function (value) {
+          if ( !isArray(value) || value.length !== 2 ) {
+            throw new TypeError( this.name+' expected, got '+dump(value) );
+          }
+          return [
+            left.stringify(value[0])[0] +
+            ':' +
+            right.stringify(value[0])[0]
+          ];
+        }
+      };
+    };
+ 
     // for "point list", while "list of" is introduced in FF[4]
-    FF1.TYPES.listOf = function (type, args) {
+    FF4.TYPES.listOf = function (type, args) {
       var canBeEmpty = args && args.canBeEmpty === true;
 
       return type && {
@@ -187,11 +201,11 @@
     };
 
     // for VW, while "elist of" is introduced in FF[4]
-    FF1.TYPES.elistOf = function (type) {
-      return FF1.TYPES.listOf(type, { canBeEmpty: true });
+    FF4.TYPES.elistOf = function (type) {
+      return FF4.TYPES.listOf(type, { canBeEmpty: true });
     };
 
-    FF1.TYPES.Unknown = {
+    FF4.TYPES.Unknown = {
       name: 'Unknown',
       parse: function (values) {
         var vals = [];
@@ -219,280 +233,6 @@
         return vals;
       }
     };
-
-    FF1.properties = function (types) {
-      var t = types || FF1.TYPES;
-
-      return {
-        B  : t.Move,
-        W  : t.Move,
-        C  : t.Text,
-        N  : t.Text,
-        //
-        V  : t.Number,
-        //
-        CH : t.Triple,
-        GB : t.Triple,
-        GW : t.Triple,
-        TE : t.Triple,
-        BM : t.Triple,
-        // times
-        BL : t.Real,
-        WL : t.Real,
-        // figure
-        FG : t.None,
-        // set up
-        AB : t.listOf( t.Point ),
-        AW : t.listOf( t.Point ),
-        AE : t.listOf( t.Point ),
-        PL : t.Color,
-        // game info
-        GN : t.Text, 
-        GC : t.Text,
-        EV : t.Text,
-        RO : t.Text,
-        DT : t.Text,
-        PC : t.Text,
-        PB : t.Text,
-        PW : t.Text,
-        RE : t.Text,
-        US : t.Text,
-        TM : t.Text,
-        SO : t.Text,
-        // root
-        GM : t.Number,
-        SZ : t.Number,
-        VW : t.elistOf( t.Point ), // "an empty list denotes the whole board"
-        BS : t.Number,
-        WS : t.Number,
-        // computer algorithms
-        EL : t.Number,
-        EX : t.Move,
-        // marking
-        SL : t.listOf( t.Point ),
-        M  : t.listOf( t.Point ),
-        L  : t.listOf( t.Point ),
-        // unknown
-        unknown : t.Unknown
-      };
-    };
-
-    return FF1;
-  }());
-
-  /**
-   * Go (;GM[1]) specific properties
-   * @namespace
-   * @memberof SGF
-   */
-  SGF.FF[1][1] = (function () {
-    var FF = SGF.FF;
-    var TYPES, PROPS;
-
-    TYPES = Object.create( FF[1].TYPES );
-
-    TYPES.Point = FF.TYPES.scalar({
-      name: 'Point',
-      like: /^[a-s]{2}$/
-    });
-
-    TYPES.Move = FF.TYPES.scalar({
-      name: 'Move',
-      like: /^(?:[a-s]{2}|tt)$/
-    });
-
-    PROPS = FF[1].properties( TYPES );
-
-    PROPS.BR = TYPES.Text;
-    PROPS.WR = TYPES.Text;
-    PROPS.HA = TYPES.Number;
-    PROPS.KM = TYPES.Real;
-    PROPS.TB = TYPES.listOf( TYPES.Point );
-    PROPS.TW = TYPES.listOf( TYPES.Point );
-    PROPS.SC = TYPES.listOf( TYPES.Point );
-    PROPS.RG = TYPES.listOf( TYPES.Point );
-
-    return {
-      TYPES: TYPES,
-      PROPERTIES: PROPS
-    };
-  }());
-
-  // "FF[2] was never made public. It's more or less identical to FF[1] -
-  // the only changes known (to me) are that the BS/WS values had been
-  // redefined." (http://www.red-bean.com/sgf/proplist_ff.html)
-  SGF.FF[2] = SGF.FF[1];
-
-  /**
-   * File Format (;FF[3])
-   * @namespace
-   * @memberof SGF
-   * @see http://www.red-bean.com/sgf/ff1_3/ff3.html
-   * @see http://www.red-bean.com/sgf/ff1_3/sgfhistory.html
-   */
-  SGF.FF[3] = (function () {
-    var FF = SGF.FF;
-    var FF3 = {};
-
-    FF3.TYPES = Object.create( FF[1].TYPES );
-
-    FF3.TYPES.Compose = function (left, right) {
-      return left && right && {
-        name: 'composed '+left.name+' ":" '+right.name,
-        parse: function (values) {
-          var value = values[0].match(/^((?:\\:|[^:])*):(.*)$/);
-
-          if ( values.length > 1 || !value ) {
-            throw new TypeError( this.name+' expected, got '+dump(values) );
-          }
-
-          return [
-             left.parse( [value[1]] ),
-            right.parse( [value[2]] )
-          ];
-        },
-        stringify: function (value) {
-          if ( !isArray(value) || value.length !== 2 ) {
-            throw new TypeError( this.name+' expected, got '+dump(value) );
-          }
-          return [
-            left.stringify(value[0])[0] +
-            ':' +
-            right.stringify(value[0])[0]
-          ];
-        }
-      };
-    };
-
-    FF3.properties = function (types) {
-      var t = types || FF3.TYPES;
-
-      return {
-        // Moves
-        B  : t.Move,
-        W  : t.Move,
-        // Setup Position or Problem
-        AB : t.listOf( t.Point ),
-        AW : t.listOf( t.Point ),
-        AE : t.listOf( t.Point ),
-        PL : t.Color,
-        // Node Annotation
-        C  : t.Text,
-        N  : t.Text,
-        SE : t.listOf( t.Point ),
-        // Move Annotation
-        V  : t.Real,
-        CH : t.Triple,
-        GB : t.Triple,
-        GW : t.Triple,
-        TE : t.Triple,
-        BM : t.Triple,
-        DO : t.None,
-        IT : t.None,
-        UC : t.Triple,
-        DM : t.Triple,
-        HO : t.Triple,
-        SI : t.Triple,
-        // Time Control
-        BL : t.Real,
-        WL : t.Real,
-        OB : t.Number,
-        OM : t.Number,
-        OP : t.Real,
-        OV : t.Number,
-        OW : t.Number,
-        // Diagrams and Printing
-        FG : t.None,
-        MN : t.Number,
-        // Root Properties
-        FF : t.Number,
-        GM : t.Number,
-        SZ : t.Number,
-        BS : t.Number,
-        WS : t.Number,
-        LT : t.None,
-        // Game Info
-        GN : t.Text,
-        GC : t.Text,
-        EV : t.Text,
-        RO : t.Text,
-        DT : t.Text,
-        PC : t.Text,
-        PB : t.Text,
-        PW : t.Text,
-        BT : t.Text,
-        WT : t.Text,
-        RE : t.Text,
-        US : t.Text,
-        TM : t.Text,
-        SO : t.Text,
-        AN : t.Text,
-        CP : t.Text,
-        ID : t.Text,
-        ON : t.Text,
-        // Position Annotation
-        SL : t.listOf( t.Point ),
-        MA : t.listOf( t.Point ),
-        TR : t.listOf( t.Point ),
-        CR : t.listOf( t.Point ),
-        LB : t.Compose( t.Point, t.Text ),
-        // Unknown
-        unknown : t.Unknown
-      };
-    };
-
-    return FF3;
-  }());
-
-  /**
-   * Go (;FF[3]GM[1]) specific properties
-   * @namespace
-   * @memberof SGF
-   */
-  SGF.FF[3][1] = (function () {
-    var FF = SGF.FF;
-    var TYPES, PROPS;
-
-    TYPES = Object.create( FF[3].TYPES );
-
-    TYPES.Point = FF[1][1].TYPES.Point;
-    TYPES.Move  = FF[1][1].TYPES.Move;
-
-    PROPS = FF[3].properties( TYPES );
-
-    PROPS.KO = TYPES.None;
-    PROPS.RU = TYPES.Text;
-    PROPS.BR = TYPES.Text;
-    PROPS.WR = TYPES.Text;
-    PROPS.HA = TYPES.Number;
-    PROPS.KM = TYPES.Real;
-    PROPS.TB = TYPES.listOf( TYPES.Point );
-    PROPS.TW = TYPES.listOf( TYPES.Point );
-    PROPS.TC = TYPES.Number;
-    PROPS.SC = TYPES.listOf( TYPES.Point );
-    PROPS.RG = TYPES.listOf( TYPES.Point );
-
-    return {
-      TYPES: TYPES,
-      PROPERTIES: PROPS
-    };
-  }());
-
-  /**
-   * File Format (;FF[4])
-   * @namespace
-   * @memberof SGF
-   * @see http://www.red-bean.com/sgf/sgf4.html
-   * @see http://www.red-bean.com/sgf/properties.html
-   */
-  SGF.FF[4] = (function () {
-    var FF = SGF.FF;
-    var FF4 = {};
-
-    FF4.TYPES = Object.create( FF[3].TYPES );
-
-    FF4.TYPES.Double = Object.create( FF4.TYPES.Triple );
-    FF4.TYPES.Double.name = 'Double';
 
     // Real = Number ["." Digit { Digit }]
     FF4.TYPES.Real = FF.TYPES.scalar({
@@ -950,7 +690,7 @@
    */
   SGF.parse = (function () {
     var FF = SGF.FF;
-    var Num = FF[1].TYPES.Number;
+    var Num = FF[4].TYPES.Number;
     var source, lastIndex;
 
     var error = function (message) {
@@ -988,7 +728,7 @@
       while ( test(/^;\s*/g) ) { // start of Node
         node = {};
 
-        while ( ident = exec(/^([a-zA-Z\d]+)\s*/g) ) { // PropIdent(-like)
+        while ( ident = exec(/^([A-Z]+)\s*/g) ) { // PropIdent
           ident = ident[1];
           values = [];
 
@@ -1025,8 +765,8 @@
       return [sequence, subtrees];
     };
 
-    var finalize = function (trees, collection, ff, PROPS, nodeId) {
-      var i, tree, sequence, root, gm;
+    var finalize = function (trees, collection, PROPS, nodeId) {
+      var i, tree, sequence, root, ff, gm;
       var j, node, idents;
       var k, ident, id, values;
 
@@ -1044,7 +784,7 @@
             ff = root.FF ? Num.parse(root.FF) : 1;
             gm = root.GM ? Num.parse(root.GM) : 1;
 
-            if ( ff !== 4 && ff !== 3 && ff !== 1 ) {
+            if ( ff !== 4 ) {
               throw new Error( 'FF['+ff+'] is not supported' );
             }
           }
@@ -1065,31 +805,6 @@
               ident = idents[k];
               values = node[ident];
 
-              if ( ff === 1 && !/^[A-Z][A-Z\d]?$/.test(ident) ) {
-                throw new SyntaxError( 'Not a FF[1] PropIdent' );
-              }
-
-              if ( ff === 3 ) {
-                id = ident.replace(/[a-z]/g, '');
-
-                if ( !/^[A-Z][A-Z\d]?$/.test(id) ) {
-                  throw new SyntaxError( 'Not a FF[3] PropIdent' );
-                }
-
-                if ( id !== ident && node.hasOwnProperty(id) ) {
-                  throw new SyntaxError( "Property '"+id+"' already exists" );
-                }
-
-                if ( id !== ident ) {
-                  delete node[ident];
-                  ident = id;
-                }
-              }
-
-              if ( ff === 4 && !/^[A-Z]+$/.test(ident) ) {
-                throw new SyntaxError( 'Not a FF[4] PropIdent' );
-              }
-
               node[ident] = (PROPS[ident] || PROPS.unknown).parse(values);
             }
             catch (error) {
@@ -1101,7 +816,7 @@
           nodeId += 1;
         }
 
-        finalize( tree[1], collection, ff, PROPS, nodeId );
+        finalize( tree[1], collection, PROPS, nodeId );
       }
     };
 
@@ -1201,7 +916,7 @@
    */
   SGF.stringify = (function () {
     var FF = SGF.FF;
-    var Num = FF[1].TYPES.Number;
+    var Num = FF[4].TYPES.Number;
 
     var toSGF = function (value) {
       if ( value && typeof value === 'object' &&
@@ -1211,10 +926,10 @@
       return value;
     };
 
-    var stringify = function (trees, replacer, select, collection, ff, PROPS) {
+    var stringify = function (trees, replacer, select, collection, PROPS) {
       var text = '';
       var i, tree, sequence, subtrees;
-      var j, node, root, gm;
+      var j, node, root, ff, gm;
       var ident, values;
 
       if ( !isArray(trees) ) {
@@ -1253,11 +968,7 @@
           for ( ident in node ) {
             if ( !node.hasOwnProperty(ident) ) { continue; }
             if ( select && !select.hasOwnProperty(ident) ) { continue; }
-
-            // ignore non-SGF properties
-            if ( ff === 1 && !/^[A-Z][A-Z\d]?$/.test(ident) ) { continue; }
-            if ( ff === 3 && !/^[A-Z][A-Z\d]?$/.test(ident) ) { continue; }
-            if ( ff === 4 && !/^[A-Z]+$/.test(ident) ) { continue; }
+            if ( !/^[A-Z]+$/.test(ident) ) { continue; }
 
             values = toSGF( node[ident] );
             values = replacer ? replacer.call(node, ident, values) : values;
@@ -1282,7 +993,7 @@
           gm = root.hasOwnProperty('GM') ? root.GM : 1;
           gm = Num.parse( Num.stringify(gm) );
 
-          if ( ff !== 4 && ff !== 3 && ff !== 1 ) {
+          if ( ff !== 4 ) {
             throw new Error( 'FF['+ff+'] is not supported' );
           }
 
@@ -1300,7 +1011,7 @@
         subtrees = toSGF( tree[1] );
         subtrees = replacer ? replacer.call(tree, tree.length-1, subtrees) : subtrees;
 
-        text += stringify( subtrees, replacer, select, collection, ff, PROPS );
+        text += stringify( subtrees, replacer, select, collection, PROPS );
         text += ')'; // close GameTree
       }
 

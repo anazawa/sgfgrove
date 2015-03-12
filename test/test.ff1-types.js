@@ -1,8 +1,8 @@
 var test = require('tape');
 var FF = require('../sgfgrove.js').FF;
 
-test('FF[1] Number', function (t) {
-  var Num = FF[1].TYPES.Number;
+test('FF[4] Number', function (t) {
+  var Num = FF[4].TYPES.Number;
 
   t.equal( Num.name, 'Number' );
 
@@ -30,8 +30,8 @@ test('FF[1] Number', function (t) {
   t.end();
 });
 
-test('FF[1] None', function (t) {
-  var None = FF[1].TYPES.None;
+test('FF[4] None', function (t) {
+  var None = FF[4].TYPES.None;
 
   t.equal( None.name, 'None' );
   t.equal( None.parse(['']), null );
@@ -54,6 +54,7 @@ test('FF[1] None', function (t) {
   t.end();
 });
 
+/*
 test('FF[1] Real', function (t) {
   var Real = FF[1].TYPES.Real;
 
@@ -83,9 +84,10 @@ test('FF[1] Real', function (t) {
 
   t.end();
 });
+*/
 
-test('FF[1] Triple', function (t) {
-  var Triple = FF[1].TYPES.Triple;
+test('FF[4] Triple', function (t) {
+  var Triple = FF[4].TYPES.Triple;
 
   t.equal( Triple.name, 'Triple' );
 
@@ -112,8 +114,8 @@ test('FF[1] Triple', function (t) {
   t.end();
 });
 
-test('FF[1] Color', function (t) {
-  var Color = FF[1].TYPES.Color;
+test('FF[4] Color', function (t) {
+  var Color = FF[4].TYPES.Color;
 
   t.equal( Color.name, 'Color' );
 
@@ -140,6 +142,7 @@ test('FF[1] Color', function (t) {
   t.end();
 });
 
+/*
 test('FF[1] Text', function (t) {
   var Text = FF[1].TYPES.Text;
 
@@ -163,9 +166,10 @@ test('FF[1] Text', function (t) {
 
   t.end();
 });
+*/
 
-test('FF[1] Unknown', function (t) {
-  var Unknown = FF[1].TYPES.Unknown;
+test('FF[4] Unknown', function (t) {
+  var Unknown = FF[4].TYPES.Unknown;
 
   t.equal( Unknown.name, 'Unknown' );
   t.deepEqual( Unknown.parse(['\\]']), [']'] );
@@ -174,6 +178,7 @@ test('FF[1] Unknown', function (t) {
   t.end();
 });
 
+/*
 test('FF[1]GM[1] Point', function (t) {
   var Point = FF[1][1].TYPES.Point;
 
@@ -198,7 +203,9 @@ test('FF[1]GM[1] Point', function (t) {
 
   t.end();
 });
+*/
 
+/*
 test('FF[1]GM[1] Move', function (t) {
   var Move = FF[1][1].TYPES.Move;
 
@@ -228,7 +235,9 @@ test('FF[1]GM[1] Move', function (t) {
 
   t.end();
 });
+*/
 
+/*
 test('FF[1]GM[1] elist of Point', function (t) {
   var elistOfPoint = FF[1][1].TYPES.elistOf( FF[1][1].TYPES.Point );
 
@@ -242,7 +251,9 @@ test('FF[1]GM[1] elist of Point', function (t) {
 
   t.end();
 });
+*/
 
+/*
 test('FF[1]GM[1] list of Point', function (t) {
   var listOfPoint = FF[1][1].TYPES.listOf( FF[1][1].TYPES.Point );
 
@@ -269,4 +280,5 @@ test('FF[1]GM[1] list of Point', function (t) {
 
   t.end();
 });
+*/
 

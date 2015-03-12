@@ -10,7 +10,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(;B[aa]B[bb])');
+      SGF.parse('(;FF[4]B[aa]B[bb])');
     },
     SyntaxError,
     'duplicate property'
@@ -18,7 +18,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(;B[aa]extra)');
+      SGF.parse('(;FF[4]extra)');
     },
     SyntaxError,
     'extra characters'
@@ -26,7 +26,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(B[aa])');
+      SGF.parse('(FF[4])');
     },
     SyntaxError,
     'semicolon is missing'
@@ -42,7 +42,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(;B[aa]');
+      SGF.parse('(;FF[4]');
     },
     SyntaxError,
     'unclosed GameTree'
@@ -50,7 +50,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(;B)');
+      SGF.parse('(;FF)');
     },
     SyntaxError,
     'PropValue is missing'
@@ -58,7 +58,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(;B[aa)');
+      SGF.parse('(;FF[4]B[aa)');
     },
     SyntaxError,
     'unclosed PropValue'
@@ -66,7 +66,7 @@ test('SGF.parse: Syntax', function (t) {
 
   t.throws(
     function () {
-      SGF.parse('(;C[foo [2k]: hi])');
+      SGF.parse('(;FF[4]C[foo [2k]: hi])');
     },
     SyntaxError,
     'unescaped closing bracket'
