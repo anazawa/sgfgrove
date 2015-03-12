@@ -1,5 +1,5 @@
 var test = require('tape');
-var FF = require('../sgf.js').FF;
+var FF = require('../sgfgrove.js').FF;
 
 test('FF[4] SimpleText', function (t) {
   var SimpleText = FF[4].TYPES.SimpleText;

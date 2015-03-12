@@ -1,5 +1,5 @@
 var test = require('tape');
-var SGF = require('../sgf.js');
+var SGF = require('../sgfgrove.js');
 
 test('basic', function (t) {
   var text

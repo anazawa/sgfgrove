@@ -1,5 +1,5 @@
 var test = require('tape');
-var FF = require('../sgf.js').FF;
+var FF = require('../sgfgrove.js').FF;
 
 test('FF[1] Number', function (t) {
   var Num = FF[1].TYPES.Number;

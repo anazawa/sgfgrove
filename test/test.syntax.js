@@ -1,5 +1,5 @@
 var test = require('tape');
-var SGF = require('../sgf.js');
+var SGF = require('../sgfgrove.js');
 
 test('SGF.parse: Syntax', function (t) {
   t.deepEqual(

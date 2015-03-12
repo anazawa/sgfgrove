@@ -1,23 +1,23 @@
 NAME
 
-  SGF.js - Type-aware SGF parser/stringifier that supports FF[1]-FF[4]
+  sgfgrove - Type-aware SGF parser/stringifier that supports FF[1]-FF[4]
 
 SYNOPSIS
 
   In your HTML:
 
-    <script src="sgf.js"></script>
+    <script src="sgfgrove.js"></script>
 
   In your JavaScript:
 
-    SGF.parse("(;FF[4]B[pd];W[qp])");
+    SGFGROVE.parse("(;FF[4]B[pd];W[qp])");
     // => [[
     //   { FF: 4, B: "pd" },
     //   { W: "qp" },
     //   []
     // ]]
  
-    SGF.stringify([[
+    SGFGROVE.stringify([[
       { FF: 4, B: "pd" },
       { W: "qp" },
       []
@@ -47,7 +47,7 @@ DESCRIPTION
 
   METHODS
 
-    array = SGF.parse( string[, reviver] )
+    array = SGFGROVE.parse( string[, reviver] )
 
       Given a SGF string, returns an array representing a SGF collection.
       You can also pass a callback function that is used to filter properties.
@@ -58,11 +58,11 @@ DESCRIPTION
       will be deleted.
 
       A SGF collection is represented by an array containing SGF game trees.
-      Each game tree is again an array of SGF nodes. Each node is simply an
-      object. Each SGF property is stored in the object with the property name
-      as the key, and the property value(s) for the value. The last element
-      of a game tree array always refers to an array containing sub game trees,
-      called variations.
+      Each game tree is an array containing an array of SGF nodes and an array
+      of sub game trees, called variations/branches/alternate lines of play.
+      Each node is simply an object. Each SGF property is stored in the object
+      with the property name as the key, and the property value(s) for the
+      value.
 
         Collection:
 
@@ -76,10 +76,12 @@ DESCRIPTION
         GameTree:
 
           [
-            {Node},
-            {Node},
-            ...
-            {Node},
+            [
+              {Node},
+              {Node},
+              ...
+              {Node}
+            ],
             [
               [GameTree],
               [GameTree],
@@ -94,10 +96,16 @@ DESCRIPTION
             FF: 4,
             B: "pd"
           }
+
+      WHY NOT USUAL TREE STRUCTURE?
+
+        Because it's optimized for a go game record played by human being
+        with some variations. That's why the data structure is simplified,
+        considering a SGF sequence as the node of the tree.
    
       You can also convert the above data structure to JSON:
    
-        JSON.stringify( SGF.parse("(;FF[4])") );
+        JSON.stringify( SGFGROVE.parse("(;FF[4])") );
         // => JSON representaion of SGF
    
       While an invalid SGF is rejected, e.g., "(;FF[four])", this method
@@ -119,7 +127,7 @@ DESCRIPTION
   
           var char2coord = { "a": 0, "b": 1, ... };
 
-          SGF.parse("(;FF[4]B[ab];W[ba])", function (key, value) {
+          SGFGROVE.parse("(;FF[4]B[ab];W[ba])", function (key, value) {
             if ( key === "B" || key === "W" ) {
               var x = value.charAt(0);
               var y = value.charAt(1);
@@ -130,14 +138,14 @@ DESCRIPTION
             }
           });
           // => [[
-          //   { FF: 4, B: [0, 1] },
-          //   { W: [1, 0] },
+          //   [{ FF: 4, B: [0, 1] },
+          //    { W: [1, 0] }],
           //   []
           // ]]
 
         Remove Comments
 
-          SGF.parse("(;FF[4]C[foo: hi\nbar: gg])", function (key, value) {
+          SGFGROVE.parse("(;FF[4]C[foo: hi\nbar: gg])", function (key, value) {
             if ( key !== "C" ) { // exclude the C property
               return value;
             }
@@ -149,7 +157,7 @@ DESCRIPTION
 
         GameTree Traversal
 
-          var trees = SGF.parse('(;FF[4])'); // => [Collection]
+          var trees = SGFGROVE.parse('(;FF[4])'); // => [Collection]
           var nodeId = 0;
 
           (function walk (subtrees) {
@@ -164,27 +172,26 @@ DESCRIPTION
             for ( var i = 0; i < subtrees.length; i++ ) {
               var subtree = subtrees[i];
               // => [
-              //   {Node},
-              //   {Node},
-              //   ...
-              //   {Node},
+              //   [{Node}, {Node}, ..., {Node}],
               //   [[GameTree], [GameTree], ..., [GameTree]]
               // ]
+
+              var sequence = subtree[0];
+              // => [{Node}, {Node}, ..., {Node}]
    
               if ( subtrees === trees ) {
                 // 'subtree' is the direct descendant of Collection,
                 // not trees within other trees
    
                 // one of root nodes
-                subtree[0];
+                sequence[0];
                 // => {
                 //   FF: 4
                 // }
               }
    
-              // NOTE: exclude the last element of 'subtree'
-              for ( var j = 0; j < subtree.length-1; j++ ) {
-                var node = subtree[j];
+              for ( var j = 0; j < sequence.length-1; j++ ) {
+                var node = sequence[j];
    
                 node.id = nodeId; // assign node id
    
@@ -197,12 +204,12 @@ DESCRIPTION
                 nodeId += 1;
               }
    
-              // the last element of 'subtree' always refers to sub subtrees
-              walk( subtree[subtree.length-1] );
+              // subtree[1] refers to sub subtrees
+              walk( subtree[1] );
             }
           }(trees));
  
-    string = SGF.stringify( array[, replacer] )
+    string = SGFGROVE.stringify( array[, replacer] )
 
       Given an array representing a SGF collection, returns a SGF string.
       If a property name does not look like SGF, the property will be ignored
@@ -215,19 +222,19 @@ DESCRIPTION
 
         User-defined properties are ignored
 
-          SGF.stringify([[
-            {
+          SGFGROVE.stringify([[
+            [{
               FF: 4,
               foo: "bar" // ignored
-            },
+            }],
             []
           ]]);
           // => "(;FF[4])"
 
         Using toSGF Method
 
-          SGF.stringify([[
-            {
+          SGFGROVE.stringify([[
+            [{
               FF: 4,
               FOO: {
                 bar: "baz",
@@ -235,7 +242,7 @@ DESCRIPTION
                   return [ this.bar ];
                 }
               }
-            },
+            }],
             []
           ]]);
           // => "(;FF[4]FOO[baz])"
@@ -243,13 +250,13 @@ DESCRIPTION
         Select properties
 
           var sgf = [[
-            { FF: 4, B: "pd", C: "foo: hi" },
-            { W: "qp", C: "bar: gg" },
+            [{ FF: 4, B: "pd", C: "foo: hi" },
+             { W: "qp", C: "bar: gg" }],
             []
           ]];
  
           // FF, B and W are included, while C is excluded
-          SGF.stringify(sgf, ["FF", "B", "W"]);
+          SGFGROVE.stringify(sgf, ["FF", "B", "W"]);
           // => "(;FF[4]B[pd];W[qp])"
 
         Coordinate Transformation
@@ -257,12 +264,12 @@ DESCRIPTION
           var coord2char = [ "a", "b", ... ];
 
           var sgf = [[
-            { FF: 4, B: [0, 1] },
-            { W: [1, 0] },
+            [{ FF: 4, B: [0, 1] },
+             { W: [1, 0] }],
             []
           ]];
 
-          SGF.stringify(sgf, function (key, value) {
+          SGFGROVE.stringify(sgf, function (key, value) {
             if ( key === "B" || key === "W" ) {
               var x = coord2char[ value[0] ];
               var y = coord2char[ value[1] ];
