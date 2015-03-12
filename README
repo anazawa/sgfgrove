@@ -384,6 +384,11 @@ SEE ALSO
   SGF Specification: http://www.red-bean.com/sgf/
   smartgame: https://github.com/neagle/smartgame
 
+ACKNOWLEDGEMENTS
+
+  Thanks to yewang@github for his thoughtful comments on the data structure of
+  a game tree.
+
 AUTHOR
 
   Ryo Anazawa (anazawa@cpan.org)
