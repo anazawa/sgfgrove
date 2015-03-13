@@ -80,7 +80,7 @@ For example, "FOO" and "FOOBAR" are valid FF[4] property names.
 "foo", "fooBar" and "foo_bar" are ignored. If a property value has
 `toSGF` method, the value is replaced with the return value of the method.
 
-## The Game Data Structure
+### The Game Data Structure
 
 A SGF collection is represented by an array containing SGF game trees.
 Each game tree is an array consisting of an array of SGF nodes and an array
@@ -129,7 +129,7 @@ JSON.stringify( SGFGrove.parse("(;FF[4])") );
 // => JSON representaion of SGF
 ```
 
-### Why Not Usual Tree Structure?
+#### Why Not Usual Tree Structure?
 
 Because it's optimized for a go game record played by human being
 with some variations. That's why the data structure is simplified,
@@ -273,7 +273,7 @@ var nodeId = 0;
             // one of root nodes
             sequence[0];
             // => {
-            //   FF: 4
+            //     FF: 4
             // }
         }
    
@@ -284,8 +284,8 @@ var nodeId = 0;
   
             node; 
             // => {
-            //   id: 0,
-            //   FF: 4
+            //     id: 0,
+            //     FF: 4
             // }
    
             nodeId += 1;
@@ -297,9 +297,9 @@ var nodeId = 0;
 }(trees));
 ```
 
-## SGF Properties
+### SGF Properties
 
-### FF[4]
+#### FF[4]
 
     SGF                   JavaScript            Notes
     ------------------------------------------------------------------
@@ -347,7 +347,7 @@ var nodeId = 0;
     WR[white rank]        "white rank"
     WT[white team]        "white team"
 
-### FF[4]GM\[1] (Go)
+#### FF[4]GM\[1] (Go)
 
     SGF                   JavaScript            Notes
     ------------------------------------------------------------------
@@ -378,6 +378,37 @@ var nodeId = 0;
       lists at this time (even if it's not compressed, that SGF does not
       violate the SGF specification).
 
+#### Unknown Properties
+
+Unknown properties are converted into an array of strings.
+When parsing, closing brackets in the property value must be escaped.
+When stringifying, closing brackets in the given string will be escaped
+by this module.
+
+```js
+SGFGrove.parse("(;FF[4]UNKNOWN[foo][bar:baz][123][])");
+// => [[
+//     [{
+//         FF: 4,
+//         UNKNOWN: ["foo", "bar:baz", "123", ""]
+//     }],
+//     []
+// ]]
+```
+
+```js
+SGFGrove.stringify([[
+    [{
+        FF: 4,
+        UNKNOWN: ["foo", "bar:baz", "123", ""]
+        //UNKNOWN: "foo" => TypeError
+        //UNKNOWN: ["foo", ["bar", "baz"], 123, null] => TypeError
+    }],
+    []
+]]);
+// => "(;FF[4]UNKNOWN[foo][bar:baz][123][])"
+```
+
 ## History
 
 The data structure of a SGF collection is based on Games::Go::SGF::Grove,
@@ -390,10 +421,10 @@ and so this module is not compatible with Perl one.
 
 ## Other SGF Parsers
 
-### smartgame: https://github.com/neagle/smartgame
+### [smartgame](https://github.com/neagle/smartgame)
 
 This module comes with "smartgamer" that allows you to edit/iterate through
-the "smartgame" data structure. It seems very handy. SGFGrove.js is not
+the smartgame data structure. It seems very handy. SGFGrove.js is not
 compatible with this module.
 
 ## See Also
