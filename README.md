@@ -52,13 +52,9 @@ the appropriate JavaScript type. See "SGF Properties" for details.
 #### array = SGFGrove.parse( string[, reviver] )
 
 Given a SGF string, returns an array representing a SGF collection.
-You can also pass a callback function that is used to filter properties.
-The callback is called with the object containing the property being
-processed as `this` and with the name of the property and the value
-as `arguments`. The return value is used to override the existing
-property value. If the callback returns `undefined`, then the property
-will be deleted.
-  
+You can also pass the `reviver` parameter that will be used in the same way
+as the JSON.parse method uses the parameter.
+
 While an invalid SGF is rejected, e.g., `(;FF[four])`, this method
 does not care about the meaning of the given SGF property,
 but the format of the property. In other words, it allows you to
@@ -72,9 +68,13 @@ You have to decode them by yourself.
 This method does not convert HTML special characters in text properties
 into their entity equivalents. You have to escape them by yourself.
 
-#### string = SGFGrove.stringify( array[, replacer, space] )
+#### string = SGFGrove.stringify( array[, replacer[, space]] )
 
 Given an array representing a SGF collection, returns a SGF string.
+You can also pass the `replacer` and `space` parameters that will be used
+in the same way as the JSON.stringify method uses the parameters,
+while the `toJSON` method will not be invoked.
+
 If a property name does not look like SGF, the property will be ignored
 silently. In other words, that property is considered user-defined.
 For example, "FOO" and "FOOBAR" are valid FF[4] property names.
@@ -134,8 +134,8 @@ JSON.stringify( SGFGrove.parse("(;FF[4])") );
 
 Because it's simplified, *considering a SGF sequence as the node of the tree*,
 where a SGF sequence is a list of SGF nodes. This simplification is based on
-an (not-so-reliable) observed fact that most of SGF files have no/only some
-variations.
+an (not-so-reliable) observed fact that the height of a SGF game tree tends
+to be much longer than the width, the number of variations.
 
 ### SGF Properties
 
@@ -465,6 +465,13 @@ var nodeId = 0;
 }(trees));
 ```
 
+## Versioning
+
+If the changes contain an incompatible change that may break the user's
+existing code, the module namespace itself will be renamed, e.g.,
+`SGFGrove` will become `SGFGrove2`. Otherwise the version number will be
+simply incremented.
+
 ## History
 
 The data structure of a SGF collection is based on Games::Go::SGF::Grove,
@@ -488,7 +495,8 @@ compatible with this module.
 
 ## See Also
 
-- SGF Specification: http://www.red-bean.com/sgf/
+- [SGF File Format FF[4\]](http://www.red-bean.com/sgf/)
+- [JSON - JavaScript|MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
 
 ## Acknowledgements
 

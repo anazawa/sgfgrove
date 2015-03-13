@@ -1,6 +1,125 @@
 var test = require('tape');
 var FF = require('../sgfgrove.js').FF;
 
+test('FF[4] Number', function (t) {
+  var Num = FF[4].TYPES.Number;
+
+  t.equal( Num.name, 'Number' );
+
+  t.equal( Num.parse(['123']), 123 );
+  t.equal( Num.parse(['+123']), 123 );
+  t.equal( Num.parse(['-123']), -123 );
+
+  t.deepEqual( Num.stringify(123), ['123'] );
+  t.deepEqual( Num.stringify(-123), ['-123'] );
+
+  t.throws(
+    function () {
+      Num.parse(['string']);
+    },
+    TypeError
+  );
+
+  t.throws(
+    function () {
+      Num.stringify('string');
+    },
+    TypeError
+  );
+
+  t.end();
+});
+
+test('FF[4] None', function (t) {
+  var None = FF[4].TYPES.None;
+
+  t.equal( None.name, 'None' );
+  t.equal( None.parse(['']), null );
+  t.deepEqual( None.stringify(null), [''] );
+
+  t.throws(
+    function () {
+      None.parse(['invalid']);
+    },
+    TypeError
+  );
+
+  t.throws(
+    function () {
+      None.stringify('invalid');
+    },
+    TypeError
+  );
+
+  t.end();
+});
+
+test('FF[4] Double', function (t) {
+  var Double = FF[4].TYPES.Double;
+
+  t.equal( Double.name, 'Double' );
+
+  t.equal( Double.parse(['1']), 1 );
+  t.equal( Double.parse(['2']), 2 );
+
+  t.deepEqual( Double.stringify(1), ['1'] );
+  t.deepEqual( Double.stringify(2), ['2'] );
+
+  t.throws(
+    function () {
+      Double.parse(['3']);
+    },
+    TypeError
+  );
+
+  t.throws(
+    function () {
+      Double.stringify(3);
+    },
+    TypeError
+  );
+
+  t.end();
+});
+
+test('FF[4] Color', function (t) {
+  var Color = FF[4].TYPES.Color;
+
+  t.equal( Color.name, 'Color' );
+
+  t.equal( Color.parse(['B']), 'B' );
+  t.equal( Color.parse(['W']), 'W' );
+
+  t.deepEqual( Color.stringify('B'), ['B'] );
+  t.deepEqual( Color.stringify('W'), ['W'] );
+
+  t.throws(
+    function () {
+      Color.parse(['b']);
+    },
+    TypeError
+  );
+
+  t.throws(
+    function () {
+      Color.stringify('b');
+    },
+    TypeError
+  );
+
+  t.end();
+});
+
+test('FF[4] Unknown', function (t) {
+  var Unknown = FF[4].TYPES.Unknown;
+
+  t.equal( Unknown.name, 'Unknown' );
+  t.deepEqual( Unknown.parse(['\\]']), [']'] );
+  t.deepEqual( Unknown.stringify([']']), ['\\]'] );
+
+  t.end();
+});
+
 test('FF[4] SimpleText', function (t) {
   var SimpleText = FF[4].TYPES.SimpleText;
 

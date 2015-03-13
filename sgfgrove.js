@@ -82,11 +82,35 @@
 
     FF4.TYPES = {};
 
+    FF4.TYPES.None = FF.TYPES.scalar({
+      name: 'None',
+      like: /^$/,
+      isa: function (v) { return v === null; },
+      parse: function (v) { return null; },
+      stringify: function (v) { return ''; }
+    });
+
     // Number = ["+"|"-"] Digit {Digit}
     FF4.TYPES.Number = FF.TYPES.scalar({
       name: 'Number',
       like: /^[+-]?\d+$/,
       isa: function (v) { return isNumber(v) && Math.floor(v) === v; },
+      parse: function (v) { return parseInt(v, 10); }
+    });
+
+    // Real = Number ["." Digit { Digit }]
+    FF4.TYPES.Real = FF.TYPES.scalar({
+      name: 'Real',
+      like: /^[+-]?\d+(?:\.\d+)?$/,
+      isa: isNumber,
+      parse: parseFloat
+    });
+
+    // Double = ("1" | "2")
+    FF4.TYPES.Double = FF.TYPES.scalar({
+      name: 'Double',
+      like: /^[12]$/,
+      isa: function (v) { return v === 1 || v === 2; },
       parse: function (v) { return parseInt(v, 10); }
     });
 
@@ -96,20 +120,38 @@
       like: /^[BW]$/
     });
 
-    // Triple = ("1" | "2")
-    FF4.TYPES.Triple = FF.TYPES.scalar({
-      name: 'Triple',
-      like: /^[12]$/,
-      isa: function (v) { return v === 1 || v === 2; },
-      parse: function (v) { return parseInt(v, 10); }
+    // Text = { any character }
+    FF4.TYPES.Text = FF.TYPES.scalar({
+      name: 'Text',
+      parse: function (value) {
+        return value.
+          // remove soft linebreaks
+          replace( /\\(?:\n\r?|\r\n?)/g, '' ).
+          // convert white spaces other than linebreaks to space
+          replace( /[^\S\n\r]/g, ' ' ).
+          // insert escaped chars verbatim
+          replace( /\\(.)/g, '$1' );
+      },
+      stringify: function (value) {
+        return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
+      }
     });
 
-    FF4.TYPES.None = FF.TYPES.scalar({
-      name: 'None',
-      like: /^$/,
-      isa: function (v) { return v === null; },
-      parse: function (v) { return null; },
-      stringify: function (v) { return ''; }
+    // SimpleText = { any character }
+    FF4.TYPES.SimpleText = FF.TYPES.scalar({
+      name: 'SimpleText',
+      parse: function (value) {
+        return value.
+          // remove soft linebreaks
+          replace( /\\(?:\n\r?|\r\n?)/g, '' ).
+          // convert white spaces other than space to space even if it's escaped
+          replace( /\\?[^\S ]/g, ' ' ).
+          // insert escaped chars verbatim
+          replace( /\\(.)/g, '$1' );
+      },
+      stringify: function (value) {
+        return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
+      }
     });
 
     FF4.TYPES.Compose = function (left, right) {
@@ -218,48 +260,6 @@
         return vals;
       }
     };
-
-    // Real = Number ["." Digit { Digit }]
-    FF4.TYPES.Real = FF.TYPES.scalar({
-      name: 'Real',
-      like: /^[+-]?\d+(?:\.\d+)?$/,
-      isa: isNumber,
-      parse: parseFloat
-    });
-
-    // Text = { any character }
-    FF4.TYPES.Text = FF.TYPES.scalar({
-      name: 'Text',
-      parse: function (value) {
-        return value.
-          // remove soft linebreaks
-          replace( /\\(?:\n\r?|\r\n?)/g, '' ).
-          // convert white spaces other than linebreaks to space
-          replace( /[^\S\n\r]/g, ' ' ).
-          // insert escaped chars verbatim
-          replace( /\\(.)/g, '$1' );
-      },
-      stringify: function (value) {
-        return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
-      }
-    });
-
-    // SimpleText = { any character }
-    FF4.TYPES.SimpleText = FF.TYPES.scalar({
-      name: 'SimpleText',
-      parse: function (value) {
-        return value.
-          // remove soft linebreaks
-          replace( /\\(?:\n\r?|\r\n?)/g, '' ).
-          // convert white spaces other than space to space even if it's escaped
-          replace( /\\?[^\S ]/g, ' ' ).
-          // insert escaped chars verbatim
-          replace( /\\(.)/g, '$1' );
-      },
-      stringify: function (value) {
-        return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
-      }
-    });
 
     FF4.TYPES.BoardSize = function (square, rectangular) {
       return square && rectangular && {
