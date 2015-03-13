@@ -409,6 +409,14 @@ SGFGrove.stringify([[
 // => "(;FF[4]UNKNOWN[foo][bar:baz][123][])"
 ```
 
+#### Unknown Game Types
+
+Game-specific properties of the unknown game type, such as `B` or `W`,
+are treated as an unknown property. You can also add game-specific types
+and properties to this module, while the API is not ready. Currently,
+all you can do is to read the source code and extend the `SGFGrove.FF`
+namespace.
+
 ## History
 
 The data structure of a SGF collection is based on Games::Go::SGF::Grove,
