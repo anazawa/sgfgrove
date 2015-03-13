@@ -1,7 +1,7 @@
 {
   "name": "sgfgrove",
   "author": "anazawa <anazawa@cpan.org>",
-  "description": "Type-aware SGF parser/stringifier that supports FF[1], FF[3] and FF[4]",
+  "description": "Type-aware SGF parser/stringifier that supports only FF[4]",
   "version": "0.0.1",
   "homepage": "https://github.com/anazawa/sgfgrove",
   "repository": {

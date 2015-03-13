@@ -1,5 +1,5 @@
 /**
- * @file Type-aware SGF parser/stringifier that supports FF[1], FF[3] and FF[4]
+ * @overview SGFGrove.js
  * @author Ryo Anazawa
  * @version 0.0.1
  * @license MIT
@@ -30,13 +30,9 @@
     return (JSON.stringify(value) || '').slice(0, 32);
   };
 
-  /**
-   * @global
-   * @namespace
-   */
-  var SGF = {};
+  var SGFGrove = function () {};
 
-  SGF.FF = (function () {
+  SGFGrove.FF = (function () {
     var FF = {};
 
     FF.TYPES = {};
@@ -77,15 +73,11 @@
     return FF;
   }());
 
-  /**
-   * File Format (;FF[4])
-   * @namespace
-   * @memberof SGF
-   * @see http://www.red-bean.com/sgf/sgf4.html
-   * @see http://www.red-bean.com/sgf/properties.html
-   */
-  SGF.FF[4] = (function () {
-    var FF = SGF.FF;
+  // File Format (;FF[4])
+  // http://www.red-bean.com/sgf/sgf4.html
+  // http://www.red-bean.com/sgf/properties.html
+  SGFGrove.FF[4] = (function () {
+    var FF = SGFGrove.FF;
     var FF4 = {};
 
     FF4.TYPES = {};
@@ -377,14 +369,10 @@
     return FF4;
   }());
 
-  /**
-   * Go (;FF[4]GM[1]) specific properties
-   * @namespace
-   * @memberof SGF
-   * @see http://www.red-bean.com/sgf/go.html
-   */
-  SGF.FF[4][1] = (function () {
-    var FF = SGF.FF;
+  // Go (;FF[4]GM[1]) specific properties
+  // http://www.red-bean.com/sgf/go.html
+  SGFGrove.FF[4][1] = (function () {
+    var FF = SGFGrove.FF;
     var TYPES, PROPS;
 
     var expandPointList = (function () {
@@ -507,182 +495,8 @@
     };
   }());
 
-  /**
-   * Given a SGF string, returns an array representing a SGF collection.
-   * You can also pass a callback function that is used to filter properties.
-   * The callback is called with the object containing the property being
-   * processed as `this` and with the name of the property and the value
-   * as `arguments`. The return value is used to override the existing
-   * property value. If the callback returns `undefined`, then the property
-   * will be deleted.
-   *
-   * A SGF collection is represented by an array containing SGF
-   * game trees. Each game tree is again an array of SGF nodes.
-   * Each node is simply an object. Each SGF property is stored in the object
-   * with the property name as the key, and the property value(s) for the value.
-   * The last element of a game tree array always refers to an array
-   * containing sub game trees, called variations.
-   *
-   * Collection:
-   *
-   *     [
-   *       [GameTree],
-   *       [GameTree],
-   *       ...
-   *       [GameTree]
-   *     ]
-   *
-   * GameTree:
-   *
-   *     [
-   *       {Node},
-   *       {Node},
-   *       ...
-   *       {Node},
-   *       [
-   *         [GameTree],
-   *         [GameTree],
-   *         ...
-   *         [GameTree]
-   *       ]
-   *     ]
-   * 
-   * Node:
-   *
-   *     {
-   *       FF: 4,
-   *       B: "pd"
-   *     }
-   *
-   * You can also convert the above data structure to JSON:
-   *
-   *     JSON.stringify( SGF.parse('(;FF[4])') );
-   *     // => JSON representaion of SGF
-   *
-   * While an invalid SGF is rejected, e.g., `(;FF[four])`, this method
-   * does not care about the meaning of the given SGF property,
-   * but the format of the property. In other words, it allows you to
-   * parse a meaningless syntactically-correct SGF, such as
-   * `(;FF[4]SZ[1]B[ZZ])`. You have to check the meanings by yourself.
-   *
-   * This method neither checks the CA (charset) property of the given
-   * SGF string nor decodes the encoded properties, such as C (comment).
-   * You have to decode them by yourself.
-   *
-   * This method does not convert HTML special characters in text properties
-   * into their entity equivalents. You have to escape them by yourself.
-   *
-   * @function
-   * @memberof SGF
-   *
-   * @param {String} text
-   * @param {Function} [reviver]
-   *
-   * @returns {Array}
-   *
-   * @throws {Error}
-   * @throws {SyntaxError}
-   * @throws {TypeError}
-   *
-   * @example Basic Usage
-   *
-   * SGF.parse('(;FF[4]B[pd];W[qp])');
-   * // => [[
-   * //   { FF: 4, B: 'pd' },
-   * //   { W: 'qp' },
-   * //   []
-   * // ]]
-   *
-   * @example Coordinate Transformation
-   *
-   * var char2coord = { 'a': 0, 'b': 1, ... };
-   *
-   * SGF.parse('(;FF[4]B[ab];W[ba])', function (key, value) {
-   *  if ( key === 'B' || key === 'W' ) {
-   *    var x = value.charAt(0);
-   *    var y = value.charAt(1);
-   *    return [ char2coord[x], char2coord[y] ];
-   *  }
-   *  else {
-   *    return value;
-   *  }
-   * });
-   * // => [[
-   * //   { FF: 4, B: [0, 1] },
-   * //   { W: [1, 0] },
-   * //   []
-   * // ]]
-   *
-   * @example Remove Comments
-   *
-   * SGF.parse('(;FF[4]C[foo: hi\nbar: gg])', function (key, value) {
-   *  if ( key !== 'C' ) { // exclude the C property
-   *    return value;
-   *  }
-   * });
-   * // => [[
-   * //   { FF: 4 },
-   * //   []
-   * // ]]
-   *
-   * @example GameTree Traversal
-   *
-   * var trees = SGF.parse('(;FF[4])'); // => [Collection]
-   * var nodeId = 0;
-   *
-   * (function walk (subtrees) {
-   *   subtrees;
-   *   // => [
-   *   //   [GameTree],
-   *   //   [GameTree],
-   *   //   ...
-   *   //   [GameTree]
-   *   // ]
-   *
-   *   for ( var i = 0; i < subtrees.length; i++ ) {
-   *     var subtree = subtrees[i];
-   *     // => [
-   *     //   {Node},
-   *     //   {Node},
-   *     //   ...
-   *     //   {Node},
-   *     //   [[GameTree], [GameTree], ..., [GameTree]]
-   *     // ]
-   *
-   *     if ( subtrees === trees ) {
-   *       // 'subtree' is the direct descendant of Collection,
-   *       // not trees within other trees
-   *
-   *       // one of root nodes
-   *       subtree[0];
-   *       // => {
-   *       //   FF: 4
-   *       // }
-   *     }
-   *
-   *     // NOTE: exclude the last element of 'subtree'
-   *     for ( var j = 0; j < subtree.length-1; j++ ) {
-   *       var node = subtree[j];
-   *
-   *       node.id = nodeId; // assign node id
-   *
-   *       node; 
-   *       // => {
-   *       //   id: 0,
-   *       //   FF: 4
-   *       // }
-   *
-   *       nodeId += 1;
-   *     }
-   *
-   *     // the last element of 'subtree' always refers to sub subtrees
-   *     walk( subtree[subtree.length-1] );
-   *   }
-   * }(trees));
-   *
-   */
-  SGF.parse = (function () {
-    var FF = SGF.FF;
+  SGFGrove.parse = (function () {
+    var FF = SGFGrove.FF;
     var Num = FF[4].TYPES.Number;
     var source, lastIndex, reviver;
 
@@ -847,59 +661,8 @@
     };
   }());
 
-  /**
-   * Given an array representing a SGF collection, returns a SGF string.
-   * If a property name does not look like SGF, the property will be ignored
-   * silently. In other words, that property is considered user-defined.
-   * For example, "FOO" and "FOOBAR" are valid FF[4] property names.
-   * "foo", "fooBar" and "foo_bar" are ignored. If a property value has
-   * toSGF method, the value is replaced with the return value of the method.
-   *
-   * @function
-   * @memberof SGF
-   *
-   * @param {Array} trees
-   * @param {Array|function} [replacer]
-   *
-   * @returns {String}
-   *
-   * @throws {Error}
-   * @throws {TypeError}
-   *
-   * @example
-   *
-   * SGF.stringify([[{ FF: 4 }, []]]); // => "(;FF[4])"
-   *
-   * @example User-defined properties are ignored
-   *
-   * SGF.stringify([[
-   *   {
-   *     FF: 4,
-   *     foo: 'bar' // ignored
-   *   },
-   *   []
-   * ]]);
-   * // => "(;FF[4])"
-   *
-   * @example Using toSGF Method
-   *
-   * SGF.stringify([[
-   *   {
-   *     FF: 4,
-   *     FOO: {
-   *       bar: 'baz',
-   *       toSGF: function () {
-   *         return [ this.bar ];
-   *       }
-   *     }
-   *   },
-   *   []
-   * ]]);
-   * // => "(;FF[4]FOO[baz])"
-   *
-   */
-  SGF.stringify = (function () {
-    var FF = SGF.FF;
+  SGFGrove.stringify = (function () {
+    var FF = SGFGrove.FF;
     var Num = FF[4].TYPES.Number;
     var replacer, select;
 
@@ -1078,10 +841,10 @@
   }());
 
   if ( typeof exports !== 'undefined' ) {
-    module.exports = SGF;
+    module.exports = SGFGrove;
   }
   else {
-    window.SGFGROVE = SGF;
+    window.SGFGrove = SGFGrove;
   }
 
 }());
