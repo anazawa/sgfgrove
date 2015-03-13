@@ -1,6 +1,7 @@
 # SGFGrove.js
 
-Type-aware SGF parser/stringifier that supports only FF[4]
+Type-aware SGF parser/stringifier that supports only FF[4].
+Indended for the browser. Optimized for fun.
 
 ## Synopsis
 
@@ -416,6 +417,53 @@ are treated as an unknown property. You can also add game-specific types
 and properties to this module, while the API is not ready. Currently,
 all you can do is to read the source code and extend the `SGFGrove.FF`
 namespace.
+
+### Exceptions
+
+#### Error: FF[%d]GM[%d] is not supported
+
+You tried to #parse/#stringify an unsupported file type.
+
+```js
+SGFGrove.parse("(;FF[3])"); // => Error
+SGFGrove.stringify([[[{ FF: 3 }], []]]); // => Error
+```
+
+#### SyntaxError: Unexpected token '%s'
+
+You tried to #parse a malformed SGF string.
+
+```js
+SGFGrove.parse("(broken)"); // => SyntaxError
+```
+
+#### SyntaxError/TypeError: GameTree must contain at least one node
+
+You tried to #parse/#stringify an empty game tree.
+It's prohibited by the SGF specification.
+
+```js
+SGFGrove.parse("()"); // => SyntaxError
+SGFGrove.stringify([[[], []]]); // => TypeError
+```
+
+#### SyntaxError: PropValue of %s is missing
+
+You tried to #parse a property that has no value.
+
+```js
+SGFGrove.parse("(;FF[4]B)"); // => SyntaxError
+```
+
+#### TypeError: %s expected, got %s
+
+You tried to #parse a malformed property value or #stringify data that
+has an invalid data type. See "SGF Properties" for details.
+
+```js
+SGFGrove.parse("(;FF[four])"); // => TypeError
+SGFGrove.stringify([[[ FF: "four" ], []]]); // => TypeError
+```
 
 ## History
 
