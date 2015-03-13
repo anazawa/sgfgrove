@@ -116,7 +116,6 @@
       parse: function (v) { return parseInt(v, 10); }
     });
 
-    // for FG, while None is introduced in FF[4]
     FF4.TYPES.None = FF.TYPES.scalar({
       name: 'None',
       like: /^$/,
@@ -153,7 +152,6 @@
       };
     };
  
-    // for "point list", while "list of" is introduced in FF[4]
     FF4.TYPES.listOf = function (type, args) {
       var canBeEmpty = args && args.canBeEmpty === true;
 
@@ -200,7 +198,6 @@
       };
     };
 
-    // for VW, while "elist of" is introduced in FF[4]
     FF4.TYPES.elistOf = function (type) {
       return FF4.TYPES.listOf(type, { canBeEmpty: true });
     };
@@ -691,7 +688,7 @@
   SGF.parse = (function () {
     var FF = SGF.FF;
     var Num = FF[4].TYPES.Number;
-    var source, lastIndex;
+    var source, lastIndex, reviver;
 
     var error = function (message) {
       var tail = source.slice(lastIndex).replace(/^\s*/, '').slice(0, 32);
@@ -711,9 +708,9 @@
 
     var exec = function (regexp) {
       regexp.lastIndex = 0;
-      var splat = regexp.exec( source.slice(lastIndex) );
-      lastIndex = splat ? lastIndex+regexp.lastIndex : lastIndex;
-      return splat;
+      var array = regexp.exec( source.slice(lastIndex) );
+      lastIndex = array ? lastIndex+regexp.lastIndex : lastIndex;
+      return array;
     };
 
     var gameTree = function () {
@@ -762,72 +759,18 @@
         error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
       }
 
-      return [sequence, subtrees];
+      return [ sequence, subtrees ];
     };
 
-    var finalize = function (trees, collection, PROPS, nodeId) {
-      var i, tree, sequence, root, ff, gm;
-      var j, node, idents;
-      var k, ident, id, values;
-
-      collection = collection || trees;
-      nodeId = nodeId || 0;
-
-      for ( i = 0; i < trees.length; i++ ) {
-        tree = trees[i];
-        sequence = tree[0];
-
-        if ( trees === collection ) {
-          root = sequence[0];
-
-          try {
-            ff = root.FF ? Num.parse(root.FF) : 1;
-            gm = root.GM ? Num.parse(root.GM) : 1;
-
-            if ( ff !== 4 ) {
-              throw new Error( 'FF['+ff+'] is not supported' );
-            }
-          }
-          catch (error) {
-            error.message += ' at node #'+nodeId+', '+dump(root);
-            throw error;
-          }
-
-          PROPS = FF[ff][gm] ? FF[ff][gm].PROPERTIES : FF[ff].properties();
-        }
-
-        for ( j = 0; j < sequence.length; j++ ) {
-          node = sequence[j];
-          idents = keys(node); // to rename
-
-          for ( k = 0; k < idents.length; k++ ) {
-            try {
-              ident = idents[k];
-              values = node[ident];
-
-              node[ident] = (PROPS[ident] || PROPS.unknown).parse(values);
-            }
-            catch (error) {
-              error.message += ' at '+ident+' of node #'+nodeId+', '+dump(node);
-              throw error;
-            }
-          }
-
-          nodeId += 1;
-        }
-
-        finalize( tree[1], collection, PROPS, nodeId );
-      }
-    };
-
-    // Copied and rearranged from json2.js:
+    // Copied and rearranged from json2.js so that we can pass the same
+    // callback to both of SGF.parse and JSON.parse
     // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
-    var walk = function (holder, key, reviver) {
+    var walk = function (holder, key) {
       var k, v, value = holder[key];
       if ( value && typeof value === 'object' ) {
         for ( k in value ) {
           if ( Object.prototype.hasOwnProperty.call(value, k) ) {
-            v = walk( value, k, reviver );
+            v = walk( value, k );
             if ( v !== undefined ) {
               value[k] = v;
             } else {
@@ -839,11 +782,13 @@
       return reviver.call(holder, key, value);
     };
 
-    return function (text, reviver) {
+    return function (text, rev) {
       var trees = [], tree;
+      var PROPS, nodeId = 0;
 
       source = String(text);
       lastIndex = 0;
+      reviver = typeof rev === 'function' && rev;
 
       while ( tree = gameTree() ) {
         trees.push( tree );
@@ -853,13 +798,56 @@
         error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
       }
 
-      finalize( trees );
+      (function finalize (subtrees) {
+        var i, subtree, sequence, root, ff, gm;
+        var j, node, id, PROP;
 
-      if ( typeof reviver === 'function' ) {
-        return walk({ '': trees }, '', reviver);
-      }
+        for ( i = 0; i < subtrees.length; i++ ) {
+          subtree = subtrees[i];
+          sequence = subtree[0];
 
-      return trees;
+          if ( subtrees === trees ) {
+            try {
+              root = sequence[0];
+              ff = root.hasOwnProperty('FF') ? Num.parse(root.FF) : 1;
+              gm = root.hasOwnProperty('GM') ? Num.parse(root.GM) : 1;
+
+              if ( ff < 1 || gm < 1 || !FF.hasOwnProperty(ff) ) {
+                throw new Error( 'FF['+ff+']GM['+gm+'] is not supported' );
+              }
+
+              PROPS = FF[ff].hasOwnProperty(gm) && FF[ff][gm].PROPERTIES;
+              PROPS = PROPS || FF[ff].properties();
+            }
+            catch (error) {
+              error.message += ' at node #'+nodeId+', '+dump(root);
+              throw error;
+            }
+          }
+
+          for ( j = 0; j < sequence.length; j++ ) {
+            node = sequence[j];
+
+            for ( id in node ) {
+              try {
+                if ( !node.hasOwnProperty(id) ) { continue; }
+                PROP = PROPS.hasOwnProperty(id) ? PROPS[id] : PROPS.unknown;
+                node[id] = PROP.parse( node[id] );
+              }
+              catch (error) {
+                error.message += ' at '+id+' of node #'+nodeId+', '+dump(node);
+                throw error;
+              }
+            }
+
+            nodeId += 1;
+          }
+
+          finalize( subtree[1] );
+        }
+      }(trees));
+
+      return reviver ? walk({ '': trees }, '') : trees;
     };
   }());
 
@@ -917,75 +905,88 @@
   SGF.stringify = (function () {
     var FF = SGF.FF;
     var Num = FF[4].TYPES.Number;
+    var replacer, select;
 
-    var toSGF = function (value) {
+    var replace = function (key, holder) {
+      var value = holder[key];
+
       if ( value && typeof value === 'object' &&
            typeof value.toSGF === 'function' ) {
         value = value.toSGF();
       }
-      return value;
+
+      return replacer ? replacer.call(holder, key, value) : value;
     };
 
-    var stringify = function (trees, replacer, select, collection, PROPS) {
-      var text = '';
-      var i, tree, sequence, subtrees;
-      var j, node, root, ff, gm;
-      var ident, values;
+    var finalize = function (key, holder) {
+      var trees = replace( key, holder );
+      var copy = [];
+      var i, tree, sequence, s;
+      var j, node, n, ident, values;
 
       if ( !isArray(trees) ) {
-        throw new TypeError( 'Array expected, got '+trees );
+        throw new TypeError( 'array expected, got '+trees );
       }
 
-      collection = collection || trees;
-
       for ( i = 0; i < trees.length; i++ ) {
-        tree = toSGF( trees[i] );
-        tree = replacer ? replacer.call(trees, i, tree) : tree;
+        tree = replace( i, trees );
 
         if ( !isArray(tree) ) {
-          throw new TypeError( 'Array expected, got '+tree );
+          throw new TypeError( 'array expected, got '+dump(tree) );
         }
 
-        sequence = tree[0];
-        root = trees === collection && {};
+        sequence = replace( 0, tree );
+        s = [];
 
-        if ( sequence.length === 0 ) {
+        if ( !isArray(sequence) ) {
+          throw new TypeError( 'array expected, got '+dump(sequence) );
+        }
+        else if ( !sequence.length ) {
           throw new TypeError( 'GameTree must contain at least one Node' );
         }
 
-        text += '('; // open GameTree
-
         for ( j = 0; j < sequence.length; j++ ) {
-          node = toSGF( sequence[j] );
-          node = replacer ? replacer.call(sequence, j, node) : node;
+          node = replace( j, sequence );
+          n = {};
 
           if ( !node || typeof node !== 'object' ) {
-            throw new TypeError( 'Object expected, got '+node );
+            throw new TypeError( 'object expected, got '+node );
           }
-
-          text += ';'; // open Node
 
           for ( ident in node ) {
             if ( !node.hasOwnProperty(ident) ) { continue; }
             if ( select && !select.hasOwnProperty(ident) ) { continue; }
-            if ( !/^[A-Z]+$/.test(ident) ) { continue; }
+            if ( /[^A-Z]/.test(ident) ) { continue; }
 
-            values = toSGF( node[ident] );
-            values = replacer ? replacer.call(node, ident, values) : values;
+            values = replace( ident, node );
 
-            if ( values === undefined ) { continue; }
-
-            if ( root ) {
-              root[ident] = values;
-              continue; // we don't know how to stringify 'values' yet
+            if ( values !== undefined ) {
+              n[ident] = values;
             }
-
-            values = (PROPS[ident] || PROPS.unknown).stringify(values);
-
-            text += ident + '[' + values.join('][') + ']'; // add Property
           }
 
-          if ( !root ) { continue; }
+          s.push(n);
+        }
+
+        copy.push([ s, finalize(1, tree) ]);
+      }
+
+      return copy;
+    };
+
+    var stringify = function (trees, collection, PROPS) {
+      var text = '';
+      var i, tree, sequence, root, ff, gm;
+      var j, node, ident, values;
+
+      collection = collection || trees;
+
+      for ( i = 0; i < trees.length; i++ ) {
+        tree = trees[i];
+        sequence = tree[0];
+
+        if ( trees === collection ) {
+          root = sequence[0];
 
           ff = root.hasOwnProperty('FF') ? root.FF : 1;
           ff = Num.parse( Num.stringify(ff) );
@@ -993,51 +994,139 @@
           gm = root.hasOwnProperty('GM') ? root.GM : 1;
           gm = Num.parse( Num.stringify(gm) );
 
-          if ( ff !== 4 ) {
-            throw new Error( 'FF['+ff+'] is not supported' );
+          if ( ff < 1 || gm < 1 || !FF.hasOwnProperty(ff) ) {
+            throw new Error( 'FF['+ff+']GM['+gm+'] is not supported' );
           }
 
-          PROPS = FF[ff][gm] ? FF[ff][gm].PROPERTIES : FF[ff].properties();
+          PROPS = FF[ff].hasOwnProperty(gm) && FF[ff][gm].PROPERTIES;
+          PROPS = PROPS || FF[ff].properties();
+        }
+ 
+        text += '('; // Open GameTree
 
-          for ( ident in root ) {
-            if ( !root.hasOwnProperty(ident) ) { continue; }
-            values = (PROPS[ident] || PROPS.unknown).stringify(root[ident]);
+        for ( j = 0; j < sequence.length; j++ ) {
+          node = sequence[j];
+
+          text += ';'; // Open Node
+
+          for ( ident in node ) {
+            if ( !node.hasOwnProperty(ident) ) { continue; }
+            values = (PROPS[ident] || PROPS.unknown).stringify(node[ident]);
             text += ident + '[' + values.join('][') + ']'; // add Property
           }
-
-          root = undefined;
         }
 
-        subtrees = toSGF( tree[1] );
-        subtrees = replacer ? replacer.call(tree, tree.length-1, subtrees) : subtrees;
-
-        text += stringify( subtrees, replacer, select, collection, PROPS );
+        text += stringify( tree[1], collection, PROPS );
         text += ')'; // close GameTree
       }
 
       return text;
     };
 
-    return function (trees, replacer) {
-      var select, i;
+    return function (trees, rep, space) {
+      var nodeId = 0;
+      var gap = '';
+      var indent = '';
+      var i, PROPS;
 
-      if ( replacer && typeof replacer === 'object' &&
-           typeof replacer.length === 'number' ) {
+      select = undefined;
+      replacer = undefined;
+
+      if ( rep && typeof rep === 'object' &&
+           typeof rep.length === 'number' ) {
         select = {};
-        for ( i = 0; i < replacer.length; i++ ) {
-          if ( typeof replacer[i] !== 'string' ) { continue; }
-          select[replacer[i]] = true;
+        for ( i = 0; i < rep.length; i++ ) {
+          if ( typeof rep[i] === 'string' ) {
+            select[rep[i]] = null;
+          }
         }
-        replacer = undefined;
       }
-      else if ( replacer && typeof replacer !== 'function') {
+      else if ( typeof rep === 'function' ) {
+        replacer = rep;
+      }
+      else if ( rep ) {
         throw new Error('replacer must be array or function');
       }
 
-      trees = toSGF( trees );
-      trees = replacer ? replacer.call({ '': trees }, '', trees) : trees;
+      if ( typeof space === 'number' ) {
+        for ( i = 0; i < space; i++ ) {
+          indent += ' ';
+        }
+      }
+      else if ( typeof space === 'string' ) {
+        indent = space;
+      }
 
-      return stringify( trees, replacer, select );
+      trees = finalize( '', { '': trees } );
+
+      return (function stringify (subtrees) {
+        var text = '', mind, partial, prefix;
+        var i, subtree, sequence, root, ff, gm;
+        var j, node, id, values, PROP;
+
+        for ( i = 0; i < subtrees.length; i++ ) {
+          subtree = subtrees[i];
+          sequence = subtree[0];
+
+          if ( subtrees === trees ) {
+            try {
+              root = sequence[0];
+
+              ff = root.hasOwnProperty('FF') ? root.FF : 1;
+              ff = Num.parse( Num.stringify(ff) );
+
+              gm = root.hasOwnProperty('GM') ? root.GM : 1;
+              gm = Num.parse( Num.stringify(gm) );
+
+              if ( ff < 1 || gm < 1 || !FF.hasOwnProperty(ff) ) {
+                throw new Error( 'FF['+ff+']GM['+gm+'] is not supported' );
+              }
+
+              PROPS = FF[ff].hasOwnProperty(gm) && FF[ff][gm].PROPERTIES;
+              PROPS = PROPS || FF[ff].properties();
+            }
+            catch (error) {
+              error.message += ' at node #'+nodeId+', '+dump(root);
+              throw error;
+            }
+          }
+ 
+          text += indent ? gap+'(\n' : '('; // Open GameTree
+
+          mind = gap;
+          gap += indent;
+
+          for ( j = 0; j < sequence.length; j++ ) {
+            node = sequence[j];
+
+            text += indent ? '' : ';'; // Open Node
+            prefix = ';';
+
+            for ( id in node ) {
+              try {
+                if ( !node.hasOwnProperty(id) ) { continue; }
+                PROP = PROPS.hasOwnProperty(id) ? PROPS[id] : PROPS.unknown;
+                partial = id + '[' + PROP.stringify(node[id]).join('][') + ']';
+                text += indent ? gap+prefix+partial+'\n' : partial; // add Prop
+                prefix = ' ';
+              }
+              catch (error) {
+                error.message += ' at '+id+' of node #'+nodeId+', '+dump(node);
+                throw error;
+              }
+            }
+
+            nodeId += 1;
+          }
+
+          text += stringify( subtree[1] );
+          text += indent ? mind+')\n' : ')'; // close GameTree
+
+          gap = mind;
+        }
+
+        return text;
+      }(trees));
     };
   }());
 
