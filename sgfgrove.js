@@ -8,31 +8,27 @@
 (function () {
   'use strict';
 
-  var keys = Object.keys || function (object) {
-    var keys = [];
-
-    for ( var key in object ) {
-      if ( object.hasOwnProperty(key) ) {
-        keys.push( key );
-      }
-    }
-
-    return keys;
+  var isNumber = function (value) {
+    return typeof value === 'number' && isFinite(value);
   };
 
-  function isNumber (value) {
-    return typeof value === 'number' && isFinite(value);
-  }
-
-  function isString (value) {
+  var isString = function (value) {
     return typeof value === 'string';
-  }
+  };
 
   var isArray = Array.isArray || function (value) {
     return Object.prototype.toString.call(value) === '[object Array]';
   };
 
-  var dump = function (v) { return JSON.stringify(v); };
+  var create = Object.create || function (prototype) {
+    var Ctor = function () {};
+    Ctor.prototype = prototype;
+    return new Ctor();
+  };
+
+  var dump = function (value) {
+    return (JSON.stringify(value) || '').slice(0, 32);
+  };
 
   /**
    * @global
@@ -392,22 +388,22 @@
     var TYPES, PROPS;
 
     var expandPointList = (function () {
-      var coord2char = 'abcdefghijklmnopqrstuvwxyz';
-          coord2char = (coord2char + coord2char.toUpperCase()).split('');
+      var coord = 'abcdefghijklmnopqrstuvwxyz';
+          coord += coord.toUpperCase();
 
-      var char2coord = {};
-      for ( var i = 0; i < coord2char.length; i++ ) {
-        char2coord[coord2char[i]] = i;
-      }
+      var charCoordAt = function (at) {
+        var code = this.charCodeAt(at);
+        return code >= 97 ? code-97 : code-65+26;
+      };
 
       return function (p1, p2) {
         var points = [];
         var x, y, h;
 
-        var x1 = char2coord[ p1.charAt(0) ];
-        var y1 = char2coord[ p1.charAt(1) ];
-        var x2 = char2coord[ p2.charAt(0) ];
-        var y2 = char2coord[ p2.charAt(1) ];
+        var x1 = charCoordAt.call( p1, 0 );
+        var y1 = charCoordAt.call( p1, 1 );
+        var x2 = charCoordAt.call( p2, 0 );
+        var y2 = charCoordAt.call( p2, 1 );
 
         if ( x1 > x2 ) {
           h = x1; x1 = x2; x2 = h;
@@ -419,7 +415,7 @@
 
         for ( y = y1; y <= y2; y++ ) {
           for ( x = x1; x <= x2; x++ ) {
-            points.push( coord2char[x]+coord2char[y] );
+            points.push( coord.charAt(x)+coord.charAt(y) );
           }
         }
 
@@ -427,14 +423,14 @@
       };
     }());
 
-    TYPES = Object.create( FF[4].TYPES );
+    TYPES = create( FF[4].TYPES );
 
     TYPES.Point = FF.TYPES.scalar({
       name: 'Point',
       like: /^[a-zA-Z]{2}$/
     });
   
-    TYPES.Stone = Object.create( TYPES.Point );
+    TYPES.Stone = create( TYPES.Point );
     TYPES.Stone.name = 'Stone';
 
     TYPES.Move = FF.TYPES.scalar({
@@ -488,14 +484,14 @@
       }
     };
 
-    TYPES.elistOfPoint = Object.create( TYPES.listOfPoint );
+    TYPES.elistOfPoint = create( TYPES.listOfPoint );
     TYPES.elistOfPoint.name = 'elist of Point';
     TYPES.elistOfPoint.canBeEmpty = true;
 
-    TYPES.listOfStone = Object.create( TYPES.listOfPoint );
+    TYPES.listOfStone = create( TYPES.listOfPoint );
     TYPES.listOfStone.name = 'list of Stone';
 
-    TYPES.elistOfStone = Object.create( TYPES.elistOfPoint );
+    TYPES.elistOfStone = create( TYPES.elistOfPoint );
     TYPES.elistOfStone.name = 'elist of Stone';
     
     PROPS = FF[4].properties( TYPES );
@@ -699,17 +695,17 @@
     // the \G assertion (/\G.../gc). See also:
     // http://perldoc.perl.org/perlop.html#Regexp-Quote-Like-Operators
     
-    var test = function (regexp) {
-      regexp.lastIndex = 0;
-      var bool = regexp.test( source.slice(lastIndex) );
-      lastIndex = bool ? lastIndex+regexp.lastIndex : lastIndex;
+    var test = function () {
+      this.lastIndex = 0;
+      var bool = this.test( source.slice(lastIndex) );
+      lastIndex = bool ? lastIndex+this.lastIndex : lastIndex;
       return bool;
     };
 
-    var exec = function (regexp) {
-      regexp.lastIndex = 0;
-      var array = regexp.exec( source.slice(lastIndex) );
-      lastIndex = array ? lastIndex+regexp.lastIndex : lastIndex;
+    var exec = function () {
+      this.lastIndex = 0;
+      var array = this.exec( source.slice(lastIndex) );
+      lastIndex = array ? lastIndex+this.lastIndex : lastIndex;
       return array;
     };
 
@@ -718,14 +714,14 @@
       var subtrees = [], subtree;
       var node, ident, values, val;
 
-      if ( !test(/^\s*\(\s*/g) ) { // start of GameTree
+      if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
         return;
       }
 
-      while ( test(/^;\s*/g) ) { // start of Node
+      while ( test.call(/^;\s*/g) ) { // start of Node
         node = {};
 
-        while ( ident = exec(/^([A-Z]+)\s*/g) ) { // PropIdent
+        while ( ident = exec.call(/^([A-Z]+)\s*/g) ) { // PropIdent
           ident = ident[1];
           values = [];
 
@@ -733,7 +729,7 @@
             error( "Property '"+ident+"' already exists" );
           }
 
-          while ( val = exec(/^\[((?:\\]|[^\]])*)\]\s*/g) ) { // PropValue
+          while ( val = exec.call(/^\[((?:\\]|[^\]])*)\]\s*/g) ) { // PropValue
             values.push( val[1] );
           }
 
@@ -755,7 +751,7 @@
         subtrees.push( subtree );
       }
 
-      if ( !test(/^\)\s*/g) ) { // end of GameTree
+      if ( !test.call(/^\)\s*/g) ) { // end of GameTree
         error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
       }
 
@@ -925,7 +921,7 @@
       var j, node, n, ident, values;
 
       if ( !isArray(trees) ) {
-        throw new TypeError( 'array expected, got '+trees );
+        throw new TypeError( 'array expected, got '+dump(trees) );
       }
 
       for ( i = 0; i < trees.length; i++ ) {
@@ -972,55 +968,6 @@
       }
 
       return copy;
-    };
-
-    var stringify = function (trees, collection, PROPS) {
-      var text = '';
-      var i, tree, sequence, root, ff, gm;
-      var j, node, ident, values;
-
-      collection = collection || trees;
-
-      for ( i = 0; i < trees.length; i++ ) {
-        tree = trees[i];
-        sequence = tree[0];
-
-        if ( trees === collection ) {
-          root = sequence[0];
-
-          ff = root.hasOwnProperty('FF') ? root.FF : 1;
-          ff = Num.parse( Num.stringify(ff) );
-
-          gm = root.hasOwnProperty('GM') ? root.GM : 1;
-          gm = Num.parse( Num.stringify(gm) );
-
-          if ( ff < 1 || gm < 1 || !FF.hasOwnProperty(ff) ) {
-            throw new Error( 'FF['+ff+']GM['+gm+'] is not supported' );
-          }
-
-          PROPS = FF[ff].hasOwnProperty(gm) && FF[ff][gm].PROPERTIES;
-          PROPS = PROPS || FF[ff].properties();
-        }
- 
-        text += '('; // Open GameTree
-
-        for ( j = 0; j < sequence.length; j++ ) {
-          node = sequence[j];
-
-          text += ';'; // Open Node
-
-          for ( ident in node ) {
-            if ( !node.hasOwnProperty(ident) ) { continue; }
-            values = (PROPS[ident] || PROPS.unknown).stringify(node[ident]);
-            text += ident + '[' + values.join('][') + ']'; // add Property
-          }
-        }
-
-        text += stringify( tree[1], collection, PROPS );
-        text += ')'; // close GameTree
-      }
-
-      return text;
     };
 
     return function (trees, rep, space) {
