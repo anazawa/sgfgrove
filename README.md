@@ -132,10 +132,12 @@ JSON.stringify( SGFGrove.parse("(;FF[4])") );
 
 #### Why Not Usual Tree Structure?
 
-Because it's simplified, *considering a SGF sequence as the node of the tree*,
-where a SGF sequence is a list of SGF nodes. This simplification is based on
-an (not-so-reliable) observed fact that the height of a SGF game tree tends
-to be much longer than the width, the number of variations.
+Because it's simplified to avoid nesting the data unnecessarily, *considering
+a SGF sequence as the node of the tree*, where a SGF sequence is a list of
+SGF nodes. This simplification is based on an (not-so-reliable) observed fact
+that the height of a SGF game tree tends to be much longer than the width.
+Even tsumego/joseki, which generally has a lot of variations, can be considered
+as a tree of sequences.
 
 ### SGF Properties
 
@@ -256,6 +258,56 @@ are treated as an unknown property. You can also add game-specific types
 and properties to this module, while the API is not ready. Currently,
 all you can do is to read the source code and extend the `SGFGrove.FF`
 namespace.
+
+```js
+// define Othello (GM[2]) handlers
+
+// NOTE: the FF[4] spec does not come with the Othello definition,
+// and so the following code may be wrong. This example is based on
+// the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
+
+SGFGrove.FF[4][2] = (function () {
+    var FF = SGF.Grove.FF;
+    var TYPES, PROPS;
+
+    // inherit from FF[4] types
+    TYPES = Object.create( FF[4].TYPES );
+
+    // define Othello-specific type
+    TYPES.Point = FF.TYPES.scalar({
+        name: 'Point',
+        like: /^[a-h][1-8]$/ // "a1"-"h8"
+    });
+
+    // Point becomes Move
+    TYPES.Move = Object.create( TYPES.Point );
+    TYPES.Move.name = "Move";
+
+    // inherit from FF[4] properties, overriding Point and Move types
+    PROPS = FF[4].properties( TYPES );
+
+    // add Othello-specific properties
+    PROPS.PE = TYPES.Number;
+    PROPS.OS = TYPES.Number;
+    PROPS.OE = TYPES.Number;
+
+    return {
+        TYPES: TYPES,
+        PROPERTIES: PROPS // "PROPERTIES" is the canonical name
+    };
+}());
+
+// SGFGrove knows how to handle Othello game records now:
+var othello = SGFGrove.parse("(;FF[4]GM[2]B[a1])");
+// => [[
+//     [{
+//         FF: 4,
+//         GM: 2,
+//         B: "a1"
+//     }],
+//     []
+// ]]
+```
 
 ### Exceptions
 
