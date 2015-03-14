@@ -1,8 +1,10 @@
 var test = require('tape');
-var FF = require('../sgfgrove.js').FF;
+var SGFGrove = require('../sgfgrove.js');
+
+SGFGrove.define(null, null, function (FF) {
 
 test('FF[4] Number', function (t) {
-  var Num = FF[4].TYPES.Number;
+  var Num = FF[4].Types.Number;
 
   t.equal( Num.name, 'Number' );
 
@@ -31,7 +33,7 @@ test('FF[4] Number', function (t) {
 });
 
 test('FF[4] None', function (t) {
-  var None = FF[4].TYPES.None;
+  var None = FF[4].Types.None;
 
   t.equal( None.name, 'None' );
   t.equal( None.parse(['']), null );
@@ -55,7 +57,7 @@ test('FF[4] None', function (t) {
 });
 
 test('FF[4] Double', function (t) {
-  var Double = FF[4].TYPES.Double;
+  var Double = FF[4].Types.Double;
 
   t.equal( Double.name, 'Double' );
 
@@ -83,7 +85,7 @@ test('FF[4] Double', function (t) {
 });
 
 test('FF[4] Color', function (t) {
-  var Color = FF[4].TYPES.Color;
+  var Color = FF[4].Types.Color;
 
   t.equal( Color.name, 'Color' );
 
@@ -111,17 +113,17 @@ test('FF[4] Color', function (t) {
 });
 
 test('FF[4] Unknown', function (t) {
-  var Unknown = FF[4].TYPES.Unknown;
+  var unknown = FF.properties().unknown;
 
-  t.equal( Unknown.name, 'Unknown' );
-  t.deepEqual( Unknown.parse(['\\]']), [']'] );
-  t.deepEqual( Unknown.stringify([']']), ['\\]'] );
+  //t.equal( unknown.name, 'Unknown' );
+  t.deepEqual( unknown.parse(['\\]']), [']'] );
+  t.deepEqual( unknown.stringify([']']), ['\\]'] );
 
   t.end();
 });
 
 test('FF[4] SimpleText', function (t) {
-  var SimpleText = FF[4].TYPES.SimpleText;
+  var SimpleText = FF[4].Types.SimpleText;
 
   t.equal( SimpleText.name, 'SimpleText' );
 
@@ -149,7 +151,7 @@ test('FF[4] SimpleText', function (t) {
 });
 
 test('FF[4] Text', function (t) {
-  var Text = FF[4].TYPES.Text;
+  var Text = FF[4].Types.Text;
 
   t.equal( Text.name, 'Text' );
 
@@ -177,7 +179,7 @@ test('FF[4] Text', function (t) {
 });
 
 test('FF[4]GM[1] Point', function (t) {
-  var Point = FF[4][1].TYPES.Point;
+  var Point = FF[4][1].Types.Point;
 
   t.equal( Point.name, 'Point' );
 
@@ -205,7 +207,7 @@ test('FF[4]GM[1] Point', function (t) {
 });
 
 test('FF[4]GM[1] Move', function (t) {
-  var Move = FF[4][1].TYPES.Move;
+  var Move = FF[4][1].Types.Move;
 
   t.equal( Move.name, 'Move' );
 
@@ -216,7 +218,7 @@ test('FF[4]GM[1] Move', function (t) {
 });
 
 test('FF[4]GM[1] list of Point', function (t) {
-  var listOfPoint = FF[4][1].TYPES.listOfPoint;
+  var listOfPoint = FF[4][1].Types.listOfPoint;
 
   t.deepEqual( listOfPoint.parse(['aa', 'bb']), ['aa', 'bb'] );
 
@@ -262,3 +264,4 @@ test('FF[4]GM[1] list of Point', function (t) {
   t.end();
 });
 
+});

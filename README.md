@@ -255,49 +255,44 @@ SGFGrove.stringify([[
 
 Game-specific properties of the unknown game type, such as `B` or `W`,
 are treated as an unknown property. You can also add game-specific types
-and properties to this module, while the API is not ready. Currently,
-all you can do is to read the source code and extend the `SGFGrove.FF`
-namespace.
+and properties to this module. See the source code for details.
 
 ```js
-// define Othello (GM[2]) handlers
+// define Othello (FF[4]GM[2]) handlers
 
 // NOTE: the FF[4] spec does not come with the Othello definition,
 // and so the following code may be wrong. This example is based on
 // the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
 
-SGFGrove.FF[4][2] = (function () {
-    var FF = SGF.Grove.FF;
-    var TYPES, PROPS;
-
-    // inherit from FF[4] types
-    TYPES = Object.create( FF[4].TYPES );
+SGFGrove.define("4", "2", function (FF) {
+    var Types = Object.create( FF[4].Types ); // inherit from FF[4] types
+    var Props;
 
     // define Othello-specific type
-    TYPES.Point = FF.TYPES.scalar({
-        name: 'Point',
+    Types.Point = Types.scalar({
+        name: "Point",
         like: /^[a-h][1-8]$/ // "a1"-"h8"
     });
 
     // Point becomes Move
-    TYPES.Move = Object.create( TYPES.Point );
-    TYPES.Move.name = "Move";
+    Types.Move = Object.create( Types.Point );
+    Types.Move.name = "Move";
 
     // inherit from FF[4] properties, overriding Point and Move types
-    PROPS = FF[4].properties( TYPES );
+    Props = FF[4].properties( Types );
 
     // add Othello-specific properties
-    PROPS.PE = TYPES.Number;
-    PROPS.OS = TYPES.Number;
-    PROPS.OE = TYPES.Number;
+    Props.PE = Types.Number;
+    Props.OS = Types.Number;
+    Props.OE = Types.Number;
 
-    return {
-        TYPES: TYPES,
-        PROPERTIES: PROPS // "PROPERTIES" is the canonical name
-    };
-}());
+    this.Types = Types;
+    this.Properties = Props; // "Properties" is the canonical name
 
-// SGFGrove knows how to handle Othello game records now:
+    return;
+});
+
+// SGFGrove knows how to handle Othello game records
 var othello = SGFGrove.parse("(;FF[4]GM[2]B[a1])");
 // => [[
 //     [{

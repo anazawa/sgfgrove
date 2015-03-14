@@ -59,6 +59,7 @@ test('basic', function (t) {
     'SGF.stringify: toSGF method should be invoked'
   );
 
+  /*
   t.throws(
     function () {
       SGF.parse('(;FF[5])');
@@ -66,6 +67,7 @@ test('basic', function (t) {
     Error,
     'SGF.parse: unsupported'
   );
+  */
 
   t.end();
 });
