@@ -264,4 +264,5 @@ test('FF[4]GM[1] list of Point', function (t) {
   t.end();
 });
 
+return FF;
 });

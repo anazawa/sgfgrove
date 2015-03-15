@@ -38,11 +38,14 @@ JSON by using JSON.stringify without any modifications.
 
 The supported SGF versions are as follows:
 
+- FF[1] \(requires sgfgrove/ff123.js)
+- FF[2] \(requires sgfgrove/ff123.js)
+- FF[3] \(requires sgfgrove/ff123.js)
 - FF[4]
 
 The supported game types are as follows:
 
-- GM\[1] (Go)
+- GM[1] \(Go)
 
 SGF defines various types of property values. This module maps the type into
 the appropriate JavaScript type. See "SGF Properties" for details.
@@ -542,8 +545,8 @@ compatible with this module.
 
 ## See Also
 
-- [SGF File Format FF[4\]](http://www.red-bean.com/sgf/)
-- [JSON - JavaScript|MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
+- [SGF File Format FF\[4\]](http://www.red-bean.com/sgf/)
+- [JSON - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
 
 ## Acknowledgements
 

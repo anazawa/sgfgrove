@@ -33,6 +33,11 @@
   var FF = {};
   var SGFGrove = {};
 
+  FF.Util = {
+    create: create,
+    isNumber: isNumber
+  };
+
   FF.Types = (function () {
     var Types = {};
 
@@ -150,7 +155,7 @@
       FF[ff] = cb.call(def, FF) || def;
     }
     else {
-      cb.call(null, FF);
+      FF = cb.call(def, FF) || def;
     }
 
     return;
