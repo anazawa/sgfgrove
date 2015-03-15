@@ -1,7 +1,6 @@
 # SGFGrove.js
 
-Type-aware SGF parser/stringifier that supports only FF[4].
-Indended for the browser. Optimized for fun.
+Type-aware SGF parser/composer intended for the browser
 
 ## Synopsis
 
@@ -9,6 +8,7 @@ In your HTML:
 
 ```html
 <script src="sgfgrove.js"></script>
+<script src="sgfgrove/ff123.js"></script><!-- optional -->
 ```
 
 In your JavaScript:
@@ -38,9 +38,9 @@ JSON by using JSON.stringify without any modifications.
 
 The supported SGF versions are as follows:
 
-- FF[1] \(requires sgfgrove/ff123.js)
-- FF[2] \(requires sgfgrove/ff123.js)
-- FF[3] \(requires sgfgrove/ff123.js)
+- FF[1] \(requires `sgfgrove/ff123.js`)
+- FF[2] \(requires `sgfgrove/ff123.js`)
+- FF[3] \(requires `sgfgrove/ff123.js`)
 - FF[4]
 
 The supported game types are as follows:
@@ -76,13 +76,23 @@ into their entity equivalents. You have to escape them by yourself.
 Given an array representing a SGF collection, returns a SGF string.
 You can also pass the `replacer` and `space` parameters that will be used
 in the same way as the JSON.stringify method uses the parameters,
-while the `toJSON` method will not be invoked.
+except that the `toJSON` method is not invoked.
 
 If a property name does not look like SGF, the property will be ignored
 silently. In other words, that property is considered user-defined.
 For example, "FOO" and "FOOBAR" are valid FF[4] property names.
 "foo", "fooBar" and "foo_bar" are ignored. If a property value has
 `toSGF` method, the value is replaced with the return value of the method.
+
+#### SGFGrove.define( ff, gm, function (FF) {...} )
+
+Can be used to define game-specific types and properties.
+It's intended for those who writes extensions for this module.
+See the source code for details.
+
+This module only comes with the FF[4] definition and the default game type
+GM[1] \(Go). Other file formats or game types are provided by the SGFGrove
+extensions, such as `sgfgrove/ff123.js` that defines FF[1]-FF[3] properties.
 
 ### The Game Data Structure
 
@@ -254,69 +264,18 @@ SGFGrove.stringify([[
 // => "(;FF[4]UNKNOWN[foo][bar:baz][123][])"
 ```
 
-#### Unknown Game Types
+#### Unknown Game Types (GM)
 
 Game-specific properties of the unknown game type, such as `B` or `W`,
 are treated as an unknown property. You can also add game-specific types
-and properties to this module. See the source code for details.
+and properties to this module by using the #define method.
 
-```js
-// define Othello (FF[4]GM[2]) handlers
+#### Unknown File Formats (FF)
 
-// NOTE: the FF[4] spec does not come with the Othello definition,
-// and so the following code may be wrong. This example is based on
-// the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
-
-SGFGrove.define("4", "2", function (FF) {
-    var Types = Object.create( FF[4].Types ); // inherit from FF[4] types
-    var Props;
-
-    // define Othello-specific type
-    Types.Point = Types.scalar({
-        name: "Point",
-        like: /^[a-h][1-8]$/ // "a1"-"h8"
-    });
-
-    // Point becomes Move
-    Types.Move = Object.create( Types.Point );
-    Types.Move.name = "Move";
-
-    // inherit from FF[4] properties, overriding Point and Move types
-    Props = FF[4].properties( Types );
-
-    // add Othello-specific properties
-    Props.PE = Types.Number;
-    Props.OS = Types.Number;
-    Props.OE = Types.Number;
-
-    this.Types = Types;
-    this.Properties = Props; // "Properties" is the canonical name
-
-    return;
-});
-
-// SGFGrove knows how to handle Othello game records
-var othello = SGFGrove.parse("(;FF[4]GM[2]B[a1])");
-// => [[
-//     [{
-//         FF: 4,
-//         GM: 2,
-//         B: "a1"
-//     }],
-//     []
-// ]]
-```
+All the properties of the unknown file format are treated as an unknown
+property.
 
 ### Exceptions
-
-#### Error: FF[%d]GM[%d] is not supported
-
-You tried to #parse/#stringify an unsupported file type.
-
-```js
-SGFGrove.parse("(;FF[3])"); // => Error
-SGFGrove.stringify([[[{ FF: 3 }], []]]); // => Error
-```
 
 #### SyntaxError: Unexpected token '%s'
 
@@ -324,6 +283,23 @@ You tried to #parse a malformed SGF string.
 
 ```js
 SGFGrove.parse("(broken)"); // => SyntaxError
+```
+
+#### SyntaxError: Property '%s' already exists
+
+You tried to #parse a SGF node that has a duplicate property.
+It's prohibited by the SGF specification.
+
+```js
+SGFGrove.parse("(;FF[4]B[aa]B[bb])"); // => SyntaxError
+```
+
+#### SyntaxError: PropValue of %s is missing
+
+You tried to #parse a property that has no value.
+
+```js
+SGFGrove.parse("(;FF[4]B)"); // => SyntaxError
 ```
 
 #### SyntaxError/TypeError: GameTree must contain at least one node
@@ -334,14 +310,6 @@ It's prohibited by the SGF specification.
 ```js
 SGFGrove.parse("()"); // => SyntaxError
 SGFGrove.stringify([[[], []]]); // => TypeError
-```
-
-#### SyntaxError: PropValue of %s is missing
-
-You tried to #parse a property that has no value.
-
-```js
-SGFGrove.parse("(;FF[4]B)"); // => SyntaxError
 ```
 
 #### TypeError: %s expected, got %s
@@ -514,6 +482,61 @@ var nodeId = 0;
     }
 }(trees));
 ```
+
+### Define Othello (FF[4]GM[2]) handlers
+
+```js
+// NOTE: the FF[4] spec does not come with the Othello definition,
+// and so the following code may be wrong. This example is based on
+// the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
+
+SGFGrove.define("4", "2", function (FF) {
+    var Types = Object.create( FF[4].Types ); // inherit from FF[4] types
+    var Props;
+
+    // define Othello-specific type
+    Types.Point = Types.scalar({
+        name: "Point",
+        like: /^[a-h][1-8]$/ // "a1"-"h8"
+    });
+
+    // Point becomes Move
+    Types.Move = Object.create( Types.Point );
+    Types.Move.name = "Move";
+
+    // inherit from FF[4] properties, overriding Point and Move types
+    Props = FF[4].properties( Types );
+
+    // add Othello-specific properties
+    Props.PE = Types.Number;
+    Props.OS = Types.Number;
+    Props.OE = Types.Number;
+
+    this.Types = Types;
+    this.Properties = Props; // "Properties" is the canonical name
+
+    return;
+});
+
+// SGFGrove knows how to handle Othello game records now
+var othello = SGFGrove.parse("(;FF[4]GM[2]B[a1])");
+// => [[
+//     [{
+//         FF: 4,
+//         GM: 2,
+//         B: "a1"
+//     }],
+//     []
+// ]]
+```
+
+## Extensions
+
+### sgfgrove/ff123.js
+
+Adds FF[1]-FF[3] properties and their Go (GM[1]) specific properties
+to SGFGrove. Note that FF[2] is simply treated as FF[1]. See the test cases
+for details.
 
 ## Versioning
 

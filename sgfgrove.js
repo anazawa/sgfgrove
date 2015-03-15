@@ -200,8 +200,8 @@
       while ( test.call(/^;\s*/g) ) { // start of Node
         node = {};
 
-        while ( ident = exec.call(/^([A-Z]+)\s*/g) ) { // PropIdent
-          ident = ident[1];
+        while ( ident = exec.call(/^([a-zA-Z0-9]+)\s*/g) ) { // PropIdent(-like)
+          ident = ident[1].replace(/[a-z]/g, ''); // for FF[3]
           values = [];
 
           if ( node.hasOwnProperty(ident) ) {
@@ -372,7 +372,7 @@
           for ( ident in node ) {
             if ( !node.hasOwnProperty(ident) ) { continue; }
             if ( select && !select.hasOwnProperty(ident) ) { continue; }
-            if ( /[^A-Z]/.test(ident) ) { continue; }
+            //if ( /[^A-Z]/.test(ident) ) { continue; }
 
             values = replace( ident, node );
 
@@ -467,6 +467,8 @@
             for ( id in node ) {
               try {
                 if ( !node.hasOwnProperty(id) ) { continue; }
+                if ( ff !== 4 && !/^[A-Z][A-Z0-9]?$/.test(id) ) { continue; }
+                if ( ff === 4 && !/^[A-Z]+$/.test(id) ) { continue; }
                 values = props.find(id).stringify(node[id]);
                 partial = id + '[' + values.join('][') + ']';
                 text += indent ? gap+prefix+partial+'\n' : partial; // add Prop

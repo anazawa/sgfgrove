@@ -75,6 +75,7 @@ test('SGF.parse: Syntax', function (t) {
   t.end();
 });
 
+/*
 test('SGF.parse: Syntax: FF[4]', function (t) {
   t.throws(
     function () {
@@ -85,5 +86,6 @@ test('SGF.parse: Syntax: FF[4]', function (t) {
   );
   t.end();
 });
+*/
 
 
