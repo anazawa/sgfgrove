@@ -147,11 +147,11 @@
   SGFGrove.define = function (ff, gm, cb) {
     var def = {};
 
-    if ( isString(ff) && isString(gm) ) {
+    if ( ff && gm ) {
       FF[ff] = FF[ff] || {};
       FF[ff][gm] = cb.call(def, FF) || def;
     }
-    else if ( isString(ff) ) {
+    else if ( ff ) {
       FF[ff] = cb.call(def, FF) || def;
     }
     else {
@@ -372,7 +372,6 @@
           for ( ident in node ) {
             if ( !node.hasOwnProperty(ident) ) { continue; }
             if ( select && !select.hasOwnProperty(ident) ) { continue; }
-            //if ( /[^A-Z]/.test(ident) ) { continue; }
 
             values = replace( ident, node );
 
@@ -541,7 +540,7 @@
           // convert white spaces other than linebreaks to space
           replace( /[^\S\n\r]/g, ' ' ).
           // insert escaped chars verbatim
-          replace( /\\(.)/g, '$1' );
+          replace( /\\([\S\s])/g, '$1' );
       },
       stringify: function (value) {
         return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
@@ -558,7 +557,7 @@
           // convert white spaces other than space to space even if it's escaped
           replace( /\\?[^\S ]/g, ' ' ).
           // insert escaped chars verbatim
-          replace( /\\(.)/g, '$1' );
+          replace( /\\([\S\s])/g, '$1' );
       },
       stringify: function (value) {
         return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
@@ -569,7 +568,7 @@
       return left && right && {
         name: 'composed '+left.name+' ":" '+right.name,
         parse: function (values) {
-          var value = values[0].match(/^((?:\\:|[^:])*):(.*)$/);
+          var value = values[0].match(/^((?:\\:|[^:])*):([\S\s]*)$/);
 
           if ( values.length > 1 || !value ) {
             throw new TypeError( this.name+' expected, got '+dump(values) );

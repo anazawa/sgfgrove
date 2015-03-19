@@ -1,4 +1,5 @@
 (function () {
+  "use strict";
 
   var SGFGrove;
 
@@ -12,14 +13,19 @@
   SGFGrove.Collection = function () {};
 
   SGFGrove.Collection.GameTree = (function () {
+    var push    = Array.prototype.push;
+    var splice  = Array.prototype.splice;
+    var concat  = Array.prototype.concat;
+    var unshift = Array.prototype.unshift;
+
     var GameTree = function (tree, parent) {
       this.tree = tree || [[{}], []];
       this.parent = parent;
-      this.gameTree = this;
+      this.subtree = this;
       this.sequence = this.tree[0];
+      this.depth = 0;
+      this.children = this.tree[1];
       this.index = 0;
-      this.variations = this.tree[1];
-      this.variationIndex = 0;
     };
 
     GameTree.prototype.buildGameTree = function (tree, parent) {
@@ -29,11 +35,11 @@
     GameTree.prototype.clone = function () {
       var clone = this.buildGameTree( this.tree, this.parent );
 
+      clone.depth = this.depth;
       clone.index = this.index;
-      clone.variationIndex = this.variationIndex;
 
-      if ( this.gameTree !== this ) {
-        clone.gameTree = this.gameTree.clone();
+      if ( this.subtree !== this ) {
+        clone.subtree = this.subtree.clone();
       }
 
       return clone;
@@ -51,99 +57,171 @@
     };
 
     GameTree.prototype.rewind = function () {
-      this.gameTree = this;
+      this.subtree = this;
+      this.depth = 0;
       this.index = 0;
-      this.variationIndex = 0;
       return this;
     };
 
     GameTree.prototype.getNext = function () {
-      var gameTree = this.gameTree;
+      var subtree = this.subtree;
 
-      if ( gameTree.index < gameTree.sequence.length ) {
-        return gameTree.sequence[gameTree.index++];
+      if ( subtree.depth < subtree.sequence.length ) {
+        subtree.index = 0;
+        return subtree.sequence[subtree.depth++];
       }
 
-      if ( gameTree.variationIndex < gameTree.variations.length ) {
-        this.gameTree = this.buildGameTree(
-          gameTree.variations[gameTree.variationIndex++],
-          gameTree
-        );
-        return this.getNext();
+      while ( subtree ) {
+        if ( subtree.index < subtree.children.length ) {
+          this.subtree = this.buildGameTree(
+            subtree.children[subtree.index++],
+            subtree
+          );
+          return this.getNext();
+        }
+        subtree = subtree.parent;
       }
 
       return;
     };
 
     GameTree.prototype.hasNext = function () {
-      return this.gameTree.index < this.gameTree.sequence.length ||
-             this.gameTree.variationIndex < this.gameTree.variations.length;
+      var subtree = this.subtree;
+
+      if ( subtree.depth < subtree.sequence.length ) {
+        return true;
+      }
+
+      while ( subtree ) {
+        if ( subtree.index < subtree.children.length ) {
+          return true;
+        }
+        subtree = subtree.parent;
+      }
+
+      return false;
     };
 
     GameTree.prototype.peek = function () {
-      var gameTree = this.gameTree;
+      var subtree = this.subtree;
 
-      if ( gameTree.index < gameTree.sequence.length ) {
-        return gameTree.sequence[gameTree.index];
+      if ( subtree.depth < subtree.sequence.length ) {
+        return subtree.sequence[subtree.depth];
       }
 
-      if ( gameTree.variationIndex < gameTree.variations.length ) {
-        return gameTree.variations[gameTree.variationIndex][0][0];
+      while ( subtree ) {
+        if ( subtree.index < subtree.children.length ) {
+          return subtree.children[subtree.index][0][0];
+        }
+        subtree = subtree.parent;
       }
 
       return;
     };
 
-    GameTree.prototype.getNextVariation = function () {
-      var gameTree = this.gameTree;
-      var variation;
+    GameTree.prototype.getNextChild = function () {
+      var subtree = this.subtree;
 
-      while ( gameTree ) {
-        if ( gameTree.variationIndex < gameTree.variations.length ) {
-          variation = gameTree.variations[gameTree.variationIndex++];
-          this.gameTree = this.buildGameTree( variation, gameTree );
-          this.getNext();
-          break;
+      if ( subtree.depth < subtree.sequence.length ) {
+        if ( subtree.index < 1 ) {
+          subtree.index += 1;
+          return subtree.sequence[subtree.depth];
         }
-        gameTree = gameTree.parent;
+        return;
       }
 
-      return variation;
+      if ( subtree.index < subtree.children.length ) {
+        return subtree.children[subtree.index++][0][0];
+      }
+
+      return;
     };
 
+    GameTree.prototype.getChildren = function () {
+      var subtree = this.subtree;
+      var nodes = [];
+
+      if ( subtree.depth < subtree.sequence.length ) {
+        nodes.push( subtree.sequence[subtree.depth] );
+      }
+      else {
+        var children = subtree.children;
+        for ( var i = 0; i < children.length; i++ ) {
+          nodes.push( children[i][0][0] );
+        }
+      }
+
+      return nodes;
+    };
+
+    GameTree.prototype.getSiblings = function () {
+      var subtree = this.subtree;
+      var depth = subtree.getCurrentDepth();
+      var nodes = [];
+
+      if ( depth > 0 ) {
+        nodes.push( subtree.sequence[depth] );
+      }
+      else if ( subtree.parent ) {
+        var children = subtree.parent.children;
+        for ( var i = 0; i < children.length; i++ ) {
+          nodes.push( children[i][0][0] );
+        }
+      }
+
+      return nodes;
+    };
+
+    GameTree.prototype.getParent = function () {
+      var subtree = this.subtree;
+      var depth = this.getCurrentDepth();
+
+      if ( depth > 0 ) {
+        return subtree.sequence[depth-1];
+      }
+      else if ( subtree.parent ) {
+        var sequence = subtree.parent.sequence;
+        return sequence[sequence.length-1];
+      }
+
+      return;
+    };
+
+    /*
     GameTree.prototype.getPrevious = function () {
       var gameTree = this.gameTree;
 
-      if ( gameTree.index > 1 ) {
-        gameTree.index -= 1;
-        return gameTree.sequence[gameTree.index-1];
+      if ( gameTree.depth > 1 ) {
+        gameTree.depth -= 1;
+        return gameTree.sequence[gameTree.depth-1];
       }
 
       return;
     };
 
-    GameTree.prototype.getPreviousVariation = function () {
+    GameTree.prototype.getPreviousChild = function () {
       var gameTree = this.gameTree.parent;
-      var variation;
+      var child;
 
       if ( !gameTree ) {
         return;
       }
 
-      if ( gameTree.variationIndex > 1 ) {
-        gameTree.variationIndex--;
-        while ( gameTree.variations.length ) {
-          variation = gameTree.variations[gameTree.variationIndex-1];
-          gameTree = this.buildGameTree( variation, gameTree );
-          gameTree.index = gameTree.sequence.length;
-          gameTree.variationIndex = gameTree.variations.length;
+      if ( gameTree.index > 1 ) {
+        gameTree.index--;
+        while ( gameTree.children.length ) {
+          child = gameTree.children[gameTree.index-1];
+          gameTree = this.buildGameTree( child, gameTree );
+          gameTree.depth = gameTree.sequence.length;
+          gameTree.index = gameTree.children.length;
         }
       }
 
       this.gameTree = gameTree;
 
-      return variation || this.getCurrentVariation();
+      return child || this.getCurrentChild();
     };
+    */
 
     GameTree.prototype.getFirst = function () {
       return this.rewind().getNext();
@@ -154,60 +232,61 @@
       return this.getCurrent();
     };
 
-    GameTree.prototype.getCurrentIndex = function () {
-      return this.gameTree.index !== 0 ? this.gameTree.index-1 : 0;
+    GameTree.prototype.getCurrentDepth = function () {
+      return this.subtree.depth !== 0 ? this.subtree.depth-1 : 0;
     };
 
-    GameTree.prototype.getCurrentVariationIndex = function () {
-      var parent = this.gameTree.parent || this.gameTree;
-      return parent.variationIndex !== 0 ? parent.variationIndex-1 : 0;
+    GameTree.prototype.getCurrentIndex = function () {
+      return this.subtree.index !== 0 ? this.subtree.index-1 : 0;
     };
 
     GameTree.prototype.getCurrent = function () {
-      return this.gameTree.sequence[this.getCurrentIndex()];
+      return this.subtree.sequence[this.getCurrentDepth()];
     };
 
     GameTree.prototype.setCurrent = function (node) {
-      this.gameTree.sequence[this.getCurrentIndex()] = node;
+      this.subtree.sequence[this.getCurrentDepth()] = node;
     };
 
-    GameTree.prototype.getCurrentVariation = function () {
-      var parent = this.gameTree.parent || this.gameTree;
-      return parent.variations[this.getCurrentVariationIndex()];
+    GameTree.prototype.getCurrentChild = function () {
+      var subtree = this.subtree;
+
+      if ( subtree.depth < subtree.sequence.length ) {
+        return subtree.sequence[subtree.depth];
+      }
+
+      return subtree.children[this.getCurrentIndex()][0][0];
+    };
+
+    GameTree.prototype.getAbsoluteDepth = function () {
+      var subtree = this.subtree;
+      var depth = subtree.getCurrentDepth();
+
+      while ( subtree = subtree.parent ) {
+        depth += subtree.sequence.length;
+      }
+
+      return depth;
     };
 
     GameTree.prototype.getAbsoluteIndex = function () {
-      var gameTree = this.gameTree;
-      var index = gameTree.getCurrentIndex();
-
-      while ( gameTree = gameTree.parent ) {
-        index += gameTree.sequence.length;
-      }
-
-      return index;
-    };
-
-    GameTree.prototype.setAbsoluteIndex = function (index) {
-    };
-
-    GameTree.prototype.getAbsoluteVariationIndex = function () {
-      var current = this.getCurrentVariation();
+      var current = this.subtree.tree;
       var found = 0;
 
-      (function findLeaf (variations) {
-        for ( var i = 0; i < variations.length; i++ ) {
-          if ( variations[i] === current ) {
+      (function findLeaf (children) {
+        for ( var i = 0; i < children.length; i++ ) {
+          if ( children[i] === current ) {
             return false;
           }
-          if ( variations[i][1].length === 0 ) {
+          if ( !children[i][1].length ) {
             found += 1;
           }
           else {
-            var ret = findLeaf( variations[i][1] );
+            var ret = findLeaf( children[i][1] );
             if ( ret === false ) { return ret; }
           }
         }
-      }(this.variations));
+      }(this.children));
 
       return found;
     };
@@ -215,17 +294,17 @@
     GameTree.prototype.getHeight = function () {
       var max = 0;
 
-      (function findLeaf (variations, height) {
-        for ( var i = 0; i < variations.length; i++ ) {
-          var h = height + variations[i][0].length;
-          if ( variations[i][1].length === 0 ) {
+      (function findLeaf (children, height) {
+        for ( var i = 0; i < children.length; i++ ) {
+          var h = height + children[i][0].length;
+          if ( !children[i][1].length ) {
             max = h > max ? h : max;
           }
           else {
-            findLeaf( variations[i][1], h );
+            findLeaf( children[i][1], h );
           }
         }
-      }(this.variations, 0));
+      }(this.children, this.sequence.length));
 
       return max;
     };
@@ -233,84 +312,88 @@
     GameTree.prototype.getWidth = function () {
       var found = 0;
 
-      (function findLeaf (variations) {
-        for ( var i = 0; i < variations.length; i++ ) {
-          if ( variations[i][1].length === 0 ) {
+      (function findLeaf (children) {
+        for ( var i = 0; i < children.length; i++ ) {
+          if ( !children[i][1].length ) {
             found += 1;
           }
           else {
-            findLeaf( variations[i][1] );
+            findLeaf( children[i][1] );
           }
         }
-      }(this.variations));
+      }(this.children));
 
       return found;
     };
 
     GameTree.prototype.isLeaf = function () {
-      return this.gameTree.variations.length === 0 &&
-             this.gameTree.index === this.gameTree.sequence.length;
+      return this.subtree.children.length === 0 &&
+             this.subtree.depth === this.subtree.sequence.length;
     };
 
     GameTree.prototype.isRoot = function () {
-      return !this.parent && this.getCurrentIndex() === 0;
+      return !this.parent && this.getCurrentDepth() === 0;
     };
 
     GameTree.prototype.remove = function () {
-      var gameTree = this.gameTree;
-      var parent = gameTree.parent;
+      var subtree = this.subtree;
+      var parent = subtree.parent;
       var node;
 
-      if ( !parent && gameTree.sequence.length === 1 ) {
+      if ( !parent && subtree.sequence.length === 1 ) {
         throw new Error("GameTree must contain at least one node");
       }
 
-      node = gameTree.sequence.splice(this.getCurrentIndex(), 1)[0];
+      node = subtree.sequence.splice(this.getCurrentDepth(), 1)[0];
 
-      if ( gameTree.index > gameTree.sequence.length ) {
-        gameTree.index = gameTree.sequence.length;
+      if ( subtree.depth > subtree.sequence.length ) {
+        subtree.depth = subtree.sequence.length;
       }
 
-      if ( gameTree.sequence.length ) {
+      if ( subtree.sequence.length ) {
         return node;
       }
 
-      // merge gameTree.variations into parent.variations
-      Array.prototype.splice.apply(
-        parent.variations,
-        [].concat( this.getCurrentVariationIndex(), 1, gameTree.variations )
+      // merge gameTree.children into parent.children
+      splice.apply(
+        parent.children,
+        [parent.getCurrentIndex(), 1].concat(subtree.children)
       );
 
-      if ( parent.variationIndex > parent.variations.length ) {
-        parent.variationIndex = parent.variations.length;
+      if ( parent.index > parent.children.length ) {
+        parent.index = parent.children.length;
       }
 
-      if ( parent.variations.length ) {
-        this.gameTree = this.buildGameTree(
-          this.getCurrentVariation(),
+      if ( parent.children.length ) {
+        this.subtree = this.buildGameTree(
+          parent.children[parent.getCurrentIndex()],
           parent
         );
       }
       else {
-        this.gameTree = parent;
+        this.subtree = parent;
       }
 
       return node;
     };
 
     GameTree.prototype.insert = function (node) {
-      this.gameTree.sequence.splice(this.getCurrentIndex(), 0, node);
+      this.subtree.sequence.splice(this.getCurrentDepth(), 0, node);
     };
 
-    GameTree.prototype.push = function (node) {
-      var that = this;
+    GameTree.prototype.push = function () {
+      var subtree = this.subtree;
+      var sequence = subtree.sequence;
 
-      if ( !that.isLeaf() ) {
-        that = that.clone();
-        that.getLast();
+      if ( subtree.children.length ) {
+        var child = subtree.children[this.getCurrentIndex()];
+        while ( child[1].length ) {
+          child = child[1][0];
+        }
+        sequence = child[0];
       }
 
-      that.gameTree.sequence.push(node);
+      push.apply( sequence, arguments );
 
       return;
     };
@@ -320,23 +403,73 @@
 
       if ( !that.isLeaf() ) {
         that = that.clone();
-        that.getLast();
+        while ( !that.isLeaf() ) {
+          that.getNext();
+        }
       }
 
       return that.remove();
     };
 
     GameTree.prototype.shift = function (node) {
-      var that = this.isRoot() ? this : this.buildGameTree( this.tree );
+      var that = this.isRoot() ? this : this.buildGameTree(this.tree);
       return that.remove();
     };
 
-    GameTree.prototype.unshift = function (node) {
-      var that = this.isRoot() ? this : this.buildGameTree( this.tree );
-      return that.insert(node);
+    GameTree.prototype.unshift = function () {
+      var root = this;
+
+      while ( root.parent ) {
+        root = root.parent;
+      }
+
+      unshift.apply( root.sequence, arguments );
+
+      return;
+    };
+
+    GameTree.prototype.slice = function (start, end) {
+      var subtree = this.subtree;
+      var sequences = [];
+
+      if ( subtree.children.length ) {
+        var child = subtree.children[this.getCurrentIndex()];
+        while ( child ) {
+          sequences.push( child[0] );
+          child = child[1][0];
+        }
+      }
+
+      while ( subtree ) {
+        sequences.unshift( subtree.sequence );
+        subtree = subtree.parent;
+      }
+
+      return concat.apply([], sequences).slice(start, end);
+    };
+
+    GameTree.prototype.getLength = function () {
+      var subtree = this.subtree;
+      var length = 0;
+
+      if ( subtree.children.length ) {
+        var child = subtree.children[this.getCurrentIndex()];
+        while ( child ) {
+          length += child[0].length;
+          child = child[1][0];
+        }
+      }
+
+      while ( subtree ) {
+        length += subtree.sequence.length;
+        subtree = subtree.parent;
+      }
+
+      return length;
     };
 
     return GameTree;
   }());
 
 }());
+
