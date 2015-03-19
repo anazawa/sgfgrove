@@ -33,11 +33,6 @@
   var FF = {};
   var SGFGrove = {};
 
-  FF.Util = {
-    create: create,
-    isNumber: isNumber
-  };
-
   FF.Types = (function () {
     var Types = {};
 
@@ -492,6 +487,12 @@
       }(trees));
     };
   }());
+
+  SGFGrove.Util = {
+    create: create,
+    isNumber: isNumber,
+    isArray: isArray
+  };
 
   // File Format (;FF[4])
   // http://www.red-bean.com/sgf/sgf4.html

@@ -10,24 +10,27 @@
     SGFGrove = window.SGFGrove;
   }
 
+  var create   = SGFGrove.Util.create;
+  var isNumber = SGFGrove.Util.isNumber;
+
   // Original File Format
   // http://www.red-bean.com/sgf/ff1_3/ff1.html
   SGFGrove.define("1", null, function (FF) {
-    var Types = FF.Util.create( FF.Types );
+    var Types = create( FF.Types );
 
     Types.Color   = FF[4].Types.Color;
     Types.None    = FF[4].Types.None;
     Types.listOf  = FF[4].Types.listOf;
     Types.elistOf = FF[4].Types.elistOf;
 
-    Types.Triple = FF.Util.create( FF[4].Types.Double );
+    Types.Triple = create( FF[4].Types.Double );
     Types.Triple.name = "Triple";
 
     // Real = Number ["." {Digit}]
     Types.Real = Types.scalar({
       name: "Real",
       like: /^[+-]?\d+(?:\.\d*)?$/,
-      isa: FF.Util.isNumber,
+      isa: isNumber,
       parse: parseFloat
     });
 
@@ -101,7 +104,7 @@
   // Go (;GM[1]) specific properties
   // http://www.red-bean.com/sgf/ff1_3/ff1.html
   SGFGrove.define("1", "1", function (FF) {
-    var Types = FF.Util.create( FF[1].Types );
+    var Types = create( FF[1].Types );
     var Props;
 
     Types.Point = Types.scalar({
@@ -142,7 +145,7 @@
   // http://www.red-bean.com/sgf/ff1_3/ff3.html
   // http://www.red-bean.com/sgf/ff1_3/sgfhistory.html
   SGFGrove.define("3", null, function (FF) {
-    var Types = FF.Util.create( FF[1].Types );
+    var Types = create( FF[1].Types );
 
     Types.Compose = FF[4].Types.Compose;
 
@@ -228,7 +231,7 @@
 
   // Go (;FF[3]GM[1]) specific properties
   SGFGrove.define("3", "1", function (FF) {
-    var Types = FF.Util.create( FF[3].Types );
+    var Types = create( FF[3].Types );
     var Props;
 
     Types.Point = FF[1][1].Types.Point;

@@ -10,6 +10,8 @@
     SGFGrove = window.SGFGrove;
   }
 
+  var isArray = SGFGrove.Util.isArray;
+
   SGFGrove.Collection = function () {};
 
   SGFGrove.Collection.GameTree = (function () {
@@ -381,19 +383,20 @@
       this.subtree.sequence.splice(this.getCurrentDepth(), 0, node);
     };
 
-    GameTree.prototype.push = function () {
+    GameTree.prototype.push = function (nodes) {
+      var args = isArray(nodes) ? nodes : arguments;
       var subtree = this.subtree;
       var sequence = subtree.sequence;
 
       if ( subtree.children.length ) {
         var child = subtree.children[this.getCurrentIndex()];
-        while ( child[1].length ) {
+        while ( child ) {
+          sequence = child[0];
           child = child[1][0];
         }
-        sequence = child[0];
       }
 
-      push.apply( sequence, arguments );
+      push.apply( sequence, args );
 
       return;
     };
@@ -445,7 +448,9 @@
         subtree = subtree.parent;
       }
 
-      return concat.apply([], sequences).slice(start, end);
+      return arguments.length
+               ? concat.apply([], sequences).slice(start, end)
+               : concat.apply([], sequences);
     };
 
     GameTree.prototype.getLength = function () {
