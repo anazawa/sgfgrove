@@ -33,6 +33,8 @@
   var FF = {};
   var SGFGrove = {};
 
+  SGFGrove.VERSION = "0.0.1";
+
   FF.Types = (function () {
     var Types = {};
 
@@ -587,7 +589,7 @@
           return [
             left.stringify(value[0])[0] +
             ':' +
-            right.stringify(value[0])[0]
+            right.stringify(value[1])[0]
           ];
         }
       };
