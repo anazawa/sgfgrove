@@ -20,16 +20,11 @@
     collection.create = function () {
       var that = [];
 
-      that.create         = this.create;
-      that.initialize     = this.initialize;
-      that.parse          = this.parse;
-      that.createTrees    = this.createTrees;
-      that.createGameTree = this.createGameTree;
-      that.toString       = this.toString;
-
-      that.concat = this.concat;
-      that.slice  = this.slice;
-      that.splice = this.splice;
+      for ( var key in this ) {
+        if ( this.hasOwnProperty(key) && /[^\d]/.test(key) ) {
+          that[key] = this[key];
+        }
+      }
 
       that.initialize.apply( that, arguments );
 
@@ -38,10 +33,16 @@
 
     collection.initialize = function (trees) {
       trees = typeof trees === "string" ? this.parse(trees) : trees;
-      trees = trees || this.createTrees();
+      trees = trees || [ this.createGameTree() ];
 
       for ( var i = 0; i < trees.length; i++ ) {
-        this.push( this.createGameTree(trees[i]) );
+        if ( trees[i] && typeof trees[i] === "object" &&
+             SGFGrove.Util.isArray(trees[i].tree) ) {
+          this[i] = trees[i];
+        }
+        else {
+          this[i] = this.createGameTree(trees[i]);
+        }
       }
 
       return;
@@ -49,18 +50,6 @@
 
     collection.parse = function (text) {
       return SGFGrove.parse(text);
-    };
-
-    collection.createTrees = function () {
-      return [[
-        [{
-          FF: 4,
-          GM: 1,
-          CA: "UTF-8",
-          AP: ["SGFGrove", SGFGrove.VERSION]
-        }],
-        []
-      ]];
     };
 
     collection.createGameTree = function (tree) {
@@ -71,37 +60,26 @@
       return SGFGrove.stringify(this, replacer, space);
     };
 
-    collection.slice = function () {
-      var gameTrees = slice.apply( this, arguments );
-      var that = this.create( [] );
+    collection.clone = function () {
+      var gameTrees = [];
 
-      for ( var i = 0; i < gameTrees.length; i++ ) {
-        that.push( gameTrees[i] );
+      for ( var i = 0; i < this.length; i++ ) {
+        gameTrees[i] = this[i].clone();
       }
 
-      return that;
+      return this.create(gameTrees);
+    };
+
+    collection.slice = function () {
+      return this.create( slice.apply(this, arguments) );
     };
 
     collection.splice = function () {
-      var gameTrees = splice.apply( this, arguments );
-      var that = this.create( [] );
-
-      for ( var i = 0; i < gameTrees.length; i++ ) {
-        that.push( gameTrees[i] );
-      }
-
-      return that;
+      return this.create( splice.apply(this, arguments) );
     };
 
     collection.concat = function () {
-      var gameTrees = concat.apply( this, arguments );
-      var that = this.create( [] );
-
-      for ( var i = 0; i < gameTrees.length; i++ ) {
-        that.push( gameTrees[i] );
-      }
-
-      return that;
+      return this.create( concat.apply(this, arguments) );
     };
 
     return function (trees) {
@@ -118,7 +96,7 @@
     var gameTree = {};
 
     gameTree.create = function () {
-      var that = Object.create( this );
+      var that = SGFGrove.Util.create( this );
       that.initialize.apply( that, arguments );
       return that;
     };
@@ -169,6 +147,46 @@
 
     gameTree.toJSON = function () {
       return this.tree;
+    };
+
+    gameTree.clone = function () {
+      var seen = [];
+
+      var tree = (function clone (value) {
+        var i, key, val;
+
+        if ( !value || typeof value !== "object" ) {
+          return value;
+        }
+        else if ( typeof value.clone === "function" ) {
+          return value.clone();
+        }
+
+        for ( i = 0; i < seen.length; i++ ) {
+          if ( seen[i] === value ) {
+            throw new Error("Found duplicate references");
+          }
+        }
+
+        seen.push( value );
+
+        if ( isArray(value) ) {
+          val = [];
+          for ( i = 0; i < value.length; i++ ) {
+            val[i] = clone(value[i]);
+          }
+        }
+        else {
+          val = {};
+          for ( key in value ) {
+            val[key] = clone(value[key]);
+          }
+        }
+
+        return val;
+      }(this.tree));
+
+      return this.create(tree);
     };
 
     gameTree.getHeight = function () {
@@ -299,6 +317,7 @@
       }
 
       if ( lastVisited ) {
+        current.parent.index -= 1;
         this.current = lastVisited;
         return lastVisited.sequence[lastVisited.depth-1];
       }
@@ -583,7 +602,7 @@
         return current.sequence[current.depth-2];
       }
       else if ( parent ) {
-        return parent.sequence[parent.depth];
+        return parent.sequence[parent.depth-1];
       }
 
       return;
