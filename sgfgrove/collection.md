@@ -1,80 +1,170 @@
-# SGFGrove.Colleciton
+# SGFGrove.collection
 
-A SGF collection iterator/manipulator/visitor
+Object represents a SGF collection
 
 ## Synopsis
 
+In your HTML:
+
+```html
+<script src="sgfgrove.js"></script>
+<script src="sgfgrove/collection.js"></script>
+```
+
+In your JavaScript:
+
 ```js
-// TBD
+var collection = SGFGrove.collection("(;FF[4])");
+// or
+var collection = SGFGrove.collection("(;FF[4])", function (key, value) {...});
+// or
+var collection = SGFGrove.collection([ [[{ FF: 4 }], []], ...  ]);
+// or
+var collection = SGFGrove.collection([ SGFGrove.collection.gameTree(...), ... ])
+
+collection[0]; // => gameTree
+collection[0] = gameTree;
+
+collection.length; // => 1
+
+collection.push( gameTree, ... );
+collection.pop(); // => gameTree
+
+collection.unshift( gameTree, ... );
+collection.shift(); // => gameTree
+
+collection.concat( gameTree, anotherCollection, ... ); // => newCollection
+collection.splice( 2, 1, gameTree1, gameTree2, ... ); // => newCollection
+collection.slice( 0, 10 ); // => newCollection
+
+collection.toString(); // => "(;FF[4])"
+""+collection; // => "(;FF[4])"
+
+for ( var i = 0; i < collection.length; i++ ) {
+  // do something with collection[i]
+}
 ```
 
 ## Description
 
+### Constructor
+
+#### collection = SGFGrove.collection( sgfCollectionArray )
+
+Creates a new `SGFGrove.collection` object that inherits all methods from
+`Array.prototype`. The collection array consists of
+`SGFGrove.collection.gameTree` objects and behaves like a plain JavaScript
+array, except that `slice`, `splice` and `concat` methods
+return a new collection array instead of a plain JavaScript array,
+and also `toString` method returns a SGF string instead of a comma-separated
+string.
+
+`sgfCollectionArray` denotes an array consisting of SGF game trees, where
+a SGF game tree can be either a plain game tree array or
+a `SGFGrove.collection.gameTree` object. The plain game tree array is coerced
+into a `SGFGrove.collection.gameTree` object implicitly.
+
+#### collection = SGFGrove.collection( sgfString[, reviver] )
+
+A shortcut for:
+
+```js
+SGFGrove.collection( SGFGrove.parse(sgfString[, reviver]) );
+```
+
 ### Attributes
 
-#### sequence
-#### children
-#### parent
-#### index
-#### depth
+None.
 
 ### Methods
 
-#### width = getWidth()
+#### newCollection = collection.create( sgfString[, reviver] )
+#### newCollection = collection.create( sgfCollectionArray )
 
-#### height = getHeight()
+Creates a new `SGFGrove.collection` object that inherits all methods from
+the invocant.
 
-#### nodes = getChildren()
+#### gameTree = collection.createGameTree( sgfGameTreeArray )
 
-#### nodes = getSiblings()
+A factory method that creates a `SGFGrove.collection.gameTree` object.
 
-#### bool = isLeaf()
+#### sgfCollectionArray = collection.parse( sgfString, reviver )
 
-#### bool = isRoot()
+A shortcut for:
 
-Iterator for sequece:
+```js
+SGFGrove.parse( sgfString, reviver );
+```
 
-#### node = getNext()
+#### sgfString = collection.toString(replacer, space)
 
-#### bool = hasNext()
+A shortcut for:
 
-#### node = peek()
+```js
+SGFGrove.stringify( collection, replacer, space );
+```
 
-#### node = getCurrent()
+#### newCollection = collection.clone()
 
-#### setCurrent( node )
+Returns a deep copy of the invocant.
 
-#### depth = getCurrentDepth()
+# SGFGrove.collection.gameTree
 
-#### depth = getAbsoluteDepth()
+SGF game tree iterator/manipulator
 
-Iterator for children:
+## Synopsis
 
-#### node = getNextChild()
+## Description
 
-#### index = getCurrentIndex()
+### Constructor
 
-#### index = getAbsoluteIndex()
+#### gameTree = SGFGrove.collection.gameTree( sgfGameTreeArray )
 
-Array-like methods for sequence:
+### Attributes
 
-#### length = getLength()
+### Methods
 
-#### nodes = slice( [start[, end]] )
+#### width = gameTree.getWidth()
 
-#### push( node1, node2, ... )
-#### push( [node1, node2, ...] )
+#### height = gameTree.getHeight()
 
-#### node = pop()
+#### node = gameTree.getParent()
 
-#### node = shift()
+#### nodes = gameTree.getChildren()
 
-#### unshift( node )
+#### nodes = gameTree.getSiblings()
 
+#### bool = gameTree.isLeaf()
 
-#### node = remove()
+#### bool = gameTree.isRoot()
 
-#### insert
+#### node = gameTree.next()
+
+#### bool = gameTree.hasNext()
+
+#### node = gameTree.peek()
+
+#### node = gameTree.getNode()
+
+#### gameTree.setNode( node )
+
+#### depth = gameTree.getDepth()
+
+#### node = gameTree.nextChild()
+
+#### index = gameTree.getIndex()
+
+#### gameTree.insertChildAt( index | targetNode, node )
+
+#### gameTree.insertChild( node  )
+
+#### removedGameTree = gameTree.removeChildAt( index|targetNode )
+
+#### removedGameTree = gameTree.removeChild()
+
+#### removedGameTree = gameTree.replaceChildAt( index | targetNode, node )
+
+#### removedGameTree = gameTree.replaceChild( node  )
 
 ## Author
 

@@ -570,7 +570,7 @@ compatible with this module.
 ### [GO Tools](http://gotools.sourceforge.net/)
 
 Includes sgflib.py, a Python SGF parser. The source code is well documented.
-`SGFGrove.collection.gameTree' behaves like the `Cursor` object defined by
+`SGFGrove.collection.gameTree` behaves like the `Cursor` object defined by
 this module.
 
 ### [WGo.js](https://github.com/waltheri/wgo.js)
