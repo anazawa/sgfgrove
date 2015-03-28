@@ -26,13 +26,13 @@
         }
       }
 
-      that.initialize.apply( that, arguments );
+      that.init.apply( that, arguments );
 
       return that;
     };
 
-    collection.initialize = function (trees) {
-      trees = typeof trees === "string" ? this.parse(trees) : trees;
+    collection.init = function (trees, replacer) {
+      trees = typeof trees === "string" ? this.parse(trees, replacer) : trees;
       trees = trees || [ this.createGameTree() ];
 
       for ( var i = 0; i < trees.length; i++ ) {
@@ -48,26 +48,26 @@
       return;
     };
 
-    collection.parse = function (text) {
-      return SGFGrove.parse(text);
+    collection.parse = function (text, replacer) {
+      return SGFGrove.parse(text, replacer);
     };
 
     collection.createGameTree = function (tree) {
       return SGFGrove.collection.gameTree(tree);
     };
 
-    collection.toString = function (replacer, space) {
-      return SGFGrove.stringify(this, replacer, space);
+    collection.toString = function (reviver, space) {
+      return SGFGrove.stringify(this, reviver, space);
     };
 
     collection.clone = function () {
-      var gameTrees = [];
+      var clone = this.create([]);
 
       for ( var i = 0; i < this.length; i++ ) {
-        gameTrees[i] = this[i].clone();
+        clone[i] = this[i].clone();
       }
 
-      return this.create(gameTrees);
+      return clone;
     };
 
     collection.slice = function () {
@@ -97,33 +97,43 @@
 
     gameTree.create = function () {
       var that = SGFGrove.Util.create( this );
-      that.initialize.apply( that, arguments );
+      that.init( that.initArgs.apply(that, arguments) );
       return that;
     };
 
-    gameTree.initialize = function (tree, parent, rest) {
-      var lastVisited = rest && rest.lastVisited;
-      var baseIndex = 0;
+    gameTree.initArgs = function (tree, parent, rest) {
+      var args = {
+        tree: tree,
+        parent: parent
+      };
 
-      if ( parent && lastVisited && parent !== lastVisited ) {
-        baseIndex = lastVisited.baseIndex + 1;
-      }
-      else if ( parent ) {
-        baseIndex = parent.baseIndex;
+      if ( rest && typeof rest === "object" ) {
+        for ( var key in rest ) {
+          if ( rest.hasOwnProperty(key) ) {
+            args[key] = rest[key];
+          }
+        }
       }
 
-      this.tree = tree || this.createTree();
-      this.parent = parent;
+      return args;
+    };
+
+    gameTree.init = function (args) {
+      var tree = args.tree || this.createTree();
+      var parent = args.parent || null;
+
+      this.tree = tree;
 
       this.current = this;
-      this.lastVisited = lastVisited || parent;
+      this.parent = parent;
+      this.history = [];
 
-      this.sequence = this.tree[0];
+      this.sequence = tree[0];
       this.baseDepth = parent ? parent.baseDepth+parent.sequence.length : 0;
       this.depth = 0;
 
-      this.children = this.tree[1];
-      this.baseIndex = baseIndex;
+      this.children = tree[1];
+      this.baseIndex = args.baseIndex || 0;
       this.index = 0;
 
       return;
@@ -228,20 +238,21 @@
       return this.current.depth !== 0 ? this.current.depth-1 : 0;
     };
 
-    gameTree.getCurrentDepth = function () {
+    gameTree.getDepth = function () {
       return this.current.baseDepth+this.getRelativeDepth();
     };
 
-    gameTree.getCurrent = function () {
+    gameTree.getNode = function () {
       return this.current.sequence[this.getRelativeDepth()];
     };
 
-    gameTree.setCurrent = function (node) {
+    gameTree.setNode = function (node) {
       this.current.sequence[this.getRelativeDepth()] = node;
     };
 
     gameTree.rewind = function () {
       this.current = this;
+      this.history.length = 0;
       this.depth = 0;
       this.index = 0;
       return this;
@@ -255,15 +266,22 @@
           if ( current.index < current.children.length ) {
             current = this.create(
               current.children[current.index++], current,
-              { lastVisited: this.current }
+              { baseIndex: this.current.baseIndex }
             );
+
+            if ( current.parent !== this.current ) {
+              current.baseIndex += 1;
+            }
+
+            this.history.push( this.current );
             this.current = current;
+
             break;
           }
           current = current.parent;
         }
         if ( !current ) {
-          return;
+          return null;
         }
       }
 
@@ -303,45 +321,45 @@
         current = current.parent;
       }
 
-      return;
+      return null;
     };
 
     gameTree.previous = function () {
       var current = this.current;
-      var lastVisited = current.lastVisited;
 
       if ( current.depth > 1 ) {
         current.index = 0;
         current.depth -= 1;
-        return current.sequence[current.depth-1];
       }
-
-      if ( lastVisited ) {
+      else if ( this.history.length ) {
         current.parent.index -= 1;
-        this.current = lastVisited;
-        return lastVisited.sequence[lastVisited.depth-1];
+        current = this.history.pop();
+        this.current = current;
+      }
+      else {
+        return null;
       }
 
-      return;
+      return current.sequence[current.depth-1];
     };
 
     gameTree.hasPrevious = function () {
-      return this.current.depth > 1 || !!this.current.lastVisited;
+      return this.current.depth > 1 || !!this.history.length;
     };
 
     gameTree.lookBack = function () {
       var current = this.current;
-      var lastVisited = current.lastVisited;
 
       if ( current.depth > 1 ) {
         return current.sequence[current.depth-2];
       }
 
-      if ( lastVisited ) {
-        return lastVisited.sequence[lastVisited.depth-1];
+      if ( this.history.length ) {
+        current = this.history[this.history.length-1];
+        return current.sequence[current.depth-1];
       }
 
-      return;
+      return null;
     };
 
     gameTree.getRelativeIndex = function () {
@@ -360,22 +378,23 @@
       return -1;
     };
 
-    gameTree.getCurrentIndex = function () {
+    gameTree.getIndex = function () {
       return this.current.baseIndex+this.getRelativeIndex();
     };
 
-    gameTree.getCurrentChild = function () {
+    gameTree.getChild = function () {
       var current = this.current;
+      var depth = this.getRelativeDepth() + 1;
 
-      if ( current.depth < current.sequence.length ) {
-        return current.sequence[this.getCurrentDepth()+1];
+      if ( depth < current.sequence.length ) {
+        return current.sequence[depth];
       }
 
       if ( current.children.length ) {
         return current.children[this.getRelativeIndex()][0][0];
       }
 
-      return;
+      return null;
     };
 
     gameTree.nextChild = function () {
@@ -451,7 +470,7 @@
     };
 
     gameTree.insertChild = function (tree) {
-      return this.insertChildAt( this.getCurrentIndex(), tree );
+      return this.insertChildAt( this.getRelativeIndex(), tree );
     };
 
     gameTree.appendChild = function (tree) {
@@ -516,7 +535,7 @@
 
       if ( current.depth < sequence.length ) {
         tree = [
-          sequence.splice( this.getCurrentDepth()+1 ),
+          sequence.splice( this.getRelativeDepth()+1 ),
           children.splice(0)
         ];
         current.depth = Math.min( current.depth, sequence.length );
@@ -553,14 +572,15 @@
     gameTree.getChildren = function () {
       var current = this.current;
       var children = current.children;
+      var depth = current.depth !== 0 ? current.depth : 1;
       var nodes = [];
 
-      if ( current.depth < current.sequence.length ) {
-        nodes.push( current.sequence[current.depth] );
+      if ( depth < current.sequence.length ) {
+        nodes[0] = current.sequence[depth];
       }
       else {
         for ( var i = 0; i < children.length; i++ ) {
-          nodes.push( children[i][0][0] );
+          nodes[i] = children[i][0][0];
         }
       }
 
@@ -569,8 +589,9 @@
 
     gameTree.getChildCount = function () {
       var current = this.current;
+      var depth = current.depth !== 0 ? current.depth : 1;
 
-      if ( current.depth < current.sequence.length ) {
+      if ( depth < current.sequence.length ) {
         return 1;
       }
 
@@ -583,12 +604,15 @@
       var nodes = [];
 
       if ( current.depth > 1 ) {
-        nodes.push( current.sequence[current.depth-1] );
+        nodes[0] = current.sequence[current.depth-1];
       }
       else if ( siblings ) {
         for ( var i = 0; i < siblings.length; i++ ) {
-          nodes.push( siblings[i][0][0] );
+          nodes[i] = siblings[i][0][0];
         }
+      }
+      else {
+        return null;
       }
 
       return nodes;
@@ -596,16 +620,17 @@
 
     gameTree.getParent = function () {
       var current = this.current;
-      var parent = current.parent;
 
       if ( current.depth > 1 ) {
         return current.sequence[current.depth-2];
       }
-      else if ( parent ) {
-        return parent.sequence[parent.depth-1];
+
+      if ( current.parent ) {
+        current = current.parent;
+        return current.sequence[current.depth-1];
       }
 
-      return;
+      return null;
     };
 
     return function (tree) {

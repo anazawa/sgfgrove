@@ -8,6 +8,12 @@
 (function () {
   'use strict';
 
+  var SGFGrove = {
+    VERSION: '0.0.1'
+  };
+
+  var FF = {};
+
   var isNumber = function (value) {
     return typeof value === 'number' && isFinite(value);
   };
@@ -29,11 +35,6 @@
   var dump = function (value) {
     return (JSON.stringify(value) || '').slice(0, 32);
   };
-
-  var FF = {};
-  var SGFGrove = {};
-
-  SGFGrove.VERSION = "0.0.1";
 
   FF.Types = (function () {
     var Types = {};

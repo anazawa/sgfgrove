@@ -76,7 +76,8 @@ into their entity equivalents. You have to escape them by yourself.
 Given an array representing a SGF collection, returns a SGF string.
 You can also pass the `replacer` and `space` parameters that will be used
 in the same way as the JSON.stringify method uses the parameters,
-except that the `toJSON` method is not invoked.
+except that the `toJSON` method is not invoked, and also the replacer
+callback is not applied to the property values recursively but only once.
 
 If a property name does not look like SGF, the property will be ignored
 silently. In other words, that property is considered user-defined.
@@ -463,7 +464,7 @@ var nodeId = 0;
             // }
         }
    
-        for ( var j = 0; j < sequence.length-1; j++ ) {
+        for ( var j = 0; j < sequence.length; j++ ) {
             var node = sequence[j];
    
             node.id = nodeId; // assign node id
@@ -565,6 +566,36 @@ module's author but this module's author.
 This module comes with "smartgamer" that allows you to edit/iterate through
 the smartgame data structure. It seems very handy. SGFGrove.js is not
 compatible with this module.
+
+### [GO Tools](http://gotools.sourceforge.net/)
+
+Includes sgflib.py, a Python SGF parser. The source code is well documented.
+`SGFGrove.collection.gameTree' behaves like the `Cursor` object defined by
+this module.
+
+### [WGo.js](https://github.com/waltheri/wgo.js)
+
+Provides an HTML5 go board that comes with a simple SGF parser which is
+required by the SGF player. The `SHELL` texture of white stones is quite
+beautiful.
+
+### [SGFC](http://www.red-bean.com/sgf/sgfc/index.html)
+
+SGF syntax checker & converter written by the author of FF[4].
+Includes a SGF parser/composer written in C. The SGFGrove's internal subroutine
+`expandPointList` is based on the `ExpandPointList` function defined by
+this library.
+
+### [MultiGo](http://www.ruijiang.com/multigo/)
+
+While the source is not open, the iterator behavior of
+`SGFGrove.collection.gameTree` is based on this GUI application
+(depth-first search).
+
+### [jGoBoard](https://github.com/jokkebk/jgoboard)
+
+Provides a beautiful HTML5 go board that comes with a JavaScript SGF parser.
+The version 3.3.3 was released in March 2015.
 
 ## See Also
 
