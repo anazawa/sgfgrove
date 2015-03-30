@@ -3,7 +3,7 @@ var SGF = require("../../sgfgrove.js");
 
 require("../../sgfgrove/collection.js");
 
-test("SGFGrove.collection.gameTree", function (t) {
+test("SGFGrove.collection.gameTree: default", function (t) {
   var gameTree = SGF.collection.gameTree();
 
   var methods = [
@@ -12,17 +12,18 @@ test("SGFGrove.collection.gameTree", function (t) {
     "toJSON",
     "getHeight",
     "getWidth",
+    "clone",
+    // iterator methods
     "getDepth",
     "getIndex",
     "getNode",
-    "setNode",
     "getParent",
     "getSiblings",
     "getChildren",
+    "getChildCount",
     "getChild",
     "isRoot",
     "isLeaf",
-    // iterator methods
     "rewind",
     "next",
     "hasNext",
@@ -37,6 +38,7 @@ test("SGFGrove.collection.gameTree", function (t) {
     "hasPreviousChild",
     "lookBackChild",
     // mutator methods
+    "setNode",
     "insertChild",
     "insertChildAt",
     "appendChild",
@@ -49,6 +51,24 @@ test("SGFGrove.collection.gameTree", function (t) {
   for ( var i = 0; i < methods.length; i++ ) {
     t.ok( typeof gameTree[methods[i]] === "function" );
   }
+
+  t.deepEqual(
+    gameTree.tree,
+    [
+      [{
+        FF: 4,
+        GM: 1,
+        CA: "UTF-8",
+        AP: ["SGFGrove", SGF.VERSION]
+      }],
+      []
+    ]
+  );
+
+  t.equal( gameTree.getWidth(), 1 );
+  t.equal( gameTree.getHeight(), 1 );
+  t.equal( gameTree.toSGF(), gameTree.tree );
+  t.equal( gameTree.toJSON(), gameTree.tree );
 
   t.end();
 });

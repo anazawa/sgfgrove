@@ -27,138 +27,150 @@ test("SGFGrove.collection.gameTree: " +
 
   var data = [
     {
-      node     : { FF: 4, C: "root" },
-      parent   : null,
-      siblings : null,
-      children : [{ C: "a" }, { C: "f" }],
-      child    : { C: "a" },
-      depth    : 0,
-      index    : 0,
-      isRoot   : true,
-      isLeaf   : false
+      node       : { FF: 4, C: "root" },
+      parent     : null,
+      siblings   : null,
+      children   : [{ C: "a" }, { C: "f" }],
+      childCount : 2,
+      child      : { C: "a" },
+      depth      : 0,
+      index      : 0,
+      isRoot     : true,
+      isLeaf     : false
     },
     {
-      node     : { C: "a" },
-      parent   : { FF: 4, C: "root" },
-      siblings : [{ C: "a" }, { C: "f" }],
-      children : [{ C: "b" }],
-      child    : { C: "b" },
-      depth    : 1,
-      index    : 0,
-      isRoot   : false,
-      isLeaf   : false
+      node       : { C: "a" },
+      parent     : { FF: 4, C: "root" },
+      siblings   : [{ C: "a" }, { C: "f" }],
+      children   : [{ C: "b" }],
+      childCount : 1,
+      child      : { C: "b" },
+      depth      : 1,
+      index      : 0,
+      isRoot     : false,
+      isLeaf     : false
     },
     {
-      node     : { C: "b" },
-      parent   : { C: "a" },
-      siblings : [{ C: "b" }],
-      children : [{ C: "c" }, { C: "d" }],
-      child    : { C: "c" },
-      depth    : 2,
-      index    : 0,
-      isRoot   : false,
-      isLeaf   : false
+      node       : { C: "b" },
+      parent     : { C: "a" },
+      siblings   : [{ C: "b" }],
+      children   : [{ C: "c" }, { C: "d" }],
+      childCount : 2,
+      child      : { C: "c" },
+      depth      : 2,
+      index      : 0,
+      isRoot     : false,
+      isLeaf     : false
     },
     {
-      node     : { C: "c" },
-      parent   : { C: "b" },
-      siblings : [{ C: "c" }, { C: "d" }],
-      children : [],
-      child    : null,
-      depth    : 3,
-      index    : 0,
-      isRoot   : false,
-      isLeaf   : true
+      node       : { C: "c" },
+      parent     : { C: "b" },
+      siblings   : [{ C: "c" }, { C: "d" }],
+      children   : [],
+      childCount : 0,
+      child      : null,
+      depth      : 3,
+      index      : 0,
+      isRoot     : false,
+      isLeaf     : true
     },
     {
-      node     : { C: "d" },
-      parent   : { C: "b" },
-      siblings : [{ C: "c" }, { C: "d" }],
-      children : [{ C: "e" }],
-      child    : { C: "e" },
-      depth    : 3,
-      index    : 1,
-      isRoot   : false,
-      isLeaf   : false
+      node       : { C: "d" },
+      parent     : { C: "b" },
+      siblings   : [{ C: "c" }, { C: "d" }],
+      children   : [{ C: "e" }],
+      childCount : 1,
+      child      : { C: "e" },
+      depth      : 3,
+      index      : 1,
+      isRoot     : false,
+      isLeaf     : false
     },
     {
-      node     : { C: "e" },
-      parent   : { C: "d" },
-      siblings : [{ C: "e" }],
-      children : [],
-      child    : null,
-      depth    : 4,
-      index    : 1,
-      isRoot   : false,
-      isLeaf   : true
+      node       : { C: "e" },
+      parent     : { C: "d" },
+      siblings   : [{ C: "e" }],
+      children   : [],
+      childCount : 0,
+      child      : null,
+      depth      : 4,
+      index      : 1,
+      isRoot     : false,
+      isLeaf     : true
     },
     {
-      node     : { C: "f" },
-      parent   : { FF: 4, C: "root" },
-      siblings : [{ C: "a" }, { C: "f" }],
-      children : [{ C: "g" }, { C: "j" }],
-      child    : { C: "g" },
-      depth    : 1,
-      index    : 2,
-      isRoot   : false,
-      isLeaf   : false
+      node       : { C: "f" },
+      parent     : { FF: 4, C: "root" },
+      siblings   : [{ C: "a" }, { C: "f" }],
+      children   : [{ C: "g" }, { C: "j" }],
+      childCount : 2,
+      child      : { C: "g" },
+      depth      : 1,
+      index      : 2,
+      isRoot     : false,
+      isLeaf     : false
     },
     {
-      node     : { C: "g" },
-      parent   : { C: "f" },
-      siblings : [{ C: "g" }, { C: "j" }],
-      children : [{ C: "h" }],
-      child    : { C: "h" },
-      depth    : 2,
-      index    : 2,
-      isRoot   : false,
-      isLeaf   : false
+      node       : { C: "g" },
+      parent     : { C: "f" },
+      siblings   : [{ C: "g" }, { C: "j" }],
+      children   : [{ C: "h" }],
+      childCount : 1,
+      child      : { C: "h" },
+      depth      : 2,
+      index      : 2,
+      isRoot     : false,
+      isLeaf     : false
     },
     {
-      node     : { C: "h" },
-      parent   : { C: "g" },
-      siblings : [{ C: "h" }],
-      children : [{ C: "i" }],
-      child    : { C: "i" },
-      depth    : 3,
-      index    : 2,
-      isRoot   : false,
-      isLeaf   : false
+      node       : { C: "h" },
+      parent     : { C: "g" },
+      siblings   : [{ C: "h" }],
+      children   : [{ C: "i" }],
+      childCount : 1,
+      child      : { C: "i" },
+      depth      : 3,
+      index      : 2,
+      isRoot     : false,
+      isLeaf     : false
     },
     {
-      node     : { C: "i" },
-      parent   : { C: "h" },
-      siblings : [{ C: "i" }],
-      children : [],
-      child    : null,
-      depth    : 4,
-      index    : 2,
-      isRoot   : false,
-      isLeaf   : true
+      node       : { C: "i" },
+      parent     : { C: "h" },
+      siblings   : [{ C: "i" }],
+      children   : [],
+      childCount : 0,
+      child      : null,
+      depth      : 4,
+      index      : 2,
+      isRoot     : false,
+      isLeaf     : true
     },
     {
-      node     : { C: "j" },
-      parent   : { C: "f" },
-      children : [],
-      child    : null,
-      siblings : [{ C: "g" }, { C: "j" }],
-      depth    : 2,
-      index    : 3,
-      isRoot   : false,
-      isLeaf   : true
+      node       : { C: "j" },
+      parent     : { C: "f" },
+      children   : [],
+      childCount : 0,
+      child      : null,
+      siblings   : [{ C: "g" }, { C: "j" }],
+      depth      : 2,
+      index      : 3,
+      isRoot     : false,
+      isLeaf     : true
     }
   ];
 
   var testState = function (d, n) {
-    t.deepEqual( gameTree.getNode(),     d.node,     n+": #getNode"     );
-    t.deepEqual( gameTree.getParent(),   d.parent,   n+": #getParent"   );
-    t.deepEqual( gameTree.getSiblings(), d.siblings, n+": #getSiblings" );
-    t.deepEqual( gameTree.getChildren(), d.children, n+": #getChildren" );
-    t.deepEqual( gameTree.getChild(),    d.child,    n+": #getChild"    );
-        t.equal( gameTree.getDepth(),    d.depth,    n+": #getDepth"    );
-        t.equal( gameTree.getIndex(),    d.index,    n+": #getIndex"    );
-        t.equal( gameTree.isLeaf(),      d.isLeaf,   n+": #isLeaf"      );
-        t.equal( gameTree.isRoot(),      d.isRoot,   n+": #isRoot"      );
+    t.deepEqual( gameTree.getNode(),       d.node,       n+": #getNode"       );
+    t.deepEqual( gameTree.getParent(),     d.parent,     n+": #getParent"     );
+    t.deepEqual( gameTree.getSiblings(),   d.siblings,   n+": #getSiblings"   );
+    t.deepEqual( gameTree.getChildren(),   d.children,   n+": #getChildren"   );
+    t.deepEqual( gameTree.getChildCount(), d.childCount, n+": #getChildCount" );
+    t.deepEqual( gameTree.getChild(),      d.child,      n+": #getChild"      );
+        t.equal( gameTree.getDepth(),      d.depth,      n+": #getDepth"      );
+        t.equal( gameTree.getIndex(),      d.index,      n+": #getIndex"      );
+        t.equal( gameTree.isLeaf(),        d.isLeaf,     n+": #isLeaf"        );
+        t.equal( gameTree.isRoot(),        d.isRoot,     n+": #isRoot"        );
   };
 
   testState( data[0], "initial state" );

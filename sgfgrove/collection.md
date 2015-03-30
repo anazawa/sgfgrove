@@ -49,7 +49,7 @@ for ( var i = 0; i < collection.length; i++ ) {
 
 ### Constructor
 
-#### collection = SGFGrove.collection( sgfCollectionArray )
+#### collection = SGFGrove.collection( collectionArray )
 
 Creates a new `SGFGrove.collection` object that inherits all methods from
 `Array.prototype`. The collection array consists of
@@ -59,17 +59,17 @@ return a new collection array instead of a plain JavaScript array,
 and also `toString` method returns a SGF string instead of a comma-separated
 string.
 
-`sgfCollectionArray` denotes an array consisting of SGF game trees, where
+`collectionArray` denotes an array consisting of SGF game trees, where
 a SGF game tree can be either a plain game tree array or
-a `SGFGrove.collection.gameTree` object. The plain game tree array is coerced
-into a `SGFGrove.collection.gameTree` object implicitly.
+a `SGFGrove.collection.gameTree` object. The game tree array is coerced
+into a `gameTree` object implicitly.
 
-#### collection = SGFGrove.collection( sgfString[, reviver] )
+#### collection = SGFGrove.collection( text[, reviver] )
 
 A shortcut for:
 
 ```js
-SGFGrove.collection( SGFGrove.parse(sgfString[, reviver]) );
+SGFGrove.collection( SGFGrove.parse(text[, reviver]) );
 ```
 
 ### Attributes
@@ -78,25 +78,25 @@ None.
 
 ### Methods
 
-#### newCollection = collection.create( sgfString[, reviver] )
-#### newCollection = collection.create( sgfCollectionArray )
+#### newCollection = collection.create( text[, reviver] )
+#### newCollection = collection.create( collectionArray )
 
 Creates a new `SGFGrove.collection` object that inherits all methods from
 the invocant.
 
-#### gameTree = collection.createGameTree( sgfGameTreeArray )
+#### gameTree = collection.createGameTree( gameTreeArray )
 
 A factory method that creates a `SGFGrove.collection.gameTree` object.
 
-#### sgfCollectionArray = collection.parse( sgfString, reviver )
+#### sgfCollectionArray = collection.parse( text, reviver )
 
 A shortcut for:
 
 ```js
-SGFGrove.parse( sgfString, reviver );
+SGFGrove.parse( text, reviver );
 ```
 
-#### sgfString = collection.toString(replacer, space)
+#### text = collection.toString( replacer, space )
 
 A shortcut for:
 
@@ -110,7 +110,7 @@ Returns a deep copy of the invocant.
 
 # SGFGrove.collection.gameTree
 
-SGF game tree iterator/manipulator
+SGF game tree iterator/mutator
 
 ## Synopsis
 
@@ -118,15 +118,27 @@ SGF game tree iterator/manipulator
 
 ### Constructor
 
-#### gameTree = SGFGrove.collection.gameTree( sgfGameTreeArray )
+#### gameTree = SGFGrove.collection.gameTree( gameTreeArray )
 
 ### Attributes
 
-### Methods
+#### gameTreeArray = gameTree.tree
+
+### Basic Methods
 
 #### width = gameTree.getWidth()
 
 #### height = gameTree.getHeight()
+
+#### newGameTree = gameTree.clone()
+
+#### gameTreeArray = gameTree.toJSON()
+
+#### gameTreeArray = gameTree.toSGF()
+
+### Iterator Methods
+
+#### node = gameTree.getNode()
 
 #### node = gameTree.getParent()
 
@@ -138,33 +150,53 @@ SGF game tree iterator/manipulator
 
 #### bool = gameTree.isRoot()
 
+#### depth = gameTree.getDepth()
+
+#### index = gameTree.getIndex()
+
+#### self = gameTree.rewind()
+
 #### node = gameTree.next()
 
 #### bool = gameTree.hasNext()
 
 #### node = gameTree.peek()
 
-#### node = gameTree.getNode()
+#### node = gameTree.previous();
 
-#### gameTree.setNode( node )
+#### node = gameTree.hasPrevious();
 
-#### depth = gameTree.getDepth()
+#### node = gameTree.lookBack();
 
 #### node = gameTree.nextChild()
 
-#### index = gameTree.getIndex()
+#### node = gameTree.hasNextChild()
+
+#### node = gameTree.peekChild()
+
+#### node = gameTree.previousChild()
+
+#### node = gameTree.hasPreviousChild()
+
+#### node = gameTree.lookBackChild()
+
+### Mutator Methods
+
+#### gameTree.setNode( node )
 
 #### gameTree.insertChildAt( index | targetNode, node )
 
-#### gameTree.insertChild( node  )
+#### gameTree.insertChild( node )
 
-#### removedGameTree = gameTree.removeChildAt( index|targetNode )
+#### gameTree.appendChild( node )
+
+#### removedGameTree = gameTree.removeChildAt( index | targetNode )
 
 #### removedGameTree = gameTree.removeChild()
 
 #### removedGameTree = gameTree.replaceChildAt( index | targetNode, node )
 
-#### removedGameTree = gameTree.replaceChild( node  )
+#### removedGameTree = gameTree.replaceChild( node )
 
 ## Author
 

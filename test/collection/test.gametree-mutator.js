@@ -146,3 +146,84 @@ test("SGFGrove.collection.gameTree: #removeChildAt", function (t) {
   t.end();
 });
 
+test("SGFGrove.collection.gameTree: #appendChild", function (t) {
+  var col1 = SGF.collection("(;FF[4])");
+      col1[0].appendChild({ C: "a" });
+
+  t.equal( ""+col1, "(;FF[4];C[a])" );
+
+  var col2 = SGF.collection("(;FF[4];C[a])");
+      col2[0].appendChild({ C: "b" });
+
+  t.equal( ""+col2, "(;FF[4](;C[a])(;C[b]))" );
+
+  var col3 = SGF.collection("(;FF[4](;C[a])(;C[b]))");
+      col3[0].appendChild({ C: "c" });
+
+  t.equal( ""+col3, "(;FF[4](;C[a])(;C[b])(;C[c]))" );
+
+  t.end();
+});
+
+test("SGFGrove.collection.gameTree: #insertChild", function (t) {
+  var col1 = SGF.collection("(;FF[4])");
+      col1[0].insertChild({ C: "a" });
+
+  t.equal( ""+col1, "(;FF[4];C[a])" );
+
+  var col2 = SGF.collection("(;FF[4](;C[a])(;C[b])(;C[c]))");
+
+  col2[0].nextChild();
+  col2[0].nextChild();
+  t.deepEqual( col2[0].getChild(), { C: "b" } );
+
+  col2[0].insertChild({ C: "d" });
+  t.equal( ""+col2, "(;FF[4](;C[a])(;C[d])(;C[b])(;C[c]))" );
+
+  t.end();
+});
+
+test("SGFGrove.collection.gameTree: #removeChild", function (t) {
+  var col1 = SGF.collection("(;FF[4])");
+
+  t.throws(
+    function () {
+      col1.removeChild();
+    },
+    Error
+  );
+
+  var col2 = SGF.collection("(;FF[4](;C[a])(;C[b])(;C[c]))");
+
+  col2[0].nextChild();
+  col2[0].nextChild();
+  t.deepEqual( col2[0].getChild(), { C: "b" } );
+
+  var ret2 = col2[0].removeChild();
+
+  t.equal( ""+col2, "(;FF[4](;C[a])(;C[c]))" );
+  t.deepEqual( ret2.tree, [[{ C: "b" }], []] );
+
+  t.end();
+});
+
+test("SGFGrove.collection.gameTree: #replaceChildAt", function (t) {
+  var col1 = SGF.collection("(;FF[4];C[a])");
+  var ret1 = col1[0].replaceChildAt(0, { C: "b" });
+
+  t.equal( ""+col1, "(;FF[4];C[b])" );
+  t.deepEqual( ret1.tree, [[{ C: "a" }], []] );
+
+  t.end();
+});
+
+test("SGFGrove.collection.gameTree: #replaceChild", function (t) {
+  var col1 = SGF.collection("(;FF[4];C[a])");
+  var ret1 = col1[0].replaceChild({ C: "b" });
+
+  t.equal( ""+col1, "(;FF[4];C[b])" );
+  t.deepEqual( ret1.tree, [[{ C: "a" }], []] );
+
+  t.end();
+});
+
