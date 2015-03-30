@@ -1,7 +1,7 @@
 var test = require("tape");
-var SGF = require("../sgfgrove.js");
+var SGF = require("../../sgfgrove.js");
 
-require("../sgfgrove/collection.js");
+require("../../sgfgrove/collection.js");
 
 var sgfArray = [[
   [{ FF: 4, C: 'root' }],

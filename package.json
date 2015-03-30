@@ -1,7 +1,7 @@
 {
   "name": "sgfgrove",
   "author": "anazawa <anazawa@cpan.org>",
-  "description": "Type-aware SGF parser/stringifier that supports only FF[4]",
+  "description": "Type-aware SGF parser/composer intended for the browser",
   "version": "0.0.1",
   "homepage": "https://github.com/anazawa/sgfgrove",
   "repository": {
@@ -14,10 +14,23 @@
     "tape": "^3.0.3"
   },
   "scripts": {
-    "test": "tape test/test.*.js"
+    "test": "tape test/test.*.js test/*/test.*.js"
   },
   "license": "MIT",
   "engines": {
     "node": "*"
+  },
+  "testling": {
+    "files": ["test/test.*.js", "test/*/test.*.js"],
+    "browsers": [
+      "iexplore/9.0..latest",
+      "chrome/18.0..latest",
+      "firefox/15.0..latest",
+      "opera/11.0..latest",
+      "safari/5.0.5..latest",
+      "iphone/6.0..latest",
+      "ipad/6.0..latest",
+      "android-browser/4.2..latest"
+    ]
   }
 }

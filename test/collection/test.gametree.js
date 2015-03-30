@@ -1,7 +1,7 @@
 var test = require("tape");
-var SGF = require("../sgfgrove.js");
+var SGF = require("../../sgfgrove.js");
 
-require("../sgfgrove/collection.js");
+require("../../sgfgrove/collection.js");
 
 test("SGFGrove.collection.gameTree: #clone", function (t) {
   var gameTree = SGF.collection.gameTree();

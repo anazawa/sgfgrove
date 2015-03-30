@@ -88,12 +88,16 @@
   }());
 
   SGFGrove.collection.gameTree = (function () {
+    var gameTree = {};
+
     var isArray = SGFGrove.Util.isArray;
     var splice  = Array.prototype.splice;
     var push    = Array.prototype.push;
     var unshift = Array.prototype.unshift;
 
-    var gameTree = {};
+    var isInteger = function (value) {
+      return SGFGrove.Util.isNumber(value) && Math.floor(value) === value;
+    };
 
     gameTree.create = function () {
       var that = SGFGrove.Util.create( this );
@@ -481,8 +485,9 @@
       var current = this.current;
       var sequence = current.sequence;
       var children = current.children;
+      var depth = this.getRelativeDepth() + 1; 
 
-      if ( !isInteger ) {
+      if ( !isInteger(index) ) {
         index = this.getRelativeIndexOf(index);
       }
 
@@ -497,17 +502,16 @@
         tree = [[tree], []];
       }
 
-      if ( current.depth >= sequence.length && !children.length ) {
+      if ( depth < sequence.length ) {
+        children.push([
+          sequence.splice(depth),
+          children.splice(0)
+        ]);
+      }
+      else if ( !children.length ) {
         push.apply( sequence, tree[0] );
         push.apply( children, tree[1] );
         return;
-      }
-
-      if ( current.depth > 1 && current.depth < sequence.length ) {
-        children.push([
-          sequence.splice(current.depth),
-          children.splice(0)
-        ]);
       }
 
       children.splice( index, 0, tree );
