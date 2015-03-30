@@ -19,18 +19,5 @@
   "license": "MIT",
   "engines": {
     "node": "*"
-  },
-  "testling": {
-    "files": ["test/test.*.js", "test/*/test.*.js"],
-    "browsers": [
-      "iexplore/9.0..latest",
-      "chrome/18.0..latest",
-      "firefox/15.0..latest",
-      "opera/11.0..latest",
-      "safari/5.0.5..latest",
-      "iphone/6.0..latest",
-      "ipad/6.0..latest",
-      "android-browser/4.2..latest"
-    ]
   }
 }
