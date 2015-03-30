@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/anazawa/sgfgrove.svg)](https://travis-ci.org/anazawa/sgfgrove)
-
 # SGFGrove.js
 
 Type-aware SGF parser/composer intended for the browser
+
+[![Build Status](https://travis-ci.org/anazawa/sgfgrove.svg)](https://travis-ci.org/anazawa/sgfgrove)
 
 ## Synopsis
 

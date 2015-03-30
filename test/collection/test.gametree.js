@@ -3,6 +3,56 @@ var SGF = require("../../sgfgrove.js");
 
 require("../../sgfgrove/collection.js");
 
+test("SGFGrove.collection.gameTree", function (t) {
+  var gameTree = SGF.collection.gameTree();
+
+  var methods = [
+    "create",
+    "toSGF",
+    "toJSON",
+    "getHeight",
+    "getWidth",
+    "getDepth",
+    "getIndex",
+    "getNode",
+    "setNode",
+    "getParent",
+    "getSiblings",
+    "getChildren",
+    "getChild",
+    "isRoot",
+    "isLeaf",
+    // iterator methods
+    "rewind",
+    "next",
+    "hasNext",
+    "peek",
+    "previous",
+    "hasPrevious",
+    "lookBack",
+    "nextChild",
+    "hasNextChild",
+    "peekChild",
+    "previousChild",
+    "hasPreviousChild",
+    "lookBackChild",
+    // mutator methods
+    "insertChild",
+    "insertChildAt",
+    "appendChild",
+    "removeChild",
+    "removeChildAt",
+    "replaceChild",
+    "replaceChildAt"
+  ];
+
+  for ( var i = 0; i < methods.length; i++ ) {
+    t.ok( typeof gameTree[methods[i]] === "function" );
+  }
+
+  t.end();
+});
+
 test("SGFGrove.collection.gameTree: #clone", function (t) {
   var gameTree = SGF.collection.gameTree();
   var clone = gameTree.clone();

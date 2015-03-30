@@ -527,9 +527,10 @@
       var current = this.current;
       var sequence = current.sequence;
       var children = current.children;
-      var tree;
+      var depth = this.getRelativeDepth() + 1;
+      var tree, child;
 
-      if ( !isNumber(index) || Math.floor(index) !== index ) {
+      if ( !isInteger(index) ) {
         index = this.getRelativeIndexOf(index);
       }
 
@@ -537,19 +538,22 @@
         throw new Error("Index out of bounds: "+index);
       }
 
-      if ( current.depth < sequence.length ) {
-        tree = [
-          sequence.splice( this.getRelativeDepth()+1 ),
-          children.splice(0)
-        ];
+      if ( depth < sequence.length ) {
+        tree = [ sequence.splice(depth), children.splice(0) ];
         current.depth = Math.min( current.depth, sequence.length );
         current.index = 0;
       }
       else {
-        tree = children.splice( index, 1 );
+        tree = children.splice(index, 1)[0];
         current.index = Math.min( current.index, children.length );
       }
  
+      if ( children.length === 1 ) {
+        child = children.shift();
+        push.apply( sequence, child[0] );
+        push.apply( children, child[1] );
+      }
+
       return this.create(tree);
     };
 

@@ -90,15 +90,58 @@ test("SGFGrove.collection.gameTree: #insertChildAt", function (t) {
     Error
   );
 
-  var c3_1 = SGF.collection("(;FF[4];C[a])");
-      c3_1[0].insertChildAt( 0, { C: "b" } );
+  var c3 = SGF.collection("(;FF[4];C[a])");
+      c3[0].insertChildAt( 0, { C: "b" } );
 
-  t.equal( ""+c3_1, "(;FF[4](;C[b])(;C[a]))" );
+  t.equal( ""+c3, "(;FF[4](;C[b])(;C[a]))" );
 
-  var c4_1 = SGF.collection("(;FF[4];C[a](;C[b])(;C[c]))");
-      c4_1[0].insertChildAt( 0, { C: "d" } );
+  var c4 = SGF.collection("(;FF[4];C[a](;C[b])(;C[c]))");
+      c4[0].insertChildAt( 0, { C: "d" } );
 
-  t.equal( ""+c4_1, "(;FF[4](;C[d])(;C[a](;C[b])(;C[c])))" );
+  t.equal( ""+c4, "(;FF[4](;C[d])(;C[a](;C[b])(;C[c])))" );
+
+  t.end();
+});
+
+test("SGFGrove.collection.gameTree: #removeChildAt", function (t) {
+  var col1 = SGF.collection("(;FF[4];C[a])");
+  var ret1 = col1[0].removeChildAt(0);
+
+  t.equal( ""+col1, "(;FF[4])" );
+  t.deepEqual( ret1.tree, [[{ C: "a" }], []] );
+
+  var col2_1 = SGF.collection("(;FF[4](;C[a])(;C[b])(;C[c]))");
+  var ret2_1 = col2_1[0].removeChildAt(0);
+
+  t.equal( ""+col2_1, "(;FF[4](;C[b])(;C[c]))" );
+  t.deepEqual( ret2_1.tree, [[{ C: "a" }], []] );
+
+  var col2_2 = SGF.collection("(;FF[4](;C[a])(;C[b])(;C[c]))");
+  var ret2_2 = col2_2[0].removeChildAt(1);
+
+  t.equal( ""+col2_2, "(;FF[4](;C[a])(;C[c]))" );
+  t.deepEqual( ret2_2.tree, [[{ C: "b" }], []] );
+
+  var col2_3 = SGF.collection("(;FF[4](;C[a])(;C[b])(;C[c]))");
+  var ret2_3 = col2_3[0].removeChildAt(2);
+
+  t.equal( ""+col2_3, "(;FF[4](;C[a])(;C[b]))" );
+  t.deepEqual( ret2_3.tree, [[{ C: "c" }], []] );
+
+  var col2_4 = SGF.collection("(;FF[4](;C[a])(;C[b])(;C[c]))");
+
+  t.throws(
+    function () {
+      col2_4.removeChildAt(3);
+    },
+    Error
+  );
+
+  var col3 = SGF.collection("(;FF[4](;C[a])(;C[b](;C[c])(;C[d])))");
+  var ret3 = col3[0].removeChildAt(0);
+
+  t.equal( ""+col3, "(;FF[4];C[b](;C[c])(;C[d]))" );
+  t.deepEqual( ret3.tree, [[{ C: "a" }], []] );
 
   t.end();
 });
