@@ -11,17 +11,17 @@ test("SGFGrove.collection.gameTree: default", function (t) {
     "toSGF",
     "toJSON",
     "getHeight",
-    "getWidth",
+    "getLeafCount",
     "clone",
     // iterator methods
     "getDepth",
-    "getIndex",
+    //"getIndex",
     "getNode",
     "getParent",
     "getSiblings",
     "getChildren",
     "getChildCount",
-    "getChild",
+    //"getChild",
     "isRoot",
     "isLeaf",
     "rewind",
@@ -31,20 +31,11 @@ test("SGFGrove.collection.gameTree: default", function (t) {
     "previous",
     "hasPrevious",
     "lookBack",
-    "nextChild",
-    "hasNextChild",
-    "peekChild",
-    "previousChild",
-    "hasPreviousChild",
-    "lookBackChild",
     // mutator methods
     "setNode",
-    "insertChild",
     "insertChildAt",
     "appendChild",
-    "removeChild",
     "removeChildAt",
-    "replaceChild",
     "replaceChildAt"
   ];
 
@@ -65,8 +56,8 @@ test("SGFGrove.collection.gameTree: default", function (t) {
     ]
   );
 
-  t.equal( gameTree.getWidth(), 1 );
-  t.equal( gameTree.getHeight(), 1 );
+  t.equal( gameTree.getLeafCount(), 1 );
+  t.equal( gameTree.getHeight(), 0 );
   t.equal( gameTree.toSGF(), gameTree.tree );
   t.equal( gameTree.toJSON(), gameTree.tree );
 
@@ -114,6 +105,7 @@ test("SGFGrove.collection.gameTree: "+
   t.end();
 });
 
+/*
 test("SGFGrove.collection.gameTree: "+
      "#clone rejects duplicate references", function (t) {
   var duplicate = ["aa", "bb"];
@@ -164,6 +156,7 @@ test("SGFGrove.collection.gameTree: " +
 
   t.end();
 });
+*/
 
 test("SGFGrove.collection.gameTree: "+
      "#clone does not copy the iterator state", function (t) {

@@ -126,10 +126,6 @@ SGF game tree iterator/mutator
 
 ### Basic Methods
 
-#### width = gameTree.getWidth()
-
-#### height = gameTree.getHeight()
-
 #### newGameTree = gameTree.clone()
 
 #### gameTreeArray = gameTree.toJSON()
@@ -140,19 +136,63 @@ SGF game tree iterator/mutator
 
 #### node = gameTree.getNode()
 
+Returns the current node.
+
+#### node = gameTree.getRoot()
+
+Returns the root of `gameTree`.
+
+#### leafCount = gameTree.getLeafCount()
+
+Returns the total number of leaves that are descendants of the current node.
+If the node is a leaf, returns `1`.
+
+#### height = gameTree.getHeight()
+
+Returns the longest distance from the current node to a leaf.
+If the node has no children, returns `0`.
+
+```js
+if ( gameTree.isRoot() ) {
+  gameTree.getHeight(); // => the height of gameTree
+}
+```
+
 #### node = gameTree.getParent()
+
+Returns the current node's parent or `null` if the node has no parent.
 
 #### nodes = gameTree.getChildren()
 
+Returns an array of children of the current node.
+If the node has no children, returns an empty array.
+
+#### nodes = gameTree.getChildCount()
+
+Returns the number of children of the current node.
+
 #### nodes = gameTree.getSiblings()
+
+Returns an array of siblings of the current node.
+A node is its own sibling. If it has no parent, returns `null`.
 
 #### bool = gameTree.isLeaf()
 
+Returns a Boolean value telling whether the current node has no children or not.
+
 #### bool = gameTree.isRoot()
+
+Returns a Boolean value telling whether the current node is the root of
+`gameTree` or not.
 
 #### depth = gameTree.getDepth()
 
+Returns the distance from the root to the current node.
+If the node is the root, returns `0`.
+
 #### index = gameTree.getIndex()
+
+#### index = gameTree.getChildIndexOf()
 
 #### self = gameTree.rewind()
 
@@ -164,39 +204,26 @@ SGF game tree iterator/mutator
 
 #### node = gameTree.previous();
 
-#### node = gameTree.hasPrevious();
+#### bool = gameTree.hasPrevious();
 
 #### node = gameTree.lookBack();
 
-#### node = gameTree.nextChild()
-
-#### node = gameTree.hasNextChild()
-
-#### node = gameTree.peekChild()
-
-#### node = gameTree.previousChild()
-
-#### node = gameTree.hasPreviousChild()
-
-#### node = gameTree.lookBackChild()
-
 ### Mutator Methods
+
+`target` can be the index of children of the current node or a target node
+that will be compared to the children using the `===` operator.
+
+`child` can be a node, `gameTreeArray` or `gameTree` object.
 
 #### gameTree.setNode( node )
 
-#### gameTree.insertChildAt( index | targetNode, node )
+#### gameTree.insertChildAt( target, child )
 
-#### gameTree.insertChild( node )
+#### gameTree.appendChild( child )
 
-#### gameTree.appendChild( node )
+#### removedGameTree = gameTree.removeChildAt( target )
 
-#### removedGameTree = gameTree.removeChildAt( index | targetNode )
-
-#### removedGameTree = gameTree.removeChild()
-
-#### removedGameTree = gameTree.replaceChildAt( index | targetNode, node )
-
-#### removedGameTree = gameTree.replaceChild( node )
+#### removedGameTree = gameTree.replaceChildAt( target, child )
 
 ## Author
 

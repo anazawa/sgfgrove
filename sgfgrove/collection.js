@@ -91,9 +91,8 @@
     var gameTree = {};
 
     var isArray = SGFGrove.Util.isArray;
-    var splice  = Array.prototype.splice;
     var push    = Array.prototype.push;
-    var unshift = Array.prototype.unshift;
+    var concat  = Array.prototype.concat;
 
     var isInteger = function (value) {
       return SGFGrove.Util.isNumber(value) && Math.floor(value) === value;
@@ -101,30 +100,13 @@
 
     gameTree.create = function () {
       var that = SGFGrove.Util.create( this );
-      that.init( that.initArgs.apply(that, arguments) );
+      that.init.apply( that, arguments );
       return that;
     };
 
-    gameTree.initArgs = function (tree, parent, rest) {
-      var args = {
-        tree: tree,
-        parent: parent
-      };
-
-      if ( rest && typeof rest === "object" ) {
-        for ( var key in rest ) {
-          if ( rest.hasOwnProperty(key) ) {
-            args[key] = rest[key];
-          }
-        }
-      }
-
-      return args;
-    };
-
-    gameTree.init = function (args) {
-      var tree = args.tree || this.createTree();
-      var parent = args.parent || null;
+    gameTree.init = function (tree, parent) {
+      tree = tree || this.createTree();
+      parent = parent || null;
 
       this.tree = tree;
 
@@ -133,11 +115,10 @@
       this.history = [];
 
       this.sequence = tree[0];
-      this.baseDepth = parent ? parent.baseDepth+parent.sequence.length : 0;
+      this.baseDepth = parent ? parent.baseDepth+parent.depth : 0;
       this.depth = 0;
 
       this.children = tree[1];
-      this.baseIndex = args.baseIndex || 0;
       this.index = 0;
 
       return;
@@ -164,27 +145,16 @@
     };
 
     gameTree.clone = function () {
-      var seen = [];
-
       var tree = (function clone (value) {
         var i, key, val;
 
         if ( !value || typeof value !== "object" ) {
-          return value;
+          val = value;
         }
         else if ( typeof value.clone === "function" ) {
-          return value.clone();
+          val = value.clone();
         }
-
-        for ( i = 0; i < seen.length; i++ ) {
-          if ( seen[i] === value ) {
-            throw new Error("Found duplicate references");
-          }
-        }
-
-        seen.push( value );
-
-        if ( isArray(value) ) {
+        else if ( isArray(value) ) {
           val = [];
           for ( i = 0; i < value.length; i++ ) {
             val[i] = clone(value[i]);
@@ -193,7 +163,9 @@
         else {
           val = {};
           for ( key in value ) {
-            val[key] = clone(value[key]);
+            if ( value.hasOwnProperty(key) ) {
+              val[key] = clone(value[key]);
+            }
           }
         }
 
@@ -204,7 +176,8 @@
     };
 
     gameTree.getHeight = function () {
-      var max = this.sequence.length;
+      var current = this.current;
+      var max = current.sequence.length - this.getRelativeDepth() - 1;
 
       (function findLeaf (children, height) {
         for ( var i = 0; i < children.length; i++ ) {
@@ -216,12 +189,12 @@
             findLeaf( children[i][1], h );
           }
         }
-      }(this.children, max));
+      }(current.children, max));
 
       return max;
     };
 
-    gameTree.getWidth = function () {
+    gameTree.getLeafCount = function () {
       var found = 0;
 
       (function findLeaf (children) {
@@ -233,9 +206,13 @@
             findLeaf( children[i][1] );
           }
         }
-      }([this.tree]));
+      }([this.current.tree]));
 
       return found;
+    };
+
+    gameTree.getRoot = function () {
+      return this.sequence[0];
     };
 
     gameTree.getRelativeDepth = function () {
@@ -243,7 +220,7 @@
     };
 
     gameTree.getDepth = function () {
-      return this.current.baseDepth+this.getRelativeDepth();
+      return this.current.baseDepth + this.getRelativeDepth();
     };
 
     gameTree.getNode = function () {
@@ -252,6 +229,7 @@
 
     gameTree.setNode = function (node) {
       this.current.sequence[this.getRelativeDepth()] = node;
+      return;
     };
 
     gameTree.rewind = function () {
@@ -268,30 +246,16 @@
       if ( current.depth >= current.sequence.length ) {
         while ( current ) {
           if ( current.index < current.children.length ) {
-            current = this.create(
-              current.children[current.index++], current,
-              { baseIndex: this.current.baseIndex }
-            );
-
-            if ( current.parent !== this.current ) {
-              current.baseIndex += 1;
-            }
-
+            current = this.create( current.children[current.index++], current );
             this.history.push( this.current );
             this.current = current;
-
             break;
           }
           current = current.parent;
         }
-        if ( !current ) {
-          return null;
-        }
       }
 
-      current.index = 0;
-
-      return current.sequence[current.depth++];
+      return current && current.sequence[current.depth++];
     };
 
     gameTree.hasNext = function () {
@@ -332,7 +296,6 @@
       var current = this.current;
 
       if ( current.depth > 1 ) {
-        current.index = 0;
         current.depth -= 1;
       }
       else if ( this.history.length ) {
@@ -366,11 +329,20 @@
       return null;
     };
 
-    gameTree.getRelativeIndex = function () {
-      return this.current.index !== 0 ? this.current.index-1 : 0;
+    gameTree.getIndex = function () {
+      var current = this.current;
+
+      if ( current.depth > 1 ) {
+        return 0;
+      }
+      else if ( current.parent ) {
+        return current.parent.index - 1;
+      }
+
+      return null;
     };
 
-    gameTree.getRelativeIndexOf = function (node) {
+    gameTree.getChildIndexOf = function (node) {
       var children = this.getChildren();
 
       for ( var i = 0; i < children.length; i++ ) {
@@ -380,109 +352,6 @@
       }
 
       return -1;
-    };
-
-    gameTree.getIndex = function () {
-      return this.current.baseIndex + this.getRelativeIndex();
-    };
-
-    gameTree.getIndexOf = function (node) {
-      var index = this.getRelativeIndexOf( node );
-      return index >= 0 ? this.current.baseIndex+index : index;
-    };
-
-    gameTree.getChild = function () {
-      var current = this.current;
-      var depth = this.getRelativeDepth() + 1;
-
-      if ( depth < current.sequence.length ) {
-        return current.sequence[depth];
-      }
-
-      if ( current.children.length ) {
-        return current.children[this.getRelativeIndex()][0][0];
-      }
-
-      return null;
-    };
-
-    gameTree.nextChild = function () {
-      var current = this.current;
-      var depth = this.getRelativeDepth() + 1;
-
-      if ( depth < current.sequence.length ) {
-        if ( current.index < 1 ) {
-          current.index += 1;
-          return current.sequence[depth];
-        }
-        return null;
-      }
-
-      if ( current.index < current.children.length ) {
-        return current.children[current.index++][0][0];
-      }
-
-      return null;
-    };
-
-    gameTree.hasNextChild = function () {
-      var current = this.current;
-      var depth = this.getRelativeDepth() + 1;
-
-      if ( depth < current.sequence.length ) {
-        return current.index < 1;
-      }
-
-      return current.index < current.children.length;
-    };
-
-    gameTree.peekChild = function () {
-      var current = this.current;
-      var depth = this.getRelativeDepth() + 1;
-
-      if ( depth < current.sequence.length ) {
-        if ( current.index < 1 ) {
-          return current.sequence[depth];
-        }
-        return null;
-      }
-
-      if ( current.index < current.children.length ) {
-        return current.children[current.index][0][0];
-      }
-
-      return null;
-    };
-
-    gameTree.previousChild = function () {
-      var current = this.current;
-      var depth = this.getRelativeDepth() + 1;
-
-      if ( depth >= current.sequence.length && current.index > 1 ) {
-        current.index -= 1;
-        return current.children[current.index-1][0][0];
-      }
-
-      return null;
-    };
-
-    gameTree.hasPreviousChild = function () {
-      return this.getRelativeDepth()+1 >= this.current.sequence.length &&
-             this.current.index > 1;
-    };
-
-    gameTree.lookBackChild = function () {
-      var current = this.current;
-
-      if ( current.index > 1 ) {
-        return current.children[current.index-2][0][0];
-      }
-
-      return null;
-    };
-
-    gameTree.insertChild = function (tree) {
-      return this.insertChildAt( this.getRelativeIndex(), tree );
     };
 
     gameTree.appendChild = function (tree) {
@@ -496,7 +365,7 @@
       var depth = this.getRelativeDepth() + 1; 
 
       if ( !isInteger(index) ) {
-        index = this.getRelativeIndexOf(index);
+        index = this.getChildIndexOf(index);
       }
 
       if ( index < 0 || index > this.getChildCount() ) {
@@ -527,19 +396,15 @@
       return;
     };
 
-    gameTree.removeChild = function () {
-      return this.removeChildAt( this.getRelativeIndex() );
-    };
-
     gameTree.removeChildAt = function (index) {
       var current = this.current;
       var sequence = current.sequence;
       var children = current.children;
       var depth = this.getRelativeDepth() + 1;
-      var gameTree, child;
+      var tree, child;
 
       if ( !isInteger(index) ) {
-        index = this.getRelativeIndexOf(index);
+        index = this.getChildIndexOf(index);
       }
 
       if ( index < 0 || index >= this.getChildCount() ) {
@@ -547,31 +412,23 @@
       }
 
       if ( depth < sequence.length ) {
-        gameTree = this.create([ sequence.splice(depth), children.splice(0) ]);
-        current.depth = Math.min( current.depth, sequence.length );
-        current.index = 0;
-        return gameTree;
+        tree = [ sequence.splice(depth), children.splice(0) ];
       }
-
-      gameTree = this.create( children.splice(index, 1)[0] );
+      else {
+        tree = children.splice(index, 1)[0];
+      }
 
       if ( children.length === 1 ) {
         child = children.shift();
         push.apply( sequence, child[0] );
         push.apply( children, child[1] );
       }
-
-      current.index = Math.min( current.index, children.length );
  
-      return gameTree;
-    };
-
-    gameTree.replaceChild = function (tree) {
-      return this.replaceChildAt( this.getRelativeIndex(), tree );
+      return this.create(tree);
     };
 
     gameTree.replaceChildAt = function (index, tree) {
-      index = isInteger(index) ? index : this.getRelativeIndexOf(index);
+      index = isInteger(index) ? index : this.getChildIndexOf(index);
       var gameTree = this.removeChildAt( index );
       this.insertChildAt( index, tree );
       return gameTree;
@@ -579,7 +436,7 @@
 
     gameTree.isLeaf = function () {
       return this.current.children.length === 0 &&
-             this.current.depth >= this.current.sequence.length;
+             this.getRelativeDepth()+1 >= this.current.sequence.length;
     };
 
     gameTree.isRoot = function () {
@@ -589,7 +446,7 @@
     gameTree.getChildren = function () {
       var current = this.current;
       var children = current.children;
-      var depth = current.depth !== 0 ? current.depth : 1;
+      var depth = this.getRelativeDepth() + 1;
       var nodes = [];
 
       if ( depth < current.sequence.length ) {
@@ -647,6 +504,17 @@
       }
 
       return null;
+    };
+
+    gameTree.getAncestors = function () {
+      var current = this.current;
+      var ancestors = [ current.sequence.slice(0, this.getRelativeDepth()+1) ];
+
+      while ( current = current.parent ) {
+        ancestors.unshift( current.sequence );
+      }
+
+      return concat.apply( [], ancestors );
     };
 
     return function (tree) {
