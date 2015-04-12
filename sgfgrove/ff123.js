@@ -254,7 +254,7 @@
     this.Types = Types;
     this.Properties = Props;
 
-    return
+    return;
   });
 
 }());

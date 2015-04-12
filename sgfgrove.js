@@ -186,6 +186,7 @@
       return array;
     };
 
+    /* jshint boss:true */
     var gameTree = function () {
       var sequence = [];
       var subtrees = [], subtree;
@@ -234,6 +235,7 @@
 
       return [ sequence, subtrees ];
     };
+    /* jshint boss:false */
 
     // Copied and rearranged from json2.js so that we can pass the same
     // callback to both of SGF.parse and JSON.parse
@@ -263,7 +265,7 @@
       lastIndex = 0;
       reviver = typeof rev === 'function' && rev;
 
-      while ( tree = gameTree() ) {
+      while ( tree = gameTree() ) { // jshint ignore:line
         trees.push( tree );
       }
 
@@ -320,6 +322,42 @@
   SGFGrove.stringify = (function () {
     var Num = FF.Types.Number;
     var replacer, select;
+
+    /*
+    var finalize = function (key, holder) {
+      var value = holder[key];
+      var val;
+
+      if ( value && typeof value === 'object' &&
+           typeof value.toSGF === 'function' ) {
+        value = value.toSGF();
+      }
+
+      if ( replacer ) {
+        value = replacer.call( holder, key, value );
+      }
+
+      if ( !value || typeof value !== 'object' ) {
+        val = value;
+      }
+      else if ( isArray(value) ) {
+        val = [];
+        for ( var i = 0; i < value.length; i++ ) {
+          val[i] = finalize( i, value );
+        }
+      }
+      else {
+        val = {};
+        for ( var k in value ) {
+          if ( !value.hasOwnProperty(k) ) { continue; }
+          if ( select && !select.hasOwnProperty(k) ) { continue; }
+          val[k] = finalize( k, value );
+        }
+      }
+
+      return val;
+    };
+    */
 
     var replace = function (key, holder) {
       var value = holder[key];

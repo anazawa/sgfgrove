@@ -510,7 +510,7 @@
       var current = this.current;
       var ancestors = [ current.sequence.slice(0, this.getRelativeDepth()+1) ];
 
-      while ( current = current.parent ) {
+      while ( current = current.parent ) { // jshint ignore:line
         ancestors.unshift( current.sequence );
       }
 

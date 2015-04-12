@@ -16,7 +16,7 @@ test("SGFGrove.collection: default", function (t) {
 
 test("SGFGrove.collection: #create", function (t) {
   var collection = SGF.collection();
-      collection.foo = function () { return "bar"; }
+      collection.foo = function () { return "bar"; };
 
   var newCollection = collection.create();
 
