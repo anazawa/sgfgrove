@@ -1,3 +1,7 @@
+/* global require */
+(function () {
+"use strict";
+
 var test = require('tape');
 var SGF = require('../sgfgrove.js');
 
@@ -72,3 +76,4 @@ test('basic', function (t) {
   t.end();
 });
 
+}());

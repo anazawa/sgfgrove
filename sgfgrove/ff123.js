@@ -4,7 +4,7 @@
   var SGFGrove;
 
   if ( typeof exports !== "undefined" ) {
-    SGFGrove = require("../sgfgrove.js");
+    SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
   }
   else {
     SGFGrove = window.SGFGrove;

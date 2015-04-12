@@ -1,3 +1,7 @@
+/* global require */
+(function () {
+"use strict";
+
 var test = require('tape');
 var SGFGrove = require('../sgfgrove.js');
 
@@ -266,3 +270,5 @@ test('FF[4]GM[1] list of Point', function (t) {
 
 return FF;
 });
+
+}());

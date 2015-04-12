@@ -1,3 +1,7 @@
+/* global require */
+(function () {
+"use strict";
+
 var test = require("tape");
 var SGF = require("../../sgfgrove.js");
 
@@ -174,3 +178,4 @@ test("SGFGrove.collection.gameTree: "+
   t.end();
 });
 
+}());

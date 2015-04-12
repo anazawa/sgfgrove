@@ -105,7 +105,7 @@
 
         for ( var i = 0; i < values.length; i++ ) {
           if ( !isString(values[i]) ) {
-            throw new TypeError( 'string expected, got '+dump(value) );
+            throw new TypeError( 'string expected, got '+dump(values[i]) );
           }
           vals.push( values[i].replace(/\]/g, '\\]') );
         }
@@ -297,7 +297,7 @@
           for ( j = 0; j < sequence.length; j++ ) {
             node = sequence[j];
 
-            for ( id in node ) {
+            for ( id in node ) { // jshint ignore:line
               try {
                 if ( !node.hasOwnProperty(id) ) { continue; }
                 node[id] = props.find(id).parse(node[id]);
@@ -464,7 +464,7 @@
       return (function stringify (subtrees) {
         var text = '', mind, partial, prefix;
         var i, subtree, sequence, root, ff, gm;
-        var j, node, id, values, Prop;
+        var j, node, id, values;
 
         for ( i = 0; i < subtrees.length; i++ ) {
           subtree = subtrees[i];
@@ -499,7 +499,7 @@
             text += indent ? '' : ';'; // Open Node
             prefix = ';';
 
-            for ( id in node ) {
+            for ( id in node ) { // jshint ignore:line
               try {
                 if ( !node.hasOwnProperty(id) ) { continue; }
                 if ( ff !== 4 && !/^[A-Z][A-Z0-9]?$/.test(id) ) { continue; }
@@ -546,8 +546,8 @@
       name: 'None',
       like: /^$/,
       isa: function (v) { return v === null; },
-      parse: function (v) { return null; },
-      stringify: function (v) { return ''; }
+      parse: function () { return null; },
+      stringify: function () { return ''; }
     });
 
     // Real = Number ["." Digit { Digit }]
@@ -917,7 +917,7 @@
   });
 
   if ( typeof exports !== 'undefined' ) {
-    module.exports = SGFGrove;
+    module.exports = SGFGrove; // jshint ignore:line
   }
   else {
     window.SGFGrove = SGFGrove;
