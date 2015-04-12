@@ -36,6 +36,12 @@
     return (JSON.stringify(value) || '').slice(0, 32);
   };
 
+  var assert = function (bool, name) {
+    if ( !bool ) {
+      throw new TypeError('Assertion'+(name ? ' ('+name+')' : '')+' failed');
+    }
+  };
+
   FF.Types = (function () {
     var Types = {};
 
@@ -53,19 +59,12 @@
       };
 
       that.parse = function (values) {
-        var value = values[0];
-
-        if ( values.length > 1 || !like.test(value) ) {
-          throw new TypeError( this.name+' expected, got '+dump(values) );
-        }
-
-        return parse(value);
+        assert( values.length === 1 && like.test(values[0]), this.name );
+        return parse(values[0]);
       };
 
       that.stringify = function (value) {
-        if ( !isa(value) ) { 
-          throw new TypeError( this.name+' expected, got '+dump(value) );
-        }
+        assert( isa(value), this.name );
         return [ stringify(value) ];
       };
 
@@ -87,6 +86,7 @@
     var prototype = {};
     
     prototype.unknown = {
+      name: 'Unknown',
       parse: function (values) {
         var vals = [];
 
@@ -99,15 +99,11 @@
       stringify: function (values) {
         var vals = [];
 
-        if ( !isArray(values) ) {
-          throw new TypeError( 'array expected, got '+dump(values) );
-        }
+        assert( isArray(values), this.name );
 
         for ( var i = 0; i < values.length; i++ ) {
-          if ( !isString(values[i]) ) {
-            throw new TypeError( 'string expected, got '+dump(values[i]) );
-          }
-          vals.push( values[i].replace(/\]/g, '\\]') );
+          assert( isString(values[i]), this.name );
+          vals[i] = values[i].replace(/\]/g, '\\]');
         }
 
         return vals;
@@ -323,10 +319,9 @@
     var Num = FF.Types.Number;
     var replacer, select;
 
-    /*
     var finalize = function (key, holder) {
       var value = holder[key];
-      var val;
+      var i, k, v;
 
       if ( value && typeof value === 'object' &&
            typeof value.toSGF === 'function' ) {
@@ -338,108 +333,48 @@
       }
 
       if ( !value || typeof value !== 'object' ) {
-        val = value;
+        v = value;
       }
       else if ( isArray(value) ) {
-        val = [];
-        for ( var i = 0; i < value.length; i++ ) {
-          val[i] = finalize( i, value );
+        v = [];
+        for ( i = 0; i < value.length; i++ ) {
+          v[i] = finalize( i, value );
+        }
+      }
+      else if ( select ) {
+        v = {};
+        for ( i = 0; i < select.length; i++ ) {
+          k = select[i];
+          if ( value.hasOwnProperty(k) ) {
+            v[k] = finalize( k, value );
+          }
         }
       }
       else {
-        val = {};
-        for ( var k in value ) {
-          if ( !value.hasOwnProperty(k) ) { continue; }
-          if ( select && !select.hasOwnProperty(k) ) { continue; }
-          val[k] = finalize( k, value );
-        }
-      }
-
-      return val;
-    };
-    */
-
-    var replace = function (key, holder) {
-      var value = holder[key];
-
-      if ( value && typeof value === 'object' &&
-           typeof value.toSGF === 'function' ) {
-        value = value.toSGF();
-      }
-
-      return replacer ? replacer.call(holder, key, value) : value;
-    };
-
-    var finalize = function (key, holder) {
-      var trees = replace( key, holder );
-      var copy = [];
-      var i, tree, sequence, s;
-      var j, node, n, ident, values;
-
-      if ( !isArray(trees) ) {
-        throw new TypeError( 'array expected, got '+dump(trees) );
-      }
-
-      for ( i = 0; i < trees.length; i++ ) {
-        tree = replace( i, trees );
-
-        if ( !isArray(tree) ) {
-          throw new TypeError( 'array expected, got '+dump(tree) );
-        }
-
-        sequence = replace( 0, tree );
-        s = [];
-
-        if ( !isArray(sequence) ) {
-          throw new TypeError( 'array expected, got '+dump(sequence) );
-        }
-        else if ( !sequence.length ) {
-          throw new TypeError( 'GameTree must contain at least one Node' );
-        }
-
-        for ( j = 0; j < sequence.length; j++ ) {
-          node = replace( j, sequence );
-          n = {};
-
-          if ( !node || typeof node !== 'object' ) {
-            throw new TypeError( 'object expected, got '+node );
+        v = {};
+        for ( k in value ) {
+          if ( value.hasOwnProperty(k) ) {
+            v[k] = finalize( k, value );
           }
-
-          for ( ident in node ) {
-            if ( !node.hasOwnProperty(ident) ) { continue; }
-            if ( select && !select.hasOwnProperty(ident) ) { continue; }
-
-            values = replace( ident, node );
-
-            if ( values !== undefined ) {
-              n[ident] = values;
-            }
-          }
-
-          s.push(n);
         }
-
-        copy.push([ s, finalize(1, tree) ]);
       }
 
-      return copy;
+      return v;
     };
 
     return function (trees, rep, space) {
-      var nodeId = 0;
-      var gap = '';
-      var indent = '';
-      var i, props;
+      var props, nodeId = 0;
+      var indent = '', gap = '', lf;
+      var i;
 
       select = undefined;
       replacer = undefined;
 
-      if ( rep && typeof rep === 'object' &&
-           typeof rep.length === 'number' ) {
-        select = {};
+      if ( isArray(rep) ) {
+        select = [];
         for ( i = 0; i < rep.length; i++ ) {
           if ( typeof rep[i] === 'string' ) {
-            select[rep[i]] = null;
+            select[i] = rep[i];
           }
         }
       }
@@ -450,25 +385,31 @@
         throw new Error('replacer must be array or function');
       }
 
-      if ( typeof space === 'number' ) {
+      if ( isNumber(space) ) {
         for ( i = 0; i < space; i++ ) {
           indent += ' ';
         }
       }
-      else if ( typeof space === 'string' ) {
+      else if ( isString(space) ) {
         indent = space;
       }
 
+      lf = indent ? '\n' : '';
       trees = finalize( '', { '': trees } );
 
       return (function stringify (subtrees) {
-        var text = '', mind, partial, prefix;
+        var text = '', mind, prefix;
         var i, subtree, sequence, root, ff, gm;
         var j, node, id, values;
 
+        assert( isArray(subtrees), subtrees === trees ? 'Collection' : 'GameTrees' );
+
         for ( i = 0; i < subtrees.length; i++ ) {
           subtree = subtrees[i];
+          assert( isArray(subtree), 'GameTree' );
+
           sequence = subtree[0];
+          assert( isArray(sequence) && sequence.length, 'Sequence' );
 
           if ( subtrees === trees ) {
             try {
@@ -488,7 +429,7 @@
             }
           }
  
-          text += indent ? gap+'(\n' : '('; // Open GameTree
+          text += gap + '(' + lf; // Open GameTree
 
           mind = gap;
           gap += indent;
@@ -496,18 +437,17 @@
           for ( j = 0; j < sequence.length; j++ ) {
             node = sequence[j];
 
-            text += indent ? '' : ';'; // Open Node
-            prefix = ';';
+            assert( node && typeof node === 'object', 'Node' );
 
+            prefix = gap + ';';
             for ( id in node ) { // jshint ignore:line
               try {
                 if ( !node.hasOwnProperty(id) ) { continue; }
-                if ( ff !== 4 && !/^[A-Z][A-Z0-9]?$/.test(id) ) { continue; }
-                if ( ff === 4 && !/^[A-Z]+$/.test(id) ) { continue; }
+                if ( ff < 4 && !/^[A-Z][A-Z0-9]?$/.test(id) ) { continue; }
+                if ( ff >= 4 && !/^[A-Z]+$/.test(id) ) { continue; }
                 values = props.find(id).stringify(node[id]);
-                partial = id + '[' + values.join('][') + ']';
-                text += indent ? gap+prefix+partial+'\n' : partial; // add Prop
-                prefix = ' ';
+                text += prefix + id + '[' + values.join('][') + ']' + lf;
+                prefix = indent ? gap+' ' : '';
               }
               catch (error) {
                 error.message += ' at '+id+' of node #'+nodeId+', '+dump(node);
@@ -519,7 +459,7 @@
           }
 
           text += stringify( subtree[1] );
-          text += indent ? mind+')\n' : ')'; // close GameTree
+          text += mind + ')' + lf; // close GameTree
 
           gap = mind;
         }
@@ -612,9 +552,7 @@
         parse: function (values) {
           var value = values[0].match(/^((?:\\:|[^:])*):([\S\s]*)$/);
 
-          if ( values.length > 1 || !value ) {
-            throw new TypeError( this.name+' expected, got '+dump(values) );
-          }
+          assert( values.length === 1 && value, this.name );
 
           return [
              left.parse( [value[1]] ),
@@ -622,9 +560,8 @@
           ];
         },
         stringify: function (value) {
-          if ( !isArray(value) || value.length !== 2 ) {
-            throw new TypeError( this.name+' expected, got '+dump(value) );
-          }
+          assert( isArray(value) && value.length === 2, this.name );
+
           return [
             left.stringify(value[0])[0] +
             ':' +
@@ -644,14 +581,12 @@
           var vals = [];
 
           if ( values.length === 1 && values[0] === '' ) {
-            if ( this.canBeEmpty ) {
-              return vals;
-            }
-            throw new TypeError( this.name+' expected, got '+dump(values) );
+            assert( this.canBeEmpty, this.name );
+            return vals;
           }
 
           for ( var i = 0; i < values.length; i++ ) {
-            vals.push( type.parse([values[i]]) );
+            vals[i] = type.parse([values[i]]);
           }
 
           return vals;
@@ -659,21 +594,17 @@
         stringify: function (values) {
           var vals = [];
 
-          if ( !isArray(values) ) {
-            throw new TypeError( 'array expected, got '+dump(values) );
-          }
+          assert( isArray(values), this.name );
 
           if ( values.length ) {
             for ( var i = 0; i < values.length; i++ ) {
-              vals.push( type.stringify(values[i])[0] );
+              vals[i] = type.stringify(values[i])[0];
             }
           }
-          else if ( this.canBeEmpty ) {
-            vals.push('');
-          }
           else {
-            throw new TypeError( this.name+' expected, got None' );
-          } 
+            assert( this.canBeEmpty, this.name );
+            vals[0] = '';
+          }
 
           return vals;
         }
@@ -869,26 +800,28 @@
           if ( points && points[2] ) {
             vals = vals.concat( expandPointList(points[1], points[2]) );
           }
-          else if ( points ) {
-            vals.push( points[0] );
-          }
           else {
-            throw new TypeError( this.name+' expected, got '+dump(values[i]) );
+            assert( points, this.name );
+            vals.push( points[0] );
           }
         }
 
         return vals;
       },
       stringify: function (values) {
-        if ( !isArray(values) || (!this.canBeEmpty && values.length === 0) ) {
-          throw new TypeError( this.name+' expected, got '+dump(values) );
-        }
+        assert(
+          isArray(values) && (this.canBeEmpty || values.length > 0),
+          this.name
+        );
+
         for ( var i = 0; i < values.length; i++ ) {
-          if ( !isString(values[i]) ||
-               !/^[a-zA-Z]{2}(?::[a-zA-Z]{2})?$/.test(values[i]) ) {
-            throw new TypeError( this.name+' expected, got '+dump(values[i]) );
-          }
+          assert(
+            isString(values[i]) &&
+            /^[a-zA-Z]{2}(?::[a-zA-Z]{2})?$/.test(values[i]),
+            this.name
+          );
         }
+
         return values;
       }
     };
