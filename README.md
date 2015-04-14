@@ -16,19 +16,21 @@ In your HTML:
 In your JavaScript:
 
 ```js
-SGFGrove.parse("(;FF[4]B[pd];W[qp])");
+SGFGrove.parse("(;FF[4];B[pd];W[qp])");
 // => [[
-//     [{ FF: 4, B: "pd" },
+//     [{ FF: 4 },
+//      { B: "pd" },
 //      { W: "qp" }],
 //     []
 // ]]
 
 SGFGrove.stringify([[
-    [{ FF: 4, B: "pd" },
+    [{ FF: 4 },
+     { B: "pd" },
      { W: "qp" }],
     []
 ]]);
-// => "(;FF[4]B[pd];W[qp])"
+// => "(;FF[4];B[pd];W[qp])"
 ```
 
 ## Description
@@ -230,11 +232,11 @@ as a tree of sequences.
     W[aa]-W[ZZ], W[]      "aa"-"ZZ", null
     
     compressible:
-      Compressed point lists are expanded by the parse method automatically,
-      i.e. AB[aa:bb][cc] is converted to ["aa", "ba", "ab", "bb", "cc"].
-      NOTE: The stringify method does not compress the expanded point      
-      lists at this time (even if it's not compressed, that SGF does not
-      violate the SGF specification).
+        Compressed point lists are expanded by the parse method automatically,
+        i.e. AB[aa:bb][cc] is converted to ["aa", "ba", "ab", "bb", "cc"].
+        NOTE: The stringify method does not compress the expanded point      
+        lists at this time (even if it's not compressed, that SGF does not
+        violate the SGF specification).
 
 #### Unknown Properties
 
@@ -315,7 +317,7 @@ SGFGrove.parse("()"); // => SyntaxError
 SGFGrove.stringify([[[], []]]); // => TypeError
 ```
 
-#### TypeError: %s expected, got %s
+#### TypeError: Assersion (%s) failed
 
 You tried to #parse a malformed property value or #stringify data that
 has an invalid data type. See "SGF Properties" for details.
@@ -332,7 +334,7 @@ SGFGrove.stringify([[[{ FF: "four" }], []]]); // => TypeError
 ```js
 var char2coord = { "a": 0, "b": 1, ... };
 
-SGFGrove.parse("(;FF[4]B[ab];W[ba])", function (key, value) {
+SGFGrove.parse("(;FF[4];B[ab];W[ba])", function (key, value) {
     if ( key === "B" || key === "W" ) {
         var x = value.charAt(0);
         var y = value.charAt(1);
@@ -343,7 +345,8 @@ SGFGrove.parse("(;FF[4]B[ab];W[ba])", function (key, value) {
     }
 });
 // => [[
-//   [{ FF: 4, B: [0, 1] },
+//   [{ FF: 4 },
+//    { B: [0, 1] },
 //    { W: [1, 0] }],
 //   []
 // ]]
@@ -353,7 +356,8 @@ SGFGrove.parse("(;FF[4]B[ab];W[ba])", function (key, value) {
 var coord2char = [ "a", "b", ... ];
 
 var sgf = [[
-    [{ FF: 4, B: [0, 1] },
+    [{ FF: 4 },
+     { B: [0, 1] },
      { W: [1, 0] }],
     []
 ]];
@@ -368,16 +372,16 @@ SGFGrove.stringify(sgf, function (key, value) {
         return value;
     }
 });
-// => "(;FF[4]B[ab];W[ba])"
+// => "(;FF[4];B[ab];W[ba])"
 ```
 
 ### Remove Comments
 
 ```js
 SGFGrove.parse("(;FF[4]C[foo: hi\nbar: gg])", function (key, value) {
-  if ( key !== "C" ) { // exclude the C property
-    return value;
-  }
+    if ( key !== "C" ) { // exclude the C property
+        return value;
+    }
 });
 // => [[
 //   [{ FF: 4 }],
@@ -400,34 +404,40 @@ SGFGrove.stringify([[
 
 ### Using toSGF Method
 
+var coord2char = [ "a", "b", ... ];
+
+var Point = function (x, y) {
+    this.x = x; // => 0
+    this.y = y; // => 1
+};
+
+// convert user-defined Point object into SGF
+Point.prototype.toSGF = function () {
+    return coord2char[this.x] + coord2char[this.y]; // => "ab"
+};
+
 ```js
 SGFGrove.stringify([[
-    [{
-        FF: 4,
-        FOO: {
-            bar: "baz",
-            toSGF: function () {
-                return [ this.bar ];
-            }
-        }
-    }],
+    [{ FF: 4 },
+     { B: new Point(0, 1) }], // toSGF method of Point object is called
     []
 ]]);
-// => "(;FF[4]FOO[baz])"
+// => "(;FF[4];B[ab])"
 ```
 
 ### Select properties
 
 ```js
 var sgf = [[
-    [{ FF: 4, B: "pd", C: "foo: hi" },
+    [{ FF: 4 },
+     { B: "pd", C: "foo: hi" },
      { W: "qp", C: "bar: gg" }],
     []
 ]];
  
 // FF, B and W are included, while C is excluded
 SGFGrove.stringify(sgf, ["FF", "B", "W"]);
-// => "(;FF[4]B[pd];W[qp])"
+// => "(;FF[4];B[pd];W[qp])"
 ```
 
 ### GameTree Traversal
