@@ -138,7 +138,7 @@ value.
     
         {
             FF: 4,
-            B: "pd"
+            C: "root"
         }
 
 You can also convert the above data structure to JSON:
@@ -296,7 +296,7 @@ You tried to #parse a SGF node that has a duplicate property.
 It's prohibited by the SGF specification.
 
 ```js
-SGFGrove.parse("(;FF[4]B[aa]B[bb])"); // => SyntaxError
+SGFGrove.parse("(;FF[4];B[aa]B[bb])"); // => SyntaxError
 ```
 
 #### SyntaxError: PropValue of %s is missing
@@ -304,7 +304,7 @@ SGFGrove.parse("(;FF[4]B[aa]B[bb])"); // => SyntaxError
 You tried to #parse a property that has no value.
 
 ```js
-SGFGrove.parse("(;FF[4]B)"); // => SyntaxError
+SGFGrove.parse("(;FF[4];B)"); // => SyntaxError
 ```
 
 #### SyntaxError/TypeError: GameTree must contain at least one node
@@ -404,6 +404,7 @@ SGFGrove.stringify([[
 
 ### Using toSGF Method
 
+```js
 var coord2char = [ "a", "b", ... ];
 
 var Point = function (x, y) {
@@ -416,7 +417,6 @@ Point.prototype.toSGF = function () {
     return coord2char[this.x] + coord2char[this.y]; // => "ab"
 };
 
-```js
 SGFGrove.stringify([[
     [{ FF: 4 },
      { B: new Point(0, 1) }], // toSGF method of Point object is called
