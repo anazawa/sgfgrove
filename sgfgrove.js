@@ -91,7 +91,7 @@
         var vals = [];
 
         for ( var i = 0; i < values.length; i++ ) {
-          vals.push( values[i].replace(/\\\]/g, ']') );
+          vals[i] = values[i].replace(/\\\]/g, ']');
         }
 
         return vals;
@@ -362,8 +362,8 @@
       return v;
     };
 
-    return function (trees, rep, space) {
-      var props, nodeId = 0;
+    return function (collection, rep, space) {
+      var props, propIdents, id = 0;
       var indent = '', gap = '', lf;
       var i;
 
@@ -373,8 +373,8 @@
       if ( isArray(rep) ) {
         select = [];
         for ( i = 0; i < rep.length; i++ ) {
-          if ( typeof rep[i] === 'string' ) {
-            select[i] = rep[i];
+          if ( isString(rep[i]) ) {
+            select.push( rep[i] );
           }
         }
       }
@@ -395,77 +395,72 @@
       }
 
       lf = indent ? '\n' : '';
-      trees = finalize( '', { '': trees } );
+      collection = finalize( '', { '': collection } );
 
-      return (function stringify (subtrees) {
+      return (function stringify (gameTrees) {
         var text = '', mind, prefix;
-        var i, subtree, sequence, root, ff, gm;
-        var j, node, id, values;
+        var i, gameTree, sequence, root, ff, gm;
+        var j, node, ident, values;
 
-        assert( isArray(subtrees), subtrees === trees ? 'Collection' : 'GameTrees' );
+        assert( isArray(gameTrees), gameTrees === collection ? 'Collection' : 'GameTrees' );
 
-        for ( i = 0; i < subtrees.length; i++ ) {
-          subtree = subtrees[i];
-          assert( isArray(subtree), 'GameTree' );
+        for ( i = 0; i < gameTrees.length; i++ ) {
+          gameTree = gameTrees[i];
+          assert( isArray(gameTree), 'GameTree' );
 
-          sequence = subtree[0];
+          sequence = gameTree[0];
           assert( isArray(sequence) && sequence.length, 'Sequence' );
 
-          if ( subtrees === trees ) {
+          if ( gameTrees === collection ) {
+            root = sequence[0];
+
             try {
-              root = sequence[0];
-
-              ff = root.hasOwnProperty('FF') ? root.FF : 1;
-              ff = Num.parse( Num.stringify(ff) );
-
-              gm = root.hasOwnProperty('GM') ? root.GM : 1;
-              gm = Num.parse( Num.stringify(gm) );
-
-              props = FF.find( ff, gm );
+              ff = root.hasOwnProperty('FF') ?
+                   Num.parse( Num.stringify(root.FF) ) : 1;
+              gm = root.hasOwnProperty('GM') ?
+                   Num.parse( Num.stringify(root.GM) ) : 1;
             }
             catch (error) {
-              error.message += ' at node #'+nodeId+', '+dump(root);
+              error.message += ' at FF/GM of node #'+id+', '+dump(root);
               throw error;
             }
+
+            propIdents = ff < 4 ? /^[A-Z][A-Z0-9]?$/ : /^[A-Z]+$/;
+            props = FF.find( ff, gm );
           }
  
           text += gap + '(' + lf; // Open GameTree
 
           mind = gap;
           gap += indent;
-
-          for ( j = 0; j < sequence.length; j++ ) {
+          for ( j = 0; j < sequence.length; j++, id++ ) {
             node = sequence[j];
-
             assert( node && typeof node === 'object', 'Node' );
 
             prefix = gap + ';';
-            for ( id in node ) { // jshint ignore:line
-              try {
-                if ( !node.hasOwnProperty(id) ) { continue; }
-                if ( ff < 4 && !/^[A-Z][A-Z0-9]?$/.test(id) ) { continue; }
-                if ( ff >= 4 && !/^[A-Z]+$/.test(id) ) { continue; }
-                values = props.find(id).stringify(node[id]);
-                text += prefix + id + '[' + values.join('][') + ']' + lf;
+            for ( ident in node ) {
+              if ( node.hasOwnProperty(ident) && propIdents.test(ident) ) {
+                try {
+                  values = props.find(ident).stringify(node[ident]);
+                }
+                catch (error) {
+                  error.message += ' at '+ident+' of node #'+id+', '+dump(node);
+                  throw error;
+                }
+                text += prefix + ident + '[' + values.join('][') + ']' + lf;
                 prefix = indent ? gap+' ' : '';
               }
-              catch (error) {
-                error.message += ' at '+id+' of node #'+nodeId+', '+dump(node);
-                throw error;
-              }
             }
-
-            nodeId += 1;
           }
 
-          text += stringify( subtree[1] );
+          text += stringify( gameTree[1] );
           text += mind + ')' + lf; // close GameTree
 
           gap = mind;
         }
 
         return text;
-      }(trees));
+      }(collection));
     };
   }());
 
@@ -503,7 +498,7 @@
       name: 'Double',
       like: /^[12]$/,
       isa: function (v) { return v === 1 || v === 2; },
-      parse: function (v) { return parseInt(v, 10); }
+      parse: parseInt
     });
 
     // Color = ("B" | "W")
@@ -571,11 +566,11 @@
       };
     };
  
-    Types.listOf = function (type, args) {
+    Types.listOf = function (scalar, args) {
       var canBeEmpty = args && args.canBeEmpty === true;
 
-      return type && {
-        name: (canBeEmpty ? 'elist of ' : 'list of ')+type.name,
+      return scalar && {
+        name: (canBeEmpty ? 'elist of ' : 'list of ')+scalar.name,
         canBeEmpty: canBeEmpty,
         parse: function (values) {
           var vals = [];
@@ -586,7 +581,7 @@
           }
 
           for ( var i = 0; i < values.length; i++ ) {
-            vals[i] = type.parse([values[i]]);
+            vals[i] = scalar.parse([values[i]]);
           }
 
           return vals;
@@ -598,7 +593,7 @@
 
           if ( values.length ) {
             for ( var i = 0; i < values.length; i++ ) {
-              vals[i] = type.stringify(values[i])[0];
+              vals[i] = scalar.stringify(values[i])[0];
             }
           }
           else {
@@ -611,8 +606,8 @@
       };
     };
 
-    Types.elistOf = function (type) {
-      return Types.listOf(type, { canBeEmpty: true });
+    Types.elistOf = function (scalar) {
+      return Types.listOf(scalar, { canBeEmpty: true });
     };
 
     Types.BoardSize = function (square, rectangular) {
@@ -729,6 +724,8 @@
     var Types = create( FF[4].Types );
     var Props;
 
+    var push = Array.prototype.push;
+
     var expandPointList = (function () {
       var coord = 'abcdefghijklmnopqrstuvwxyz';
           coord += coord.toUpperCase();
@@ -776,9 +773,7 @@
     Types.Move = Types.scalar({
       name: 'Move',
       like: /^(?:[a-zA-Z]{2})?$/,
-      isa: function (v) {
-        return v === null || (isString(v) && /^[a-zA-Z]{2}$/.test(v));
-      },
+      isa: function (v) { return v === null || (isString(v) && /^[a-zA-Z]{2}$/.test(v)); },
       parse: function (v) { return v === '' ? null : v; },
       stringify: function (v) { return v === null ? '' : v; }
     });
@@ -795,13 +790,13 @@
         }
 
         for ( i = 0; i < values.length; i++ ) {
-          points = values[i].match(/^([a-zA-Z]{2})(?::([a-zA-Z]{2}))?$/);
+          points = /^([a-zA-Z]{2})(?::([a-zA-Z]{2}))?$/.exec( values[i] );
+          assert( points, this.name );
 
-          if ( points && points[2] ) {
-            vals = vals.concat( expandPointList(points[1], points[2]) );
+          if ( points[2] ) {
+            push.apply( vals, expandPointList(points[1], points[2]) );
           }
           else {
-            assert( points, this.name );
             vals.push( points[0] );
           }
         }
