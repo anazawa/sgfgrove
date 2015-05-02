@@ -80,8 +80,7 @@ into their entity equivalents. You have to escape them by yourself.
 Given an array representing a SGF collection, returns a SGF string.
 You can also pass the `replacer` and `space` parameters that will be used
 in the same way as the JSON.stringify method uses the parameters,
-except that the `toJSON` method is not invoked, and also the replacer
-callback is not applied to the property values recursively but only once.
+except that the `toJSON` method is not invoked.
 
 If a property name does not look like SGF, the property will be ignored
 silently. In other words, that property is considered user-defined.
@@ -153,9 +152,9 @@ JSON.stringify( SGFGrove.parse("(;FF[4])") );
 Because it's simplified to avoid nesting the data unnecessarily, *considering
 a SGF sequence as the node of the tree*, where a SGF sequence is a list of
 SGF nodes. This simplification is based on an (not-so-reliable) observed fact
-that the height of a SGF game tree tends to be much longer than the width.
-Even tsumego/joseki, which generally has a lot of variations, can be considered
-as a tree of sequences.
+that the height of a SGF game tree tends to be much longer than the width,
+the total number of leaves. Even tsumego/joseki, which generally has a lot of
+variations, can be considered as a tree of sequences.
 
 ### SGF Properties
 
