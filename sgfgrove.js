@@ -6,56 +6,59 @@
  * @see http://www.red-bean.com/sgf/
  */
 (function () {
-  'use strict';
+  "use strict";
 
   var SGFGrove = {
-    VERSION: '0.0.1'
+    VERSION: "0.0.1"
   };
 
   var FF = {};
 
-  var isNumber = function (value) {
-    return typeof value === 'number' && isFinite(value);
-  };
-
-  var isString = function (value) {
-    return typeof value === 'string';
-  };
-
-  var isArray = Array.isArray || function (value) {
-    return Object.prototype.toString.call(value) === '[object Array]';
-  };
-
-  var create = Object.create || function (prototype) {
-    var Ctor = function () {};
-    Ctor.prototype = prototype;
-    return new Ctor();
-  };
-
   var dump = function (value) {
-    return (JSON.stringify(value) || '').slice(0, 32);
+    return (JSON.stringify(value) || "").slice(0, 32);
   };
 
   var assert = function (bool, name) {
     if ( !bool ) {
-      throw new TypeError('Assertion'+(name ? ' ('+name+')' : '')+' failed');
+      throw new TypeError("Assertion"+(name ? " ("+name+")" : "")+" failed");
     }
   };
 
+  SGFGrove.Util = (function () {
+    var Util = {};
+
+    Util.isNumber = function (value) {
+      return typeof value === "number" && isFinite(value);
+    };
+
+    Util.isArray = Array.isArray || function (value) {
+      return Object.prototype.toString.call(value) === "[object Array]";
+    };
+
+    Util.create = Object.create || function (prototype) {
+      var Ctor = function () {};
+      Ctor.prototype = prototype;
+      return new Ctor();
+    };
+
+    return Util;
+  }());
+
   FF.Types = (function () {
     var Types = {};
+    var isNumber = SGFGrove.Util.isNumber;
 
     Types.scalar = function (args) {
       var spec = args || {};
 
-      var like = spec.like || new RegExp('');
-      var isa  = spec.isa  || function (v) { return isString(v) && like.test(v); };
+      var like = spec.like || new RegExp("");
+      var isa  = spec.isa  || function (v) { return typeof v === "string" && like.test(v); };
 
       var parse     = spec.parse     || function (v) { return v; };
       var stringify = spec.stringify || function (v) { return String(v); };
 
       var that = {
-        name: spec.name || ''
+        name: spec.name || ""
       };
 
       that.parse = function (values) {
@@ -73,7 +76,7 @@
 
     // Number = ["+"|"-"] Digit {Digit}
     Types.Number = Types.scalar({
-      name: 'Number',
+      name: "Number",
       like: /^[+-]?\d+$/,
       isa: function (v) { return isNumber(v) && Math.floor(v) === v; },
       parse: function (v) { return parseInt(v, 10); }
@@ -86,12 +89,12 @@
     var prototype = {};
     
     prototype.unknown = {
-      name: 'Unknown',
+      name: "Unknown",
       parse: function (values) {
         var vals = [];
 
         for ( var i = 0; i < values.length; i++ ) {
-          vals[i] = values[i].replace(/\\\]/g, ']');
+          vals[i] = values[i].replace(/\\\]/g, "]");
         }
 
         return vals;
@@ -99,11 +102,11 @@
       stringify: function (values) {
         var vals = [];
 
-        assert( isArray(values), this.name );
+        assert( SGFGrove.Util.isArray(values), this.name );
 
         for ( var i = 0; i < values.length; i++ ) {
-          assert( isString(values[i]), this.name );
-          vals[i] = values[i].replace(/\]/g, '\\]');
+          assert( typeof values[i] === "string", this.name );
+          vals[i] = values[i].replace(/\]/g, "\\]");
         }
 
         return vals;
@@ -116,7 +119,7 @@
 
     return function (args) {
       var spec = args || {};
-      var that = create( prototype );
+      var that = SGFGrove.Util.create( prototype );
 
       for ( var key in spec ) {
         if ( spec.hasOwnProperty(key) ) {
@@ -160,8 +163,8 @@
     var source, lastIndex, reviver;
 
     var error = function (message) {
-      var tail = source.slice(lastIndex).replace(/^\s*/, '').slice(0, 32);
-      throw new SyntaxError( message+' at octet '+lastIndex+", '"+tail+"'" );
+      var tail = source.slice(lastIndex).replace(/^\s*/, "").slice(0, 32);
+      throw new SyntaxError( message+" at octet "+lastIndex+", '"+tail+"'" );
     };
 
     // Override RegExp's test and exec methods to let ^ behave like
@@ -196,7 +199,7 @@
         node = {};
 
         while ( ident = exec.call(/^([a-zA-Z0-9]+)\s*/g) ) { // PropIdent(-like)
-          ident = ident[1].replace(/[a-z]/g, ''); // for FF[3]
+          ident = ident[1].replace(/[a-z]/g, ""); // for FF[3]
           values = [];
 
           if ( node.hasOwnProperty(ident) ) {
@@ -208,7 +211,7 @@
           }
 
           if ( !values.length ) {
-            error( 'PropValue of '+ident+' is missing' );
+            error( "PropValue of "+ident+" is missing" );
           }
 
           node[ident] = values;
@@ -218,7 +221,7 @@
       }
 
       if ( !sequence.length ) {
-        error( 'GameTree must contain at least one Node' );
+        error( "GameTree must contain at least one Node" );
       }
 
       while ( subtree = gameTree() ) {
@@ -238,7 +241,7 @@
     // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
     var walk = function (holder, key) {
       var k, v, value = holder[key];
-      if ( value && typeof value === 'object' ) {
+      if ( value && typeof value === "object" ) {
         for ( k in value ) {
           if ( Object.prototype.hasOwnProperty.call(value, k) ) {
             v = walk( value, k );
@@ -259,7 +262,7 @@
 
       source = String(text);
       lastIndex = 0;
-      reviver = typeof rev === 'function' && rev;
+      reviver = typeof rev === "function" && rev;
 
       while ( tree = gameTree() ) { // jshint ignore:line
         trees.push( tree );
@@ -280,12 +283,12 @@
           if ( subtrees === trees ) {
             try {
               root = sequence[0];
-              ff = root.hasOwnProperty('FF') ? Num.parse(root.FF) : 1;
-              gm = root.hasOwnProperty('GM') ? Num.parse(root.GM) : 1;
+              ff = root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1;
+              gm = root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1;
               props = FF.find( ff, gm );
             }
             catch (error) {
-              error.message += ' at node #'+nodeId+', '+dump(root);
+              error.message += " at node #"+nodeId+", "+dump(root);
               throw error;
             }
           }
@@ -299,7 +302,7 @@
                 node[id] = props.find(id).parse(node[id]);
               }
               catch (error) {
-                error.message += ' at '+id+' of node #'+nodeId+', '+dump(node);
+                error.message += " at "+id+" of node #"+nodeId+", "+dump(node);
                 throw error;
               }
             }
@@ -311,7 +314,7 @@
         }
       }(trees));
 
-      return reviver ? walk({ '': trees }, '') : trees;
+      return reviver ? walk({ "": trees }, "") : trees;
     };
   }());
 
@@ -319,12 +322,15 @@
     var Num = FF.Types.Number;
     var replacer, select;
 
+    var isArray  = SGFGrove.Util.isArray;
+    var isNumber = SGFGrove.Util.isNumber;
+
     var finalize = function (key, holder) {
       var value = holder[key];
       var i, k, v;
 
-      if ( value && typeof value === 'object' &&
-           typeof value.toSGF === 'function' ) {
+      if ( value && typeof value === "object" &&
+           typeof value.toSGF === "function" ) {
         value = value.toSGF();
       }
 
@@ -332,7 +338,7 @@
         value = replacer.call( holder, key, value );
       }
 
-      if ( !value || typeof value !== 'object' ) {
+      if ( !value || typeof value !== "object" ) {
         v = value;
       }
       else if ( isArray(value) ) {
@@ -364,7 +370,7 @@
 
     return function (collection, rep, space) {
       var props, propIdents, id = 0;
-      var indent = '', gap = '', lf;
+      var indent = "", gap = "", lf;
       var i;
 
       select = undefined;
@@ -373,55 +379,55 @@
       if ( isArray(rep) ) {
         select = [];
         for ( i = 0; i < rep.length; i++ ) {
-          if ( isString(rep[i]) ) {
+          if ( typeof rep[i] === "string" ) {
             select.push( rep[i] );
           }
         }
       }
-      else if ( typeof rep === 'function' ) {
+      else if ( typeof rep === "function" ) {
         replacer = rep;
       }
       else if ( rep ) {
-        throw new Error('replacer must be array or function');
+        throw new Error("replacer must be array or function");
       }
 
       if ( isNumber(space) ) {
         for ( i = 0; i < space; i++ ) {
-          indent += ' ';
+          indent += " ";
         }
       }
-      else if ( isString(space) ) {
+      else if ( typeof space === "string" ) {
         indent = space;
       }
 
-      lf = indent ? '\n' : '';
-      collection = finalize( '', { '': collection } );
+      lf = indent ? "\n" : "";
+      collection = finalize( "", { "": collection } );
 
       return (function stringify (gameTrees) {
-        var text = '', mind, prefix;
+        var text = "", mind, prefix;
         var i, gameTree, sequence, root, ff, gm;
         var j, node, ident, values;
 
-        assert( isArray(gameTrees), gameTrees === collection ? 'Collection' : 'GameTrees' );
+        assert( isArray(gameTrees), gameTrees === collection ? "Collection" : "GameTrees" );
 
         for ( i = 0; i < gameTrees.length; i++ ) {
           gameTree = gameTrees[i];
-          assert( isArray(gameTree), 'GameTree' );
+          assert( isArray(gameTree), "GameTree" );
 
           sequence = gameTree[0];
-          assert( isArray(sequence) && sequence.length, 'Sequence' );
+          assert( isArray(sequence) && sequence.length, "Sequence" );
 
           if ( gameTrees === collection ) {
             root = sequence[0];
 
             try {
-              ff = root.hasOwnProperty('FF') ?
+              ff = root.hasOwnProperty("FF") ?
                    Num.parse( Num.stringify(root.FF) ) : 1;
-              gm = root.hasOwnProperty('GM') ?
+              gm = root.hasOwnProperty("GM") ?
                    Num.parse( Num.stringify(root.GM) ) : 1;
             }
             catch (error) {
-              error.message += ' at FF/GM of node #'+id+', '+dump(root);
+              error.message += " at FF/GM of node #"+id+", "+dump(root);
               throw error;
             }
 
@@ -429,32 +435,32 @@
             props = FF.find( ff, gm );
           }
  
-          text += gap + '(' + lf; // Open GameTree
+          text += gap + "(" + lf; // Open GameTree
 
           mind = gap;
           gap += indent;
           for ( j = 0; j < sequence.length; j++, id++ ) {
             node = sequence[j];
-            assert( node && typeof node === 'object', 'Node' );
+            assert( node && typeof node === "object", "Node" );
 
-            prefix = gap + ';';
+            prefix = gap + ";";
             for ( ident in node ) {
               if ( node.hasOwnProperty(ident) && propIdents.test(ident) ) {
                 try {
                   values = props.find(ident).stringify(node[ident]);
                 }
                 catch (error) {
-                  error.message += ' at '+ident+' of node #'+id+', '+dump(node);
+                  error.message += " at "+ident+" of node #"+id+", "+dump(node);
                   throw error;
                 }
-                text += prefix + ident + '[' + values.join('][') + ']' + lf;
-                prefix = indent ? gap+' ' : '';
+                text += prefix + ident + "[" + values.join("][") + "]" + lf;
+                prefix = indent ? gap+" " : "";
               }
             }
           }
 
           text += stringify( gameTree[1] );
-          text += mind + ')' + lf; // close GameTree
+          text += mind + ")" + lf; // close GameTree
 
           gap = mind;
         }
@@ -464,30 +470,27 @@
     };
   }());
 
-  SGFGrove.Util = {
-    create: create,
-    isNumber: isNumber,
-    isArray: isArray
-  };
-
   // File Format (;FF[4])
   // http://www.red-bean.com/sgf/sgf4.html
   // http://www.red-bean.com/sgf/properties.html
-  SGFGrove.define('4', null, function (FF) {
-    var Types = create( FF.Types );
+  SGFGrove.define("4", null, function (FF) {
+    var Types = SGFGrove.Util.create( FF.Types );
+
+    var isArray  = SGFGrove.Util.isArray;
+    var isNumber = SGFGrove.Util.isNumber;
 
     // None = ""
     Types.None = Types.scalar({
-      name: 'None',
+      name: "None",
       like: /^$/,
       isa: function (v) { return v === null; },
       parse: function () { return null; },
-      stringify: function () { return ''; }
+      stringify: function () { return ""; }
     });
 
     // Real = Number ["." Digit { Digit }]
     Types.Real = Types.scalar({
-      name: 'Real',
+      name: "Real",
       like: /^[+-]?\d+(?:\.\d+)?$/,
       isa: isNumber,
       parse: parseFloat
@@ -495,7 +498,7 @@
 
     // Double = ("1" | "2")
     Types.Double = Types.scalar({
-      name: 'Double',
+      name: "Double",
       like: /^[12]$/,
       isa: function (v) { return v === 1 || v === 2; },
       parse: parseInt
@@ -503,47 +506,47 @@
 
     // Color = ("B" | "W")
     Types.Color = Types.scalar({
-      name: 'Color',
+      name: "Color",
       like: /^[BW]$/
     });
 
     // Text = { any character }
     Types.Text = Types.scalar({
-      name: 'Text',
+      name: "Text",
       parse: function (value) {
         return value.
           // remove soft linebreaks
-          replace( /\\(?:\n\r?|\r\n?)/g, '' ).
+          replace( /\\(?:\n\r?|\r\n?)/g, "" ).
           // convert white spaces other than linebreaks to space
-          replace( /[^\S\n\r]/g, ' ' ).
+          replace( /[^\S\n\r]/g, " " ).
           // insert escaped chars verbatim
-          replace( /\\([\S\s])/g, '$1' );
+          replace( /\\([\S\s])/g, "$1" );
       },
       stringify: function (value) {
-        return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
+        return value.replace(/([\]\\:])/g, "\\$1"); // escape "]", "\" and ":"
       }
     });
 
     // SimpleText = { any character }
     Types.SimpleText = Types.scalar({
-      name: 'SimpleText',
+      name: "SimpleText",
       parse: function (value) {
         return value.
           // remove soft linebreaks
-          replace( /\\(?:\n\r?|\r\n?)/g, '' ).
+          replace( /\\(?:\n\r?|\r\n?)/g, "" ).
           // convert white spaces other than space to space even if it's escaped
-          replace( /\\?[^\S ]/g, ' ' ).
+          replace( /\\?[^\S ]/g, " " ).
           // insert escaped chars verbatim
-          replace( /\\([\S\s])/g, '$1' );
+          replace( /\\([\S\s])/g, "$1" );
       },
       stringify: function (value) {
-        return value.replace(/([\]\\:])/g, '\\$1'); // escape "]", "\" and ":"
+        return value.replace(/([\]\\:])/g, "\\$1"); // escape "]", "\" and ":"
       }
     });
 
     Types.Compose = function (left, right) {
       return left && right && {
-        name: 'composed '+left.name+' ":" '+right.name,
+        name: "composed "+left.name+' ":" '+right.name,
         parse: function (values) {
           var value = values[0].match(/^((?:\\:|[^:])*):([\S\s]*)$/);
 
@@ -559,7 +562,7 @@
 
           return [
             left.stringify(value[0])[0] +
-            ':' +
+            ":" +
             right.stringify(value[1])[0]
           ];
         }
@@ -570,12 +573,12 @@
       var canBeEmpty = args && args.canBeEmpty === true;
 
       return scalar && {
-        name: (canBeEmpty ? 'elist of ' : 'list of ')+scalar.name,
+        name: (canBeEmpty ? "elist of " : "list of ")+scalar.name,
         canBeEmpty: canBeEmpty,
         parse: function (values) {
           var vals = [];
 
-          if ( values.length === 1 && values[0] === '' ) {
+          if ( values.length === 1 && values[0] === "" ) {
             assert( this.canBeEmpty, this.name );
             return vals;
           }
@@ -598,7 +601,7 @@
           }
           else {
             assert( this.canBeEmpty, this.name );
-            vals[0] = '';
+            vals[0] = "";
           }
 
           return vals;
@@ -612,7 +615,7 @@
 
     Types.BoardSize = function (square, rectangular) {
       return square && rectangular && {
-        name: '('+square.name+' | '+rectangular.name+')',
+        name: "("+square.name+" | "+rectangular.name+")",
         parse: function (values) {
           return (/:/.test(values[0]) ? rectangular : square).parse(values);
         },
@@ -624,7 +627,7 @@
 
     Types.Figure = function (none, compose) {
       return none && compose && {
-        name: '('+none.name+' | '+compose.name+')',
+        name: "("+none.name+" | "+compose.name+")",
         parse: function (values) {
           return (/:/.test(values[0]) ? compose : none).parse(values);
         },
@@ -720,14 +723,16 @@
 
   // Go (;FF[4]GM[1]) specific properties
   // http://www.red-bean.com/sgf/go.html
-  SGFGrove.define('4', '1', function (FF) {
+  SGFGrove.define("4", "1", function (FF) {
+    var create  = SGFGrove.Util.create;
+    var isArray = SGFGrove.Util.isArray;
+    var push    = Array.prototype.push;
+
     var Types = create( FF[4].Types );
     var Props;
 
-    var push = Array.prototype.push;
-
     var expandPointList = (function () {
-      var coord = 'abcdefghijklmnopqrstuvwxyz';
+      var coord = "abcdefghijklmnopqrstuvwxyz";
           coord += coord.toUpperCase();
 
       var charCoordAt = function (at) {
@@ -763,29 +768,31 @@
     }());
 
     Types.Point = Types.scalar({
-      name: 'Point',
+      name: "Point",
       like: /^[a-zA-Z]{2}$/
     });
   
     Types.Stone = create( Types.Point );
-    Types.Stone.name = 'Stone';
+    Types.Stone.name = "Stone";
 
     Types.Move = Types.scalar({
-      name: 'Move',
+      name: "Move",
       like: /^(?:[a-zA-Z]{2})?$/,
-      isa: function (v) { return v === null || (isString(v) && /^[a-zA-Z]{2}$/.test(v)); },
-      parse: function (v) { return v === '' ? null : v; },
-      stringify: function (v) { return v === null ? '' : v; }
+      isa: function (v) {
+        return v === null || (typeof v === "string" && /^[a-zA-Z]{2}$/.test(v));
+      },
+      parse: function (v) { return v === "" ? null : v; },
+      stringify: function (v) { return v === null ? "" : v; }
     });
 
     Types.listOfPoint = {
-      name: 'list of Point',
+      name: "list of Point",
       canBeEmpty: false,
       parse: function (values) {
         var vals = [];
         var i, points;
 
-        if ( this.canBeEmpty && values.length === 1 && values[0] === '' ) {
+        if ( this.canBeEmpty && values.length === 1 && values[0] === "" ) {
           return vals;
         }
 
@@ -811,7 +818,7 @@
 
         for ( var i = 0; i < values.length; i++ ) {
           assert(
-            isString(values[i]) &&
+            typeof values[i] === "string" &&
             /^[a-zA-Z]{2}(?::[a-zA-Z]{2})?$/.test(values[i]),
             this.name
           );
@@ -822,14 +829,14 @@
     };
 
     Types.elistOfPoint = create( Types.listOfPoint );
-    Types.elistOfPoint.name = 'elist of Point';
+    Types.elistOfPoint.name = "elist of Point";
     Types.elistOfPoint.canBeEmpty = true;
 
     Types.listOfStone = create( Types.listOfPoint );
-    Types.listOfStone.name = 'list of Stone';
+    Types.listOfStone.name = "list of Stone";
 
     Types.elistOfStone = create( Types.elistOfPoint );
-    Types.elistOfStone.name = 'elist of Stone';
+    Types.elistOfStone.name = "elist of Stone";
     
     Props = FF[4].properties( Types );
 
@@ -844,7 +851,7 @@
     return;
   });
 
-  if ( typeof exports !== 'undefined' ) {
+  if ( typeof exports !== "undefined" ) {
     module.exports = SGFGrove; // jshint ignore:line
   }
   else {
