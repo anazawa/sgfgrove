@@ -1,25 +1,25 @@
 {
-  "name": "sgfgrove",
-  "author": "anazawa <anazawa@cpan.org>",
-  "description": "Type-aware SGF parser/composer intended for the browser",
-  "version": "0.0.2",
-  "homepage": "https://github.com/anazawa/sgfgrove",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/anazawa/sgfgrove.git"
-  },
-  "main": "sgfgrove.js",
-  "dependencies": {},
-  "devDependencies": {
-    "tape": "^3.0.3",
-    "argg": "0.0.1",
-    "jshint": "^2.5.8"
-  },
-  "scripts": {
-    "test": "node node_modules/argg test/test.*.js test/*/test.*.js && node node_modules/jshint/bin/jshint sgfgrove.js sgfgrove/*.js test/*.js test/*/*.js"
-  },
-  "license": "MIT",
-  "engines": {
-    "node": "*"
-  }
+    "name": "sgfgrove",
+    "author": "anazawa <anazawa@cpan.org>",
+    "description": "Type-aware SGF parser/composer intended for the browser",
+    "version": "0.0.2",
+    "homepage": "https://github.com/anazawa/sgfgrove",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/anazawa/sgfgrove.git"
+    },
+    "main": "sgfgrove.js",
+    "dependencies": {},
+    "devDependencies": {
+        "tape": "^3.0.3",
+        "argg": "0.0.1",
+        "jshint": "^2.5.8"
+    },
+    "scripts": {
+        "test": "node node_modules/argg test/test.*.js test/*/test.*.js && node node_modules/jshint/bin/jshint sgfgrove.js sgfgrove/*.js test/*.js test/*/*.js"
+    },
+    "license": "MIT",
+    "engines": {
+        "node": "*"
+    }
 }
