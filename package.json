@@ -2,7 +2,7 @@
     "name": "sgfgrove",
     "author": "anazawa <anazawa@cpan.org>",
     "description": "Type-aware SGF parser/composer intended for the browser",
-    "version": "0.0.2",
+    "version": "1.0.0",
     "homepage": "https://github.com/anazawa/sgfgrove",
     "repository": {
         "type": "git",

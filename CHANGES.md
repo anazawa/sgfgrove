@@ -1,5 +1,11 @@
 Revision history for SGFGrove.js.
 
+## 1.0.0
+
+- first production release
+- tabstop 2 => 4
+- no code changes
+
 ## 0.0.2 (beta)
 
 - add .jshintrc
