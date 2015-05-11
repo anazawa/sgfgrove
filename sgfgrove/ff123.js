@@ -222,7 +222,7 @@
                 MA : t.listOf( t.Point ),
                 TR : t.listOf( t.Point ),
                 CR : t.listOf( t.Point ),
-                LB : t.Compose( t.Point, t.Text ),
+                LB : t.listOf( t.Compose(t.Point, t.Text) ),
             });
         };
 
