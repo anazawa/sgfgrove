@@ -38,6 +38,7 @@ while ( my ($file, $filter) = each %filters ) {
     unlink "$file~";
 }
 
+system 'git', 'add', '.';
 system 'git', 'commit', '-m', "version $version";
 system 'git', 'tag', '-a', "v$version", '-m', "version $version";
 
