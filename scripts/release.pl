@@ -34,8 +34,18 @@ while ( my ($file, $filter) = each %filters ) {
     rename $file => "$file~";
     rename "$file.tmp" => $file;
     chmod $mode, $file;
+}
 
-    unlink "$file~";
+if ( !system('npm', 'test') ) {
+    for my $file ( keys %filters ) {
+        unlink "$file~";
+    }
+}
+else {
+    for my $file ( keys %filters ) {
+        rename "$file~" => $file;
+    }
+    die "'npm test' did not exit with 0";
 }
 
 system 'git', 'add', '.';
