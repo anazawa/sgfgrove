@@ -86,9 +86,16 @@
     }());
 
     FF.properties = (function () {
-        var prototype = {};
-    
-        prototype.unknown = {
+        var Properties = function (args) {
+            var props = args || {};
+            for ( var key in props ) {
+                if ( props.hasOwnProperty(key) ) {
+                    this[key] = props[key];
+                }
+            }
+        };
+
+        Properties.prototype.unknown = {
             name: "Unknown",
             parse: function (values) {
                 var vals = [];
@@ -113,27 +120,18 @@
             }
         };
 
-        prototype.find = function (key) {
+        Properties.prototype.get = function (key) {
             return (this.hasOwnProperty(key) && this[key]) || this.unknown;
         };
 
         return function (args) {
-            var spec = args || {};
-            var that = SGFGrove.Util.create( prototype );
-
-            for ( var key in spec ) {
-                if ( spec.hasOwnProperty(key) ) {
-                    that[key] = spec[key];
-                }
-            }
-
-            return that;
+            return new Properties(args);
         };
     }());
 
-    FF.find = function (ff, gm) {
-        if ( ff >= 1 && FF.hasOwnProperty(ff) ) {
-            if ( gm >= 1 && FF[ff].hasOwnProperty(gm) ) {
+    FF.getProperties = function (ff, gm) {
+        if ( FF.hasOwnProperty(ff) ) {
+            if ( FF[ff].hasOwnProperty(gm) ) {
                 return FF[ff][gm].Properties;
             }
             return FF[ff].properties();
@@ -285,7 +283,7 @@
                             root = sequence[0];
                             ff = root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1;
                             gm = root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1;
-                            props = FF.find( ff, gm );
+                            props = FF.getProperties( ff, gm );
                         }
                         catch (error) {
                             error.message += " at node #"+nodeId+", "+dump(root);
@@ -299,7 +297,7 @@
                         for ( id in node ) { // jshint ignore:line
                             try {
                                 if ( !node.hasOwnProperty(id) ) { continue; }
-                                node[id] = props.find(id).parse(node[id]);
+                                node[id] = props.get(id).parse(node[id]);
                             }
                             catch (error) {
                                 error.message += " at "+id+" of node #"+nodeId+", "+dump(node);
@@ -432,7 +430,7 @@
                         }
 
                         propIdents = ff < 4 ? /^[A-Z][A-Z0-9]?$/ : /^[A-Z]+$/;
-                        props = FF.find( ff, gm );
+                        props = FF.getProperties( ff, gm );
                     }
  
                     text += gap + "(" + lf; // Open GameTree
@@ -447,7 +445,7 @@
                         for ( ident in node ) {
                             if ( node.hasOwnProperty(ident) && propIdents.test(ident) ) {
                                 try {
-                                    values = props.find(ident).stringify(node[ident]);
+                                    values = props.get(ident).stringify(node[ident]);
                                 }
                                 catch (error) {
                                     error.message += " at "+ident+" of node #"+id+", "+dump(node);
