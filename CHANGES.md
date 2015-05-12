@@ -1,5 +1,13 @@
 Revision history for SGFGrove.js.
 
+## 1.0.1
+
+- add examples/
+- add scripts/
+- fix FF[3] LB property bug (LB was not list but scalar)
+- rename test/test.syntax.js to test.parse.js
+- add tests for #parse
+
 ## 1.0.0
 
 - first production release
