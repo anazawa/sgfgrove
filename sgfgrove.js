@@ -184,9 +184,9 @@
         };
 
         /* jshint boss:true */
-        var gameTree = function () {
+        var parseGameTree = function () {
             var sequence = [];
-            var subtrees = [], subtree;
+            var children = [], child;
             var node, ident, values, val;
 
             if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
@@ -222,15 +222,15 @@
                 error( "GameTree must contain at least one Node" );
             }
 
-            while ( subtree = gameTree() ) {
-                subtrees.push( subtree );
+            while ( child = parseGameTree() ) {
+                children.push( child );
             }
 
             if ( !test.call(/^\)\s*/g) ) { // end of GameTree
                 error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
             }
 
-            return [ sequence, subtrees ];
+            return [ sequence, children ];
         };
         /* jshint boss:false */
 
@@ -255,64 +255,64 @@
         };
 
         return function (text, rev) {
-            var trees = [], tree;
-            var props, nodeId = 0;
+            var collection = [], gameTree;
+            var props, id = 0;
 
             source = String(text);
             lastIndex = 0;
             reviver = typeof rev === "function" && rev;
 
-            while ( tree = gameTree() ) { // jshint ignore:line
-                trees.push( tree );
+            while ( gameTree = parseGameTree() ) { // jshint ignore:line
+                collection.push( gameTree );
             }
 
             if ( lastIndex !== source.length ) {
                 error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
             }
 
-            (function finalize (subtrees) {
-                var i, subtree, sequence, root, ff, gm;
-                var j, node, id;
+            (function finalize (gameTrees) {
+                var i, gameTree, sequence, root, ff, gm;
+                var j, node, ident;
 
-                for ( i = 0; i < subtrees.length; i++ ) {
-                    subtree = subtrees[i];
-                    sequence = subtree[0];
+                for ( i = 0; i < gameTrees.length; i++ ) {
+                    gameTree = gameTrees[i];
+                    sequence = gameTree[0];
 
-                    if ( subtrees === trees ) {
+                    if ( gameTrees === collection ) {
+                        root = sequence[0];
+
                         try {
-                            root = sequence[0];
                             ff = root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1;
                             gm = root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1;
-                            props = FF.getProperties( ff, gm );
                         }
                         catch (error) {
-                            error.message += " at node #"+nodeId+", "+dump(root);
+                            error.message += " at FF/GM of node #"+id+", "+dump(root);
                             throw error;
                         }
+
+                        props = FF.getProperties( ff, gm );
                     }
 
-                    for ( j = 0; j < sequence.length; j++ ) {
+                    for ( j = 0; j < sequence.length; j++, id++ ) {
                         node = sequence[j];
-
-                        for ( id in node ) { // jshint ignore:line
-                            try {
-                                if ( !node.hasOwnProperty(id) ) { continue; }
-                                node[id] = props.get(id).parse(node[id]);
-                            }
-                            catch (error) {
-                                error.message += " at "+id+" of node #"+nodeId+", "+dump(node);
-                                throw error;
+                        for ( ident in node ) {
+                            if ( node.hasOwnProperty(ident) ) {
+                                try {
+                                    node[ident] = props.get(ident).parse(node[ident]);
+                                }
+                                catch (error) {
+                                    error.message += " at "+ident+" of node #"+id+", "+dump(node);
+                                    throw error;
+                                }
                             }
                         }
-
-                        nodeId += 1;
                     }
 
-                    finalize( subtree[1] );
+                    finalize( gameTree[1] );
                 }
-            }(trees));
+            }(collection));
 
-            return reviver ? walk({ "": trees }, "") : trees;
+            return reviver ? walk({ "": collection }, "") : collection;
         };
     }());
 
@@ -402,11 +402,12 @@
             collection = finalize( "", { "": collection } );
 
             return (function stringify (gameTrees) {
+                var isCollection = gameTrees === collection;
                 var text = "", mind, prefix;
                 var i, gameTree, sequence, root, ff, gm;
                 var j, node, ident, values;
 
-                assert( isArray(gameTrees), gameTrees === collection ? "Collection" : "GameTrees" );
+                assert( isArray(gameTrees), isCollection ? "Collection" : "GameTrees" );
 
                 for ( i = 0; i < gameTrees.length; i++ ) {
                     gameTree = gameTrees[i];
@@ -415,7 +416,7 @@
                     sequence = gameTree[0];
                     assert( isArray(sequence) && sequence.length, "Sequence" );
 
-                    if ( gameTrees === collection ) {
+                    if ( isCollection ) {
                         root = sequence[0];
 
                         try {
