@@ -10,12 +10,36 @@
         SGFGrove = window.SGFGrove;
     }
 
-    var ucfirst = function (string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    };
-
     SGFGrove.validator = function () {
         var that = {};
+
+        that.create = function () {
+            var that = SGFGrove.Util.create(this);
+            that.init.apply(that, arguments);
+            return that;
+        };
+
+        that.init = function (args) {
+            var rules = (args && args.rules) || [];
+
+            this.errors = [];
+            this.rules  = [];
+
+            for ( var i = 0; i < rules.length; i++ ) {
+                this.addRule(rules[i]);
+            }
+
+            return;
+        };
+
+        that.addRule = function (rule) {
+            if ( rule && typeof rule === "object" ) {
+                this.rules.push( rule );
+            }
+            else if ( typeof rule === "string" ) {
+                this.rules.push( SGFGrove.validator.rule[rule]() );
+            }
+        };
 
         that.createError = function (context, error) {
             var c = {};
@@ -44,16 +68,16 @@
             }
         };
 
-        that.applyRules = function (ff, gm, name, args) {
-            var methods = [ name ];
+        that.applyRules = function (ff, gm, default_, args) {
             var rules = this.rules;
             var i, rule;
             var j, method, body;
 
-            if ( ff && gm ) {
-                methods.push( "FF"+ff+"_"+methods[0] );
-                methods.push( "FF"+ff+"_GM"+gm+"_"+methods[0] );
-            }
+            var methods = [
+                "FF"+ff+"_GM"+gm+"_"+default_,
+                "FF"+ff+"_"+default_,
+                default_
+            ];
 
             for ( i = 0; i < rules.length; i++ ) {
                 rule = rules[i];
@@ -62,6 +86,7 @@
                     body = rule[method];
                     if ( typeof body === "function" ) {
                         this.addErrors( context, body.apply(rule, args) );
+                        break;
                     }
                 }
             }
@@ -71,7 +96,6 @@
 
         that.validate = function (collection) {
             var that = this;
-            var gameTreeId = 0;
             var nodeId = 0;
             var ff, gm;
 
@@ -89,26 +113,25 @@
             this.applyRules(ff, gm, "validateCollection", [context, collection]);
 
             (function validate (gameTrees) {
-                var i, gameTree, sequence, treeId;
+                var i, gameTree, sequence;
                 var j, node, id;
 
                 for ( i = 0; i < gameTrees.length; i++ ) {
                     gameTree = gameTrees[i];
                     sequence = gameTree[0];
 
+                    context.node      = null;
+                    context.nodeId    = null;
+                    context.propIdent = null;
+                    context.propValue = null;
+
                     if ( gameTrees === collection ) {
                         ff = sequence[0].FF || 1;
                         gm = sequence[0].GM || 1;
+                        context.gameTree = gameTree;
+                        context.gameTreeId = i;
+                        that.applyRules(ff, gm, "validateGameTree", [context, gameTree]);
                     }
-
-                    context.gameTree   = gameTree;
-                    context.gameTreeId = gameTreeId++;
-                    context.node       = null;
-                    context.nodeId     = null;
-                    context.propIdent  = null;
-                    context.propValue  = null;
-
-                    that.applyRules(ff, gm, "validateGameTree", [context, gameTree]);
 
                     for ( j = 0; j < sequence.length; j++ ) {
                         node = sequence[i];
@@ -127,13 +150,10 @@
                     }
 
                     id = nodeId;
-                    treeId = gameTreeId;
                     validate(gameTree[1]);
 
-                    context.gameTree   = gameTree;
-                    context.gameTreeId = treeId;
-                    context.propIdent  = null;
-                    context.propValue  = null;
+                    context.propIdent = null;
+                    context.propValue = null;
 
                     for ( j = sequence.length-1; j >= 0; j++ ) {
                         node = sequence[j];
@@ -141,102 +161,99 @@
                         context.nodeId = id--;
                         that.applyRules(ff, gm, "revalidateNode", [context, node]);
                     }
-
-                    that.applyRules(ff, gm, "revalidateGameTree", [context, gameTree]);
                 }
             }(collection));
 
             return !this.errors.length;
         };
 
+        that.init.apply(that, arguments);
+
         return that;
     };
 
+    SGFGrove.validator.rule = function () {
+        return {};
+    };
+
     SGFGrove.validator.rule.root = function () {
-        var that = {};
-
-        that.isRootProperty = (function () {
-            var rootProps = ["AP", "CA", "FF", "GM", "ST", "SZ"];
-            var isRootProp = {};
-
-            for ( var i = 0; i < rootProps.length; i++ ) {
-                isRootProp[rootProp[i]] = null;
-            }
-
-            return function (prop) {
-                return isRootProp.hasOwnProperty(prop);
-            };
-        }());
+        var that = SGFGrove.validator.rule();
 
         that.validateCollection = function (c) {
             c.root = null;
         };
 
         that.validateGameTree = function (c, gameTree) {
-            var collection = c.collection;
-            for ( var i = 0; i < collection.length; i++ ) {
-                if ( gameTree === collection[i] ) {
-                    c.root = gameTree[0][0];
-                    break;
+            c.root = gameTree[0][0];
+        };
+
+        that.FF4_validateProperty = (function () {
+            var error = SGFGrove.validator.error;
+            var rootProps = ["AP", "CA", "FF", "GM", "ST", "SZ"];
+            var isRootProp = {};
+
+            for ( var i = 0; i < rootProps.length; i++ ) {
+                isRootProp[rootProps[i]] = null;
+            }
+
+            return function (c, propIdent) {
+                var errors = [];
+
+                if ( c.node !== c.root && isRootProp.hasOwnProperty(propIdent) ) {
+                    errors.push( error.rootPropNotInRootNode(propIdent) );
                 }
-            }
-        };
 
-        that.FF4_validateProperty = function (c, propIdent) {
-            var errors = [];
-
-            if ( c.node !== c.root && this.isRootProperty(propIdent) ) {
-                errors.push({
-                    name: "RootPropNotInRootNode",
-                    message: "root property "+propIdent+" outside root node"
-                });
-            }
-
-            return errors;
-        };
+                return errors;
+            };
+        }());
 
         return that;
     };
 
     SGFGrove.validator.rule.gameInfo = function () {
-        var that = {};
+        var that = SGFGrove.validator.rule();
 
-        that.isGameInfoProperty = (function () {
-            var gameInfoProps = ["AN", "BR", "BT", "CP", "DT", "EV", "GN", "GC", "ON", "OT", "PB", "PC", "PW", "RE", "RO", "RU", "SO", "TM", "US", "WR", "WT"];
+        var makeValidateNode = function (gameInfoProps) {
             var isGameInfoProp = {};
+            var error = SGFGrove.validator.error;
 
             for ( var i = 0; i < gameInfoProps.length; i++ ) {
-                isGameInfoProp[gameInfoProp[i]] = null;
+                isGameInfoProp[gameInfoProps[i]] = null;
             }
 
-            return function (prop) {
-                return isGameInfoProp.hasOwnProperty(prop);
+            return function (c, node) {
+                var errors = [];
+            
+                for ( var propIndet in node ) {
+                    if ( node.hasOwnProperty(propIdent) && isGameInfoProp.hasOwnProperty(propIdent) ) {
+                        if ( !c.gameInfo ) {
+                            c.gameInfo = node;
+                            break;
+                        }
+                        errors.push( error.gameInfoAlreadySet(propIdent) );
+                    }
+                }
+
+                return errors;
             };
-        }());
+        };
 
         that.validateCollection = function (c) {
             c.gameInfo = null;
         };
 
-        that.FF4_validateNode = function (c, node) {
-            var errors = [];
-            var prop;
-            
-            for ( prop in node ) {
-                if ( node.hasOwnProperty(prop) && this.isGameInfoProperty(prop) ) {
-                    if ( c.gameInfo === null ) {
-                        c.gameInfo = node;
-                        break;
-                    }
-                    errors.push({
-                        name: "GameInfoAlreadySet",
-                        message: "game-info property "+prop+" outside game-info node"
-                    });
-                }
-            }
+        that.FF4_validateNode = makeValidateNode([
+            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
+            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
+            "RO", "RU", "SO", "TM", "US", "WR", "WT"
+        ]);
 
-            return errors;
-        };
+        that.FF4_GM1_validateNode = makeValidateNode([
+            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
+            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
+            "RO", "RU", "SO", "TM", "US", "WR", "WT",
+            "HA", "KM"
+        ]);
 
         that.FF4_revalidateNode = function (c, node) {
             if ( node === c.gameInfo ) {
@@ -245,6 +262,78 @@
         };
 
         return that;
+    };
+
+    SGFGrove.validator.rule.moveSetup = function () {
+        var that = SGFGrove.validator.rule();
+
+        that.FF4_validateNode = (function () {
+            var error = SGFGrove.validator.error;
+            var isMoveProp = { B: null, KO: null, MN: null, W: null };
+            var isSetupProp = { AB: null, AE: null, AW: null, PL: null };
+
+            return function (c, node) {
+                var errors = [];
+                var hasSetupProp = false;
+                var hasMoveProp = false;
+
+                for ( var propIdent in node ) {
+                    if ( node.hasOwnProperty(propIdent) ) {
+                        if ( isSetupProp.hasOwnProperty(propIdent) ) {
+                            hasSetupProp = true;
+                        }
+                        else if ( isMoveProp.hasOwnProperty(propIdent) ) {
+                            hasMoveProp = true;
+                        }
+                        if ( hasSetupProp && hasMoveProp ) {
+                            errors.push( error.moveSetupMixed() );
+                            break;
+                        }
+                    }
+                }
+
+                return errors;
+            };
+        }());
+
+        return that;
+    };
+
+    SGFGrove.validator.error = function (args) {
+        var spec = args || {};
+
+        var that = {
+            name    : spec.name    || "Error",
+            message : spec.message || "",
+            context : spec.context
+        };
+
+        that.toString = function () {
+            return this.message ? this.name+": "+this.message : this.name;
+        };
+
+        return that; 
+    };
+
+    SGFGrove.validator.error.rootPropNotInRootNode = function (propIdent) {
+        return SGFGrove.validator.error({
+            name: "RootPropNotInRootNode",
+            message: "root property "+propIdent+" outside root node"
+        });
+    };
+
+    SGFGrove.validator.error.gameInfoAlreadySet = function (propIdent) {
+        return SGFGrove.validator.error({
+            name: "GameInfoAlreadySet",
+            message: "game-info property "+propIdent+" outside game-info node"
+        });
+    };
+
+    SGFGrove.validator.error.moveSetupMixed = function () {
+        return SGFGrove.validator.error({
+            name: "MoveSetupMixed",
+            message: "setup and move properties mixed with in a node"
+        });
     };
 
 }());
