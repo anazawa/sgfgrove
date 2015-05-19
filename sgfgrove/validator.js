@@ -299,6 +299,23 @@
         return that;
     };
 
+    SGFGrove.validator.rule.move = function () {
+        var that = SGFGrove.validator.rule();
+        var error = SGFGrove.validator.error;
+
+        that.FF4_validateNode = function (c, node) {
+            var errors = [];
+
+            if ( node.hasOwnProperty("B") && node.hasOwnProperty("W") ) {
+                errors.push( error.twoMovesInNode() );
+            }
+
+            return errors;
+        };
+
+        return that;
+    };
+
     SGFGrove.validator.error = function (args) {
         var spec = args || {};
 
@@ -332,7 +349,14 @@
     SGFGrove.validator.error.moveSetupMixed = function () {
         return SGFGrove.validator.error({
             name: "MoveSetupMixed",
-            message: "setup and move properties mixed with in a node"
+            message: "setup and move properties mixed within a node"
+        });
+    };
+
+    SGFGrove.validator.error.twoMovesInNode = function () {
+        return SGFGrove.validator.error({
+            name: "TwoMovesInNode",
+            message: "black and white move within a node"
         });
     };
 
