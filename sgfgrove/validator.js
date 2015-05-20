@@ -41,6 +41,18 @@
             }
         };
 
+        that.findRule = function (name) {
+            var rules = this.rules;
+
+            for ( var i = 0; i < rules.length; i++ ) {
+                if ( rules[i].name === name ) {
+                    return rules[i];
+                }
+            }
+
+            return;
+        };
+
         that.createError = function (context, error) {
             var c = {};
             var key;
@@ -69,6 +81,7 @@
         };
 
         that.applyRules = function (ff, gm, default_, args) {
+            var context = args[0];
             var rules = this.rules;
             var i, rule;
             var j, method, body;
@@ -103,6 +116,7 @@
                 collection : collection,
                 gameTree   : null,
                 gameTreeId : null,
+                root       : null,
                 node       : null,
                 nodeId     : null,
                 propIdent  : null,
@@ -114,7 +128,7 @@
 
             (function validate (gameTrees) {
                 var i, gameTree, sequence;
-                var j, node, id;
+                var j, node, propIdent, propValue, id;
 
                 for ( i = 0; i < gameTrees.length; i++ ) {
                     gameTree = gameTrees[i];
@@ -126,10 +140,12 @@
                     context.propValue = null;
 
                     if ( gameTrees === collection ) {
+                        nodeId = 0;
                         ff = sequence[0].FF || 1;
                         gm = sequence[0].GM || 1;
                         context.gameTree = gameTree;
                         context.gameTreeId = i;
+                        context.root = sequence[0];
                         that.applyRules(ff, gm, "validateGameTree", [context, gameTree]);
                     }
 
@@ -155,10 +171,10 @@
                     context.propIdent = null;
                     context.propValue = null;
 
-                    for ( j = sequence.length-1; j >= 0; j++ ) {
+                    for ( j = sequence.length-1; j >= 0; j-- ) {
                         node = sequence[j];
                         context.node = node;
-                        context.nodeId = id--;
+                        context.nodeId = --id;
                         that.applyRules(ff, gm, "revalidateNode", [context, node]);
                     }
                 }
@@ -172,13 +188,18 @@
         return that;
     };
 
-    SGFGrove.validator.rule = function () {
-        return {};
+    SGFGrove.validator.rule = function (name) {
+        var that = {
+            name: name || ""
+        };
+
+        return that;
     };
 
     SGFGrove.validator.rule.root = function () {
-        var that = SGFGrove.validator.rule();
+        var that = SGFGrove.validator.rule("root");
 
+        /*
         that.validateCollection = function (c) {
             c.root = null;
         };
@@ -186,6 +207,7 @@
         that.validateGameTree = function (c, gameTree) {
             c.root = gameTree[0][0];
         };
+        */
 
         that.FF4_validateProperty = (function () {
             var error = SGFGrove.validator.error;
@@ -211,9 +233,9 @@
     };
 
     SGFGrove.validator.rule.gameInfo = function () {
-        var that = SGFGrove.validator.rule();
+        var that = SGFGrove.validator.rule("gameInfo");
 
-        var makeValidateNode = function (gameInfoProps) {
+        var makeValidateNodeMethod = function (gameInfoProps) {
             var isGameInfoProp = {};
             var error = SGFGrove.validator.error;
 
@@ -223,8 +245,9 @@
 
             return function (c, node) {
                 var errors = [];
+                var propIdent;
             
-                for ( var propIndet in node ) {
+                for ( propIdent in node ) {
                     if ( node.hasOwnProperty(propIdent) && isGameInfoProp.hasOwnProperty(propIdent) ) {
                         if ( !c.gameInfo ) {
                             c.gameInfo = node;
@@ -242,13 +265,13 @@
             c.gameInfo = null;
         };
 
-        that.FF4_validateNode = makeValidateNode([
+        that.FF4_validateNode = makeValidateNodeMethod([
             "AN", "BR", "BT", "CP", "DT", "EV", "GN",
             "GC", "ON", "OT", "PB", "PC", "PW", "RE",
             "RO", "RU", "SO", "TM", "US", "WR", "WT"
         ]);
 
-        that.FF4_GM1_validateNode = makeValidateNode([
+        that.FF4_GM1_validateNode = makeValidateNodeMethod([
             "AN", "BR", "BT", "CP", "DT", "EV", "GN",
             "GC", "ON", "OT", "PB", "PC", "PW", "RE",
             "RO", "RU", "SO", "TM", "US", "WR", "WT",
@@ -265,7 +288,7 @@
     };
 
     SGFGrove.validator.rule.moveSetup = function () {
-        var that = SGFGrove.validator.rule();
+        var that = SGFGrove.validator.rule("moveSetup");
 
         that.FF4_validateNode = (function () {
             var error = SGFGrove.validator.error;
@@ -276,8 +299,9 @@
                 var errors = [];
                 var hasSetupProp = false;
                 var hasMoveProp = false;
+                var propIdent;
 
-                for ( var propIdent in node ) {
+                for ( propIdent in node ) {
                     if ( node.hasOwnProperty(propIdent) ) {
                         if ( isSetupProp.hasOwnProperty(propIdent) ) {
                             hasSetupProp = true;
@@ -300,7 +324,7 @@
     };
 
     SGFGrove.validator.rule.move = function () {
-        var that = SGFGrove.validator.rule();
+        var that = SGFGrove.validator.rule("move");
         var error = SGFGrove.validator.error;
 
         that.FF4_validateNode = function (c, node) {
@@ -356,7 +380,7 @@
     SGFGrove.validator.error.twoMovesInNode = function () {
         return SGFGrove.validator.error({
             name: "TwoMovesInNode",
-            message: "black and white move within a node"
+            message: "black and white moves within a node"
         });
     };
 
