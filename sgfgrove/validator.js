@@ -199,16 +199,6 @@
     SGFGrove.validator.rule.root = function () {
         var that = SGFGrove.validator.rule("root");
 
-        /*
-        that.validateCollection = function (c) {
-            c.root = null;
-        };
-
-        that.validateGameTree = function (c, gameTree) {
-            c.root = gameTree[0][0];
-        };
-        */
-
         that.FF4_validateProperty = (function () {
             var error = SGFGrove.validator.error;
             var rootProps = ["AP", "CA", "FF", "GM", "ST", "SZ"];
@@ -329,9 +319,40 @@
 
         that.FF4_validateNode = function (c, node) {
             var errors = [];
+            var hasBlackMove = node.hasOwnProperty("B");
+            var hasWhiteMove = node.hasOwnProperty("W");
 
-            if ( node.hasOwnProperty("B") && node.hasOwnProperty("W") ) {
+            if ( hasBlackMove && hasWhiteMove ) {
                 errors.push( error.twoMovesInNode() );
+            }
+
+            if ( node.hasOwnProperty("KO") && !hasBlackMove && !hasWhiteMove ) {
+                errors.push( error.annotateWithoutMove("KO") );
+            }
+
+            return errors;
+        };
+
+        return that;
+    };
+
+    SGFGrove.validator.rule.setup = function () {
+        var that = SGFGrove.validator.rule("setup");
+        var error = SGFGrove.validator.error;
+
+        that.FF4_validateNode = function (c, propIdent, propValue) {
+            var errors = [];
+            var seen = {};
+            var i;
+
+            if ( propIdent === "AB" || propIdent === "AE" || propIdent === "AW" ) {
+                for ( i = 0; i < propValue.length; i++ ) {
+                    if ( seen.hasOwnProperty(propValue[i]) ) {
+                        errors.push( error.positionNotUnique(propIdent) );
+                        break;
+                    }
+                    seen[propValue[i]] = null;
+                }
             }
 
             return errors;
@@ -383,5 +404,21 @@
             message: "black and white moves within a node"
         });
     };
+
+    SGFGrove.validator.error.annotateWithoutMove = function (propIdent) {
+        return SGFGrove.validator.error({
+            name: "AnnotateWithoutMove",
+            message: "move annotation '"+propIdent+"' without a move in node"
+        });
+    };
+
+    SGFGrove.validator.error.positionNotUnique = function (propIdent) {
+        return SGFGrove.validator.error({
+            name: "positionNotUnique",
+            message: "'"+propIdent+"' position not unique"
+        });
+    };
+
+
 
 }());
