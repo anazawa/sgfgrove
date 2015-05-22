@@ -53,19 +53,7 @@
             return;
         };
 
-        that.createError = function (context, error) {
-            var c = {};
-            var key;
-
-            if ( !error.hasOwnProperty("context") ) {
-                for ( key in context ) {
-                    if ( context.hasOwnProperty(key) ) {
-                        c[key] = context[key];
-                    }
-                }
-                error.context = c;
-            }
-
+        that.createError = function (error) {
             return error;
         };
 
@@ -73,15 +61,28 @@
             this.errors.length = 0;
         };
 
-        that.addErrors = function (context, errors) {
+        that.addErrors = function (errors) {
             errors = errors || [];
             for ( var i = 0; i < errors.length; i++ ) {
-                this.errors.push( this.createError(context, errors[i]) );
+                this.errors.push( this.createError(errors[i]) );
             }
         };
 
+        that.handleErrors = function () {
+            var errors = this.errors;
+            var i, cb;
+
+            for ( i = 0; i < errors.length; i++ ) {
+                cb = this["on"+errors[i].name];
+                if ( typeof cb === "function" ) {
+                    cb(errors[i].context);
+                }
+            }
+
+            return;
+        };
+
         that.applyRules = function (ff, gm, default_, args) {
-            var context = args[0];
             var rules = this.rules;
             var i, rule;
             var j, method, body;
@@ -98,7 +99,7 @@
                     method = methods[j];
                     body = rule[method];
                     if ( typeof body === "function" ) {
-                        this.addErrors( context, body.apply(rule, args) );
+                        this.addErrors( body.apply(rule, args) );
                         break;
                     }
                 }
@@ -180,6 +181,8 @@
                 }
             }(collection));
 
+            this.handleErrors();
+
             return !this.errors.length;
         };
 
@@ -212,7 +215,7 @@
                 var errors = [];
 
                 if ( c.node !== c.root && isRootProp.hasOwnProperty(propIdent) ) {
-                    errors.push( error.rootPropNotInRootNode(propIdent) );
+                    errors.push( error.rootPropNotInRootNodeError(c, propIdent) );
                 }
 
                 return errors;
@@ -233,17 +236,15 @@
                 isGameInfoProp[gameInfoProps[i]] = null;
             }
 
-            return function (c, node) {
+            return function (c, propIdent) {
                 var errors = [];
-                var propIdent;
             
-                for ( propIdent in node ) {
-                    if ( node.hasOwnProperty(propIdent) && isGameInfoProp.hasOwnProperty(propIdent) ) {
-                        if ( !c.gameInfo ) {
-                            c.gameInfo = node;
-                            break;
-                        }
-                        errors.push( error.gameInfoAlreadySet(propIdent) );
+                if ( isGameInfoProp.hasOwnProperty(propIdent) ) {
+                    if ( !c.gameInfo ) {
+                        c.gameInfo = c.node;
+                    }
+                    else if ( c.node !== c.gameInfo ) {
+                        errors.push( error.gameInfoAlreadySetError(c, propIdent) );
                     }
                 }
 
@@ -255,13 +256,13 @@
             c.gameInfo = null;
         };
 
-        that.FF4_validateNode = makeValidateNodeMethod([
+        that.FF4_validateProperty = makeValidateNodeMethod([
             "AN", "BR", "BT", "CP", "DT", "EV", "GN",
             "GC", "ON", "OT", "PB", "PC", "PW", "RE",
             "RO", "RU", "SO", "TM", "US", "WR", "WT"
         ]);
 
-        that.FF4_GM1_validateNode = makeValidateNodeMethod([
+        that.FF4_GM1_validateProperty = makeValidateNodeMethod([
             "AN", "BR", "BT", "CP", "DT", "EV", "GN",
             "GC", "ON", "OT", "PB", "PC", "PW", "RE",
             "RO", "RU", "SO", "TM", "US", "WR", "WT",
@@ -300,7 +301,7 @@
                             hasMoveProp = true;
                         }
                         if ( hasSetupProp && hasMoveProp ) {
-                            errors.push( error.moveSetupMixed() );
+                            errors.push( error.moveSetupMixedError(c) );
                             break;
                         }
                     }
@@ -323,11 +324,11 @@
             var hasWhiteMove = node.hasOwnProperty("W");
 
             if ( hasBlackMove && hasWhiteMove ) {
-                errors.push( error.twoMovesInNode() );
+                errors.push( error.twoMovesInNodeError(c) );
             }
 
             if ( node.hasOwnProperty("KO") && !hasBlackMove && !hasWhiteMove ) {
-                errors.push( error.annotateWithoutMove("KO") );
+                errors.push( error.annotateWithoutMoveError(c, "KO") );
             }
 
             return errors;
@@ -340,7 +341,7 @@
         var that = SGFGrove.validator.rule("setup");
         var error = SGFGrove.validator.error;
 
-        that.FF4_validateNode = function (c, propIdent, propValue) {
+        that.FF4_validateProperty = function (c, propIdent, propValue) {
             var errors = [];
             var seen = {};
             var i;
@@ -348,7 +349,7 @@
             if ( propIdent === "AB" || propIdent === "AE" || propIdent === "AW" ) {
                 for ( i = 0; i < propValue.length; i++ ) {
                     if ( seen.hasOwnProperty(propValue[i]) ) {
-                        errors.push( error.positionNotUnique(propIdent) );
+                        errors.push( error.positionNotUniqueError(c, propIdent) );
                         break;
                     }
                     seen[propValue[i]] = null;
@@ -361,15 +362,60 @@
         return that;
     };
 
-    SGFGrove.validator.error = function (args) {
+    SGFGrove.validator.rule.nodeAnnotation = function () {
+        var that = SGFGrove.validator.rule("nodeAnnotation");
+        var error = SGFGrove.validator.error;
+
+        that.FF4_validateNode = (function () {
+            var props = ["DM", "UC", "GB", "GW"];
+
+            return function (c, node) {
+                var errors = [];
+                var seen = false;
+                var i;
+
+                for ( i = 0; i < props.length; i++ ) {
+                    if ( node.hasOwnProperty(props[i]) ) {
+                        if ( seen ) {
+                            errors.push( error.annotateNotUniqueError(c, props[i]) );
+                            break;
+                        }
+                        seen = true;
+                    }
+                }
+
+                return errors;
+            };
+        }());
+
+        return that;
+    };
+
+    SGFGrove.validator.error = function (c, args) {
         var spec = args || {};
 
         var that = {
             name    : spec.name    || "Error",
-            message : spec.message || "",
-            context : spec.context
+            message : spec.message || ""
         };
 
+        that.context = (function () {
+            var context = spec.context;
+            var copy = null;
+            var key;
+
+            if ( context && typeof context === "object" ) {
+                copy = {};
+                for ( key in context ) {
+                    if ( context.hasOwnProperty(key) ) {
+                        copy[key] = context[key];
+                    }
+                }
+            }
+
+            return copy;
+        }());
+ 
         that.toString = function () {
             return this.message ? this.name+": "+this.message : this.name;
         };
@@ -377,48 +423,53 @@
         return that; 
     };
 
-    SGFGrove.validator.error.rootPropNotInRootNode = function (propIdent) {
-        return SGFGrove.validator.error({
-            name: "RootPropNotInRootNode",
+    SGFGrove.validator.error.rootPropNotInRootNodeError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "RootPropNotInRootNodeError",
             message: "root property "+propIdent+" outside root node"
         });
     };
 
-    SGFGrove.validator.error.gameInfoAlreadySet = function (propIdent) {
-        return SGFGrove.validator.error({
-            name: "GameInfoAlreadySet",
+    SGFGrove.validator.error.gameInfoAlreadySetError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "GameInfoAlreadySetError",
             message: "game-info property "+propIdent+" outside game-info node"
         });
     };
 
-    SGFGrove.validator.error.moveSetupMixed = function () {
-        return SGFGrove.validator.error({
-            name: "MoveSetupMixed",
+    SGFGrove.validator.error.moveSetupMixedError = function (c) {
+        return SGFGrove.validator.error(c, {
+            name: "MoveSetupMixedError",
             message: "setup and move properties mixed within a node"
         });
     };
 
-    SGFGrove.validator.error.twoMovesInNode = function () {
-        return SGFGrove.validator.error({
-            name: "TwoMovesInNode",
+    SGFGrove.validator.error.twoMovesInNodeError = function (c) {
+        return SGFGrove.validator.error(c, {
+            name: "TwoMovesInNodeError",
             message: "black and white moves within a node"
         });
     };
 
-    SGFGrove.validator.error.annotateWithoutMove = function (propIdent) {
-        return SGFGrove.validator.error({
-            name: "AnnotateWithoutMove",
+    SGFGrove.validator.error.annotateWithoutMoveError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "AnnotateWithoutMoveError",
             message: "move annotation '"+propIdent+"' without a move in node"
         });
     };
 
-    SGFGrove.validator.error.positionNotUnique = function (propIdent) {
-        return SGFGrove.validator.error({
-            name: "positionNotUnique",
+    SGFGrove.validator.error.positionNotUniqueError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "PositionNotUniqueError",
             message: "'"+propIdent+"' position not unique"
         });
     };
 
-
+    SGFGrove.validator.error.annotateNotUnique = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "AnnotateNotUniqueError",
+            message: "annotation property '"+propIdent+"' contradicts previous property"
+        });
+    };
 
 }());
