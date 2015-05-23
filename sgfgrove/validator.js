@@ -22,8 +22,7 @@
         that.init = function (args) {
             var rules = (args && args.rules) || [];
 
-            this.errors = [];
-            this.rules  = [];
+            this.rules = [];
 
             for ( var i = 0; i < rules.length; i++ ) {
                 this.addRule(rules[i]);
@@ -57,41 +56,24 @@
             return error;
         };
 
-        that.clearErrors = function () {
-            this.errors.length = 0;
-        };
-
-        that.addErrors = function (errors) {
-            errors = errors || [];
-            for ( var i = 0; i < errors.length; i++ ) {
-                this.errors.push( this.createError(errors[i]) );
-            }
-        };
-
-        that.handleErrors = function () {
-            var errors = this.errors;
-            var i, cb;
-
-            for ( i = 0; i < errors.length; i++ ) {
-                cb = this["on"+errors[i].name];
-                if ( typeof cb === "function" ) {
-                    cb(errors[i].context);
-                }
-            }
-
-            return;
-        };
-
         that.applyRules = function (ff, gm, default_, args) {
             var rules = this.rules;
+            var errors = [];
             var i, rule;
             var j, method, body;
+            var k, result;
 
-            var methods = [
-                "FF"+ff+"_GM"+gm+"_"+default_,
-                "FF"+ff+"_"+default_,
-                default_
-            ];
+            var methods;
+            if ( ff && gm ) {
+                methods = [
+                    "FF"+ff+"_GM"+gm+"_"+default_,
+                    "FF"+ff+"_"+default_,
+                    default_
+                ];
+            }
+            else {
+                methods = [ default_ ];
+            }
 
             for ( i = 0; i < rules.length; i++ ) {
                 rule = rules[i];
@@ -99,19 +81,24 @@
                     method = methods[j];
                     body = rule[method];
                     if ( typeof body === "function" ) {
-                        this.addErrors( body.apply(rule, args) );
+                        result = body.apply(rule, args) || [];
+                        for ( k = 0; k < result.length; k++ ) {
+                            errors.push( this.createError(result[k]) );
+                        }
                         break;
                     }
                 }
             }
 
-            return;
+            return errors;
         };
 
-        that.validate = function (collection) {
+        that.validate = function (collection, errorHandlers) {
             var that = this;
+            var errors = [];
             var nodeId = 0;
             var ff, gm;
+            var i, error, handler;
 
             var context = {
                 collection : collection,
@@ -124,9 +111,12 @@
                 propValue  : null
             };
 
-            this.clearErrors();
-            this.applyRules(ff, gm, "validateCollection", [context, collection]);
+            var applyRules = function (method, args) {
+                return that.applyRules(ff, gm, method, [context].cocat(args));
+            };
 
+            errors.push( applyRules("validateCollection", [collection]) );
+            
             (function validate (gameTrees) {
                 var i, gameTree, sequence;
                 var j, node, propIdent, propValue, id;
@@ -147,21 +137,21 @@
                         context.gameTree = gameTree;
                         context.gameTreeId = i;
                         context.root = sequence[0];
-                        that.applyRules(ff, gm, "validateGameTree", [context, gameTree]);
+                        errors.push( applyRules("validateGameTree", [gameTree]) );
                     }
 
                     for ( j = 0; j < sequence.length; j++ ) {
                         node = sequence[i];
                         context.node = node;
                         context.nodeId = nodeId++;
-                        that.applyRules(ff, gm, "validateNode", [context, node]);
+                        errors.push(applyRules("validateNode", [node]));
 
                         for ( propIdent in node ) {
                             if ( node.hasOwnProperty(propIdent) ) {
                                 propValue = node[propIdent];
                                 context.propIdent = propIdent;
                                 context.porpValue = propValue;
-                                that.applyRules(ff, gm, "validateProperty", [context, propIdent, propValue]);
+                                errors.push(applyRules("validateProperty", [propIdent, propValue]));
                             }
                         }
                     }
@@ -176,14 +166,23 @@
                         node = sequence[j];
                         context.node = node;
                         context.nodeId = --id;
-                        that.applyRules(ff, gm, "revalidateNode", [context, node]);
+                        errors.push(applyRules("revalidateNode", [node]));
                     }
                 }
             }(collection));
 
-            this.handleErrors();
+            errors = [].cocat(errors);
+            if ( errorHandlers && typeof errorHandlers === "object" ) {
+                for ( i = 0; i < errors.length; i++ ) {
+                    error = errors[i];
+                    handler = errorHandlers["on"+error.name];
+                    if ( typeof handler === "function" ) {
+                        handler.call(error.context, error);
+                    }
+                }
+            }
 
-            return !this.errors.length;
+            return errors;
         };
 
         that.init.apply(that, arguments);
@@ -228,7 +227,7 @@
     SGFGrove.validator.rule.gameInfo = function () {
         var that = SGFGrove.validator.rule("gameInfo");
 
-        var makeValidateNodeMethod = function (gameInfoProps) {
+        var makeValidatePropertyMethod = function (gameInfoProps) {
             var isGameInfoProp = {};
             var error = SGFGrove.validator.error;
 
@@ -256,13 +255,13 @@
             c.gameInfo = null;
         };
 
-        that.FF4_validateProperty = makeValidateNodeMethod([
+        that.FF4_validateProperty = makeValidatePropertyMethod([
             "AN", "BR", "BT", "CP", "DT", "EV", "GN",
             "GC", "ON", "OT", "PB", "PC", "PW", "RE",
             "RO", "RU", "SO", "TM", "US", "WR", "WT"
         ]);
 
-        that.FF4_GM1_validateProperty = makeValidateNodeMethod([
+        that.FF4_GM1_validateProperty = makeValidatePropertyMethod([
             "AN", "BR", "BT", "CP", "DT", "EV", "GN",
             "GC", "ON", "OT", "PB", "PC", "PW", "RE",
             "RO", "RU", "SO", "TM", "US", "WR", "WT",
