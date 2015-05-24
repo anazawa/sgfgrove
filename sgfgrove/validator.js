@@ -56,32 +56,31 @@
             return error;
         };
 
-        that.applyRules = function (ff, gm, default_, args) {
+        that.applyRules = function (ff, gm, to, args) {
             var rules = this.rules;
             var errors = [];
             var i, rule;
-            var j, method, body;
+            var j, method;
             var k, result;
 
             var methods;
             if ( ff && gm ) {
                 methods = [
-                    "FF"+ff+"_GM"+gm+"_"+default_,
-                    "FF"+ff+"_"+default_,
-                    default_
+                    "FF"+ff+"_GM"+gm+"_"+to,
+                    "FF"+ff+"_"+to,
+                    to
                 ];
             }
             else {
-                methods = [ default_ ];
+                methods = [ to ];
             }
 
             for ( i = 0; i < rules.length; i++ ) {
                 rule = rules[i];
                 for ( j = 0; j < methods.length; j++ ) {
-                    method = methods[j];
-                    body = rule[method];
-                    if ( typeof body === "function" ) {
-                        result = body.apply(rule, args) || [];
+                    method = rule[methods[j]];
+                    if ( typeof method === "function" ) {
+                        result = method.apply(rule, args) || [];
                         for ( k = 0; k < result.length; k++ ) {
                             errors.push( this.createError(result[k]) );
                         }
@@ -97,7 +96,6 @@
             var that = this;
             var errors = [];
             var nodeId = 0;
-            var ff, gm;
             var i, error, handler;
 
             var context = {
@@ -111,11 +109,16 @@
                 propValue  : null
             };
 
-            var applyRules = function (method, args) {
-                return that.applyRules(ff, gm, method, [context].cocat(args));
+            var applyRules = function (to, args) {
+                var ff = context.root ? context.root.FF || 1 : null;
+                var gm = context.root ? context.root.GM || 1 : null;
+                var e = that.applyRules( ff, gm, to, [context].cocat(args) );
+                for ( var i = 0; i < e.length; i++ ) {
+                    errors.push( e[i] );
+                }
             };
 
-            errors.push( applyRules("validateCollection", [collection]) );
+            applyRules("validateCollection", [collection]);
             
             (function validate (gameTrees) {
                 var i, gameTree, sequence;
@@ -132,26 +135,24 @@
 
                     if ( gameTrees === collection ) {
                         nodeId = 0;
-                        ff = sequence[0].FF || 1;
-                        gm = sequence[0].GM || 1;
                         context.gameTree = gameTree;
                         context.gameTreeId = i;
                         context.root = sequence[0];
-                        errors.push( applyRules("validateGameTree", [gameTree]) );
+                        applyRules("validateGameTree", [gameTree]);
                     }
 
                     for ( j = 0; j < sequence.length; j++ ) {
                         node = sequence[i];
                         context.node = node;
                         context.nodeId = nodeId++;
-                        errors.push(applyRules("validateNode", [node]));
+                        applyRules("validateNode", [node]);
 
                         for ( propIdent in node ) {
                             if ( node.hasOwnProperty(propIdent) ) {
                                 propValue = node[propIdent];
                                 context.propIdent = propIdent;
                                 context.porpValue = propValue;
-                                errors.push(applyRules("validateProperty", [propIdent, propValue]));
+                                applyRules("validateProperty", [propIdent, propValue]);
                             }
                         }
                     }
@@ -166,12 +167,11 @@
                         node = sequence[j];
                         context.node = node;
                         context.nodeId = --id;
-                        errors.push(applyRules("revalidateNode", [node]));
+                        applyRules("revalidateNode", [node]);
                     }
                 }
             }(collection));
 
-            errors = [].cocat(errors);
             if ( errorHandlers && typeof errorHandlers === "object" ) {
                 for ( i = 0; i < errors.length; i++ ) {
                     error = errors[i];
