@@ -4,6 +4,28 @@ Type-aware SGF parser/composer intended for the browser
 
 [![Build Status](https://travis-ci.org/anazawa/sgfgrove.svg)](https://travis-ci.org/anazawa/sgfgrove)
 
+- [Sysnopsis](#synopsis)
+- [Description](#description)
+    - [Methods](#methods)
+    - [The Game Data Structure](#the-game-data-structure)
+        - [Why Not Usual Tree Structure?](#why-not-usual-tree-structure)
+    - [SGF Properties](#sgf-properties)
+        - [FF\[4\]](#ff4)
+        - [FF\[4\]GM\[1\] (Go)](#ff4gm1-go)
+        - [Unknown Properties](#unknown-properties)
+        - [Unknown Game Types (GM)](#unknown-game-types-gm)
+        - [Unknown File Formats (FF)](#unknown-file-formats-ff)
+    - [Exceptions](#exceptions)
+    - [Exapmles](#examples)
+    - [Extensions](#extensions)
+    - [Versioning](#versioning)
+    - [History](#history)
+    - [Other SGF Parsers](#other-sgf-parsers)
+    - [See Also](#see-also)
+    - [Acknowledgements](#acknowledgements)
+    - [Author](#author)
+    - [License](#license)
+
 ## Synopsis
 
 In your HTML:
