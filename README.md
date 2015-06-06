@@ -20,8 +20,8 @@ Type-aware SGF parser/composer intended for the browser
     - [Extensions](#extensions)
     - [Versioning](#versioning)
     - [History](#history)
-    - [Other SGF Parsers](#other-sgf-parsers)
     - [See Also](#see-also)
+        - [Other SGF Parsers](#other-sgf-parsers)
     - [Acknowledgements](#acknowledgements)
     - [Author](#author)
     - [License](#license)
@@ -592,48 +592,48 @@ and so this module is not compatible with Perl one.
 Do not send this module's bug reports/feature requests to the original
 module's author but this module's author.
 
-## Other SGF Parsers
+## See Also
 
-### [smartgame](https://github.com/neagle/smartgame)
+- [SGF File Format FF\[4\]](http://www.red-bean.com/sgf/)
+- [JSON - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
+
+### Other SGF Parsers
+
+#### [smartgame](https://github.com/neagle/smartgame)
 
 This module comes with "smartgamer" that allows you to edit/iterate through
 the smartgame data structure. It seems very handy. SGFGrove.js is not
 compatible with this module.
 
-### [GO Tools](http://gotools.sourceforge.net/)
+#### [GO Tools](http://gotools.sourceforge.net/)
 
 Includes sgflib.py, a Python SGF parser. The source code is well documented.
 `SGFGrove.collection.gameTree` behaves like the `Cursor` object defined by
 this module.
 
-### [WGo.js](https://github.com/waltheri/wgo.js)
+#### [WGo.js](https://github.com/waltheri/wgo.js)
 
 Provides an HTML5 go board that comes with a simple SGF parser which is
 required by the SGF player. The `SHELL` texture of white stones is quite
 beautiful.
 
-### [SGFC](http://www.red-bean.com/sgf/sgfc/index.html)
+#### [SGFC](http://www.red-bean.com/sgf/sgfc/index.html)
 
 SGF syntax checker & converter written by the author of FF[4].
 Includes a SGF parser/composer written in C. The SGFGrove's internal subroutine
 `expandPointList` is based on the `ExpandPointList` function defined by
 this library.
 
-### [MultiGo](http://www.ruijiang.com/multigo/)
+#### [MultiGo](http://www.ruijiang.com/multigo/)
 
 While the source is not open, the iterator behavior of
 `SGFGrove.collection.gameTree` is based on this GUI application
 (depth-first search).
 
-### [jGoBoard](https://github.com/jokkebk/jgoboard)
+#### [jGoBoard](https://github.com/jokkebk/jgoboard)
 
 Provides a beautiful HTML5 go board that comes with a JavaScript SGF parser.
 The version 3.3.3 was released in March 2015.
-
-## See Also
-
-- [SGF File Format FF\[4\]](http://www.red-bean.com/sgf/)
-- [JSON - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
 
 ## Acknowledgements
 
