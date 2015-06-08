@@ -9,21 +9,21 @@ Type-aware SGF parser/composer intended for the browser
     - [Methods](#methods)
     - [The Game Data Structure](#the-game-data-structure)
         - [Why Not Usual Tree Structure?](#why-not-usual-tree-structure)
-    - [SGF Property Types](#sgf-types)
-        - [FF\[4\]](#ff4)
-            - [Number](#number)
-            - [Real](#real)
-            - [Double](#double)
-            - [Color](#color)
-            - [None](#none)
-            - [Text](#text)
-            - [SimpleText](#simpletext)
+    - [SGF Property Types](#sgf-property-types)
+        - FF[4]
+            - Number
+            - Real
+            - Double
+            - Color
+            - None
+            - Text
+            - SimpleText
     - [SGF Properties](#sgf-properties)
-        - [FF\[4\]](#ff4)
-        - [FF\[4\]GM\[1\] (Go)](#ff4gm1-go)
-        - [Unknown Properties](#unknown-properties)
-        - [Unknown Game Types (GM)](#unknown-game-types-gm)
-        - [Unknown File Formats (FF)](#unknown-file-formats-ff)
+        - FF[4]
+        - FF[4]GM[1] \(Go)
+        - Unknown Properties
+        - Unknown Game Types (GM)
+        - Unknown File Formats (FF)
     - [Exceptions](#exceptions)
     - [Exapmles](#examples)
     - [Extensions](#extensions)
@@ -190,7 +190,7 @@ that the height of a SGF game tree tends to be much longer than the width,
 the total number of leaves. Even tsumego/joseki, which generally has a lot of
 variations, can be considered as a tree of sequences.
 
-### SGF Property Type
+### SGF Property Types
 
 #### FF[4]
 
@@ -217,8 +217,8 @@ SGF None is converted into JavaScript `null`.
 ##### Text
 
 SGF Text is converted into JavaScript String. Soft line breaks (linebreaks
-preceded by a `\`) are removed. Hard line breaks (linebreaks other than soft
-linebreaks) are left untouched. When parsing, escaped characters are unescaped.
+preceded by a `\`) are removed. Hard line breaks (any other linebreaks
+encoountered) are left untouched. When parsing, escaped characters are unescaped.
 When stringifying, `]`, `\` and `:` are escaped by this module.
 
     SGF                   JavaScript            Notes
