@@ -47,6 +47,24 @@
         return false;
     };
 
+    var map = function (array, cb) {
+        var result = [];
+
+        for ( var i = 0; i < array.length; i++ ) {
+            result[i] = cb(array[i], i, array);
+        }
+
+        return result;
+    };
+
+    var find = function (array, cb) {
+        for ( var i = 0; i < array.length; i++ ) {
+            if ( cb(array[i], i, array) ) {
+                return array[i];
+            }
+        }
+    };
+
     SGFGrove.validator = function () {
         var that = {};
 
@@ -417,6 +435,49 @@
         return that;
     };
 
+    SGFGrove.validator.rule.markup = function () {
+        var that = SGFGrove.validator.rule("markup");
+        var error = SGFGrove.validator.error;
+        var first = function (array) { return array[0]; };
+        var isZeroLength = function (line) { return line[0] === line[1]; };
+        var toString = function (line) { return line[0]+line[1]; };
+
+        that.FF4_validateNode = function (c, node) {
+            var errors = [];
+            var CR = node.CR || [];
+            var MA = node.MA || [];
+            var SL = node.SL || [];
+            var SQ = node.SQ || [];
+            var TR = node.TR || [];
+
+            if ( !isUnique(CR.concat(MA, SL, SQ, TR)) ) {
+                errors.push( error.positionNotUniqueError(c, ["CR", "MA", "SL", "SQ", "TR"]) );
+            }
+
+            return errors;
+        };
+
+        that.FF4_validateProperty = function (c, propIdent, propValue) {
+            var errors = [];
+
+            if ( propIdent === "LB" && !isUnique(map(propValue, first)) ) {
+                errors.push( error.positionNotUniqueError(c, ["LB"]) );
+            }
+            else if ( propIdent === "LN" || propIdent === "AR" ) {
+                if ( find(propValue, isZeroLength) ) {
+                    errors.push( error.zeroLengthLineError(c, propIdent) );
+                }
+                if ( !isUnique(map(propValue, toString)) ) {
+                    errors.push( error.lineNotUniqueError(c, propIdent) );
+                }
+            }
+
+            return errors;
+        };
+
+        return that;
+    };
+
     SGFGrove.validator.error = function (c, args) {
         var spec = args || {};
 
@@ -495,6 +556,20 @@
         return SGFGrove.validator.error(c, {
             name: "AnnotateNotUniqueError",
             message: props.join(", ")+" must not be mixed within a single node"
+        });
+    };
+
+    SGFGrove.validator.error.lineNotUniqueError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "LineNotUniqueError",
+            message: propIdent+" must have unique lines"
+        });
+    };
+
+    SGFGrove.validator.error.zeroLengthLineError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "ZeroLengthLineError",
+            message: propIdent+" contains a zero-length line"
         });
     };
 
