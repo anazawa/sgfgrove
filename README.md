@@ -348,9 +348,9 @@ and properties to this module by using the #define method.
 All the properties of the unknown file format are treated as an unknown
 property.
 
-# Diagnostics
+## Diagnostics
 
-## SyntaxError: Unexpected token '%s'
+### SyntaxError: Unexpected token '%s'
 
 You tried to #parse a malformed SGF string.
 
@@ -358,7 +358,7 @@ You tried to #parse a malformed SGF string.
 SGFGrove.parse("(broken)"); // => SyntaxError
 ```
 
-## SyntaxError: Property '%s' already exists
+### SyntaxError: Property '%s' already exists
 
 You tried to #parse a SGF node that has a duplicate property.
 It's prohibited by the SGF specification.
@@ -367,7 +367,7 @@ It's prohibited by the SGF specification.
 SGFGrove.parse("(;FF[4];B[aa]B[bb])"); // => SyntaxError
 ```
 
-## SyntaxError: PropValue of %s is missing
+### SyntaxError: PropValue of %s is missing
 
 You tried to #parse a property that has no value.
 
@@ -375,7 +375,7 @@ You tried to #parse a property that has no value.
 SGFGrove.parse("(;FF[4];B)"); // => SyntaxError
 ```
 
-## SyntaxError/TypeError: GameTree must contain at least one node
+### SyntaxError/TypeError: GameTree must contain at least one node
 
 You tried to #parse/#stringify an empty game tree.
 It's prohibited by the SGF specification.
@@ -385,7 +385,7 @@ SGFGrove.parse("()"); // => SyntaxError
 SGFGrove.stringify([[[], []]]); // => TypeError
 ```
 
-## TypeError: Assersion (%s) failed
+### TypeError: Assersion (%s) failed
 
 You tried to #parse a malformed property value or #stringify data that
 has an invalid data type. See "SGF Properties" for details.
@@ -395,9 +395,9 @@ SGFGrove.parse("(;FF[four])"); // => TypeError
 SGFGrove.stringify([[[{ FF: "four" }], []]]); // => TypeError
 ```
 
-# Examples
+## Examples
 
-## Coordinate Transformation
+### Coordinate Transformation
   
 ```js
 var char2coord = { "a": 0, "b": 1, ... };
@@ -457,7 +457,7 @@ SGFGrove.parse("(;FF[4]C[foo: hi\nbar: gg])", function (key, value) {
 // ]]
 ```
 
-## User-defined Properties are ignored
+### User-defined Properties are ignored
 
 ```js
 SGFGrove.stringify([[
@@ -470,7 +470,7 @@ SGFGrove.stringify([[
 // => "(;FF[4])"
 ```
 
-## Using toSGF Method
+### Using toSGF Method
 
 ```js
 var coord2char = [ "a", "b", ... ];
@@ -493,7 +493,7 @@ SGFGrove.stringify([[
 // => "(;FF[4];B[ab])"
 ```
 
-## Select properties
+### Select properties
 
 ```js
 var sgf = [[
@@ -508,7 +508,7 @@ SGFGrove.stringify(sgf, ["FF", "B", "W"]);
 // => "(;FF[4];B[pd];W[qp])"
 ```
 
-## GameTree Traversal
+### GameTree Traversal
 
 ```js
 var trees = SGFGrove.parse("(;FF[4])"); // => [Collection]
@@ -564,7 +564,7 @@ var nodeId = 0;
 }(trees));
 ```
 
-## Define Othello (FF[4]GM[2]) handlers
+### Define Othello (FF[4]GM[2]) handlers
 
 ```js
 // NOTE: the FF[4] spec does not come with the Othello definition,
@@ -611,15 +611,15 @@ var othello = SGFGrove.parse("(;FF[4]GM[2]B[a1])");
 // ]]
 ```
 
-# Extensions
+## Extensions
 
-## sgfgrove/ff123.js
+### sgfgrove/ff123.js
 
 Adds FF[1]-FF[3] properties and their Go (GM[1]) specific properties
 to SGFGrove. Note that FF[2] is simply treated as FF[1]. See the test cases
 for details.
 
-## sgfgrove/collection.js
+### sgfgrove/collection.js
 
 Given a SGF collection, constructs the iterator/mutator object.
 See `sgfgrove/collection.md` for details.
@@ -635,7 +635,7 @@ gameTree.appendChild({ W: "qp" });
 collection.toString(); // => "(;FF[4];B[pd];W[qp])"
 ```
 
-## sgfgrove/validator.js
+### sgfgrove/validator.js
 
 ```js
 var collection = SGFGrove.parse("(;FF[4])");
@@ -655,14 +655,14 @@ validator.validate(collection, {
 });
 ```
 
-# Versioning
+## Versioning
 
 If the changes contain an incompatible change that may break the user's
 existing code, the module namespace itself will be renamed, e.g.,
 `SGFGrove` will become `SGFGrove2`. Otherwise the version number will be
 simply incremented.
 
-# History
+## History
 
 The data structure of a SGF collection is based on Games::Go::SGF::Grove,
 a Perl module on CPAN:
@@ -675,59 +675,59 @@ and so this module is not compatible with Perl one.
 Do not send this module's bug reports/feature requests to the original
 module's author but this module's author.
 
-# See Also
+## See Also
 
 - [SGF File Format FF\[4\]](http://www.red-bean.com/sgf/)
 - [JSON - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
 
-## Other SGF Parsers
+### Other SGF Parsers
 
-### [smartgame](https://github.com/neagle/smartgame)
+#### [smartgame](https://github.com/neagle/smartgame)
 
 This module comes with "smartgamer" that allows you to edit/iterate through
 the smartgame data structure. It seems very handy. SGFGrove.js is not
 compatible with this module.
 
-### [GO Tools](http://gotools.sourceforge.net/)
+#### [GO Tools](http://gotools.sourceforge.net/)
 
 Includes sgflib.py, a Python SGF parser. The source code is well documented.
 `SGFGrove.collection.gameTree` behaves like the `Cursor` object defined by
 this module.
 
-### [WGo.js](https://github.com/waltheri/wgo.js)
+#### [WGo.js](https://github.com/waltheri/wgo.js)
 
 Provides an HTML5 go board that comes with a simple SGF parser which is
 required by the SGF player. The `SHELL` texture of white stones is quite
 beautiful.
 
-### [SGFC](http://www.red-bean.com/sgf/sgfc/index.html)
+#### [SGFC](http://www.red-bean.com/sgf/sgfc/index.html)
 
 SGF syntax checker & converter written by the author of FF[4].
 Includes a SGF parser/composer written in C. The SGFGrove's internal subroutine
 `expandPointList` is based on the `ExpandPointList` function defined by
 this library.
 
-### [MultiGo](http://www.ruijiang.com/multigo/)
+#### [MultiGo](http://www.ruijiang.com/multigo/)
 
 While the source is not open, the iterator behavior of
 `SGFGrove.collection.gameTree` is based on this GUI application
 (depth-first search).
 
-### [jGoBoard](https://github.com/jokkebk/jgoboard)
+#### [jGoBoard](https://github.com/jokkebk/jgoboard)
 
 Provides a beautiful HTML5 go board that comes with a JavaScript SGF parser.
 The version 3.3.3 was released in March 2015.
 
-# Acknowledgements
+## Acknowledgements
 
 Thanks to yewang@github for his thoughtful comments on the data structure of
 a game tree.
 
-# Author
+## Author
 
 Ryo Anazawa (anazawa@cpan.org)
 
-# License
+## License
 
 MIT
 
