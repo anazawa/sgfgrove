@@ -1,23 +1,54 @@
 (function () {
     "use strict";
 
-    var SGFGrove;
+    var SGFGrove = (function () {
+        if ( typeof exports !== "undefined" ) {
+            return require("../sgfgrove.js"); // jshint ignore:line
+        }
+        else {
+            return window.SGFGrove;
+        }
+    }());
 
-    if ( typeof exports !== "undefined" ) {
-        SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
-    }
-    else {
-        SGFGrove = window.SGFGrove;
-    }
+    var contains = function (array, item) {
+        for ( var i = 0; i < array.length; i++ ) {
+            if ( array[i] === item ) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    var isUnique = function (array) {
+        var seen = {};
+
+        for ( var i = 0; i < array.length; i++ ) {
+            if ( seen.hasOwnProperty(array[i]) ) {
+                return false;
+            }
+            seen[array[i]] = null;
+        }
+
+        return true;
+    };
+
+    var isMixed = function (object, keys) {
+        var seen = false;
+
+        for ( var i = 0; i < keys.length; i++ ) {
+            if ( object.hasOwnProperty(keys[i]) ) {
+                if ( seen ) {
+                    return true;
+                }
+                seen = true;
+            }
+        }
+
+        return false;
+    };
 
     SGFGrove.validator = function () {
         var that = {};
-
-        that.create = function () {
-            var that = SGFGrove.Util.create(this);
-            that.init.apply(that, arguments);
-            return that;
-        };
 
         that.init = function (args) {
             var rules = (args && args.rules) || [];
@@ -200,74 +231,74 @@
 
     SGFGrove.validator.rule.root = function () {
         var that = SGFGrove.validator.rule("root");
+        var error = SGFGrove.validator.error;
 
-        that.FF4_validateProperty = (function () {
-            var error = SGFGrove.validator.error;
-            var rootProps = ["AP", "CA", "FF", "GM", "ST", "SZ"];
-            var isRootProp = {};
+        that.FF4_rootProps = ["AP", "CA", "FF", "GM", "ST", "SZ"];
 
-            for ( var i = 0; i < rootProps.length; i++ ) {
-                isRootProp[rootProps[i]] = null;
+        that.FF4_validateProperty = function (c, propIdent) {
+            var errors = [];
+
+            if ( c.node !== c.root && contains(this.FF4_rootProps, propIdent) ) {
+                errors.push( error.rootPropNotInRootNodeError(c, propIdent) );
             }
 
-            return function (c, propIdent) {
-                var errors = [];
-
-                if ( c.node !== c.root && isRootProp.hasOwnProperty(propIdent) ) {
-                    errors.push( error.rootPropNotInRootNodeError(c, propIdent) );
-                }
-
-                return errors;
-            };
-        }());
+            return errors;
+        };
 
         return that;
     };
 
     SGFGrove.validator.rule.gameInfo = function () {
         var that = SGFGrove.validator.rule("gameInfo");
+        var error = SGFGrove.validator.error;
 
-        var makeValidatePropertyMethod = function (gameInfoProps) {
-            var isGameInfoProp = {};
-            var error = SGFGrove.validator.error;
+        that.FF4_gameInfoProps = [
+            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
+            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
+            "RO", "RU", "SO", "TM", "US", "WR", "WT"
+        ];
 
-            for ( var i = 0; i < gameInfoProps.length; i++ ) {
-                isGameInfoProp[gameInfoProps[i]] = null;
-            }
-
-            return function (c, propIdent) {
-                var errors = [];
-            
-                if ( isGameInfoProp.hasOwnProperty(propIdent) ) {
-                    if ( !c.gameInfo ) {
-                        c.gameInfo = c.node;
-                    }
-                    else if ( c.node !== c.gameInfo ) {
-                        errors.push( error.gameInfoAlreadySetError(c, propIdent) );
-                    }
-                }
-
-                return errors;
-            };
-        };
+        that.FF4_GM1_gameInfoProps = [
+            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
+            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
+            "RO", "RU", "SO", "TM", "US", "WR", "WT",
+            "HA", "KM"
+        ];
 
         that.validateCollection = function (c) {
             c.gameInfo = null;
         };
 
-        that.FF4_validateProperty = makeValidatePropertyMethod([
-            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
-            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
-            "RO", "RU", "SO", "TM", "US", "WR", "WT"
-        ]);
+        that.FF4_validateProperty = function (c, propIdent) {
+            var errors = [];
+            
+            if ( contains(this.FF4_gameInfoProps, propIdent) ) {
+                if ( !c.gameInfo ) {
+                    c.gameInfo = c.node;
+                }
+                else if ( c.node !== c.gameInfo ) {
+                    errors.push( error.gameInfoAlreadySetError(c, propIdent) );
+                }
+            }
 
-        that.FF4_GM1_validateProperty = makeValidatePropertyMethod([
-            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
-            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
-            "RO", "RU", "SO", "TM", "US", "WR", "WT",
-            "HA", "KM"
-        ]);
+            return errors;
+        };
 
+        that.FF4_GM1_validateProperty = function (c, propIdent) {
+            var errors = [];
+            
+            if ( contains(this.FF4_GM1_gameInfoProps, propIdent) ) {
+                if ( !c.gameInfo ) {
+                    c.gameInfo = c.node;
+                }
+                else if ( c.node !== c.gameInfo ) {
+                    errors.push( error.gameInfoAlreadySetError(c, propIdent) );
+                }
+            }
+
+            return errors;
+        };
+ 
         that.FF4_revalidateNode = function (c, node) {
             if ( node === c.gameInfo ) {
                 c.gameInfo = null;
@@ -279,36 +310,33 @@
 
     SGFGrove.validator.rule.moveSetup = function () {
         var that = SGFGrove.validator.rule("moveSetup");
+        var error = SGFGrove.validator.error;
 
-        that.FF4_validateNode = (function () {
-            var error = SGFGrove.validator.error;
-            var isMoveProp = { B: null, KO: null, MN: null, W: null };
-            var isSetupProp = { AB: null, AE: null, AW: null, PL: null };
+        that.FF4_moveProps = ["B", "KO", "MN", "W"];
+        that.FF4_setupProps = ["AB", "AE", "AW", "PL"];
 
-            return function (c, node) {
-                var errors = [];
-                var hasSetupProp = false;
-                var hasMoveProp = false;
-                var propIdent;
+        that.FF4_validateNode = function (c, node) {
+            var errors = [];
+            var hasSetupProp = false;
+            var hasMoveProp = false;
 
-                for ( propIdent in node ) {
-                    if ( node.hasOwnProperty(propIdent) ) {
-                        if ( isSetupProp.hasOwnProperty(propIdent) ) {
-                            hasSetupProp = true;
-                        }
-                        else if ( isMoveProp.hasOwnProperty(propIdent) ) {
-                            hasMoveProp = true;
-                        }
-                        if ( hasSetupProp && hasMoveProp ) {
-                            errors.push( error.moveSetupMixedError(c) );
-                            break;
-                        }
+            for ( var propIdent in node ) {
+                if ( node.hasOwnProperty(propIdent) ) {
+                    if ( contains(this.FF4_moveProps, propIdent) ) {
+                        hasSetupProp = true;
+                    }
+                    else if ( contains(this.FF4_setupProps, propIdent) ) {
+                        hasMoveProp = true;
+                    }
+                    if ( hasSetupProp && hasMoveProp ) {
+                        errors.push( error.moveSetupMixedError(c) );
+                        break;
                     }
                 }
+            }
 
-                return errors;
-            };
-        }());
+            return errors;
+        };
 
         return that;
     };
@@ -340,19 +368,11 @@
         var that = SGFGrove.validator.rule("setup");
         var error = SGFGrove.validator.error;
 
-        that.FF4_validateProperty = function (c, propIdent, propValue) {
+        that.FF4_validateNode = function (c, node) {
             var errors = [];
-            var seen = {};
-            var i;
 
-            if ( propIdent === "AB" || propIdent === "AE" || propIdent === "AW" ) {
-                for ( i = 0; i < propValue.length; i++ ) {
-                    if ( seen.hasOwnProperty(propValue[i]) ) {
-                        errors.push( error.positionNotUniqueError(c, propIdent) );
-                        break;
-                    }
-                    seen[propValue[i]] = null;
-                }
+            if ( !isUnique((node.AB||[]).concat(node.AW||[], node.AE||[])) ) {
+                errors.push( error.positionNotUniqueError(c, ["AB", "AW", "AE"]) );
             }
 
             return errors;
@@ -365,27 +385,34 @@
         var that = SGFGrove.validator.rule("nodeAnnotation");
         var error = SGFGrove.validator.error;
 
-        that.FF4_validateNode = (function () {
+        that.FF4_validateNode = function (c, node) {
             var props = ["DM", "UC", "GB", "GW"];
+            var errors = [];
 
-            return function (c, node) {
-                var errors = [];
-                var seen = false;
-                var i;
+            if ( isMixed(node, props) ) {
+                errors.push( error.annotateNotUniqueError(c, props) );
+            }
 
-                for ( i = 0; i < props.length; i++ ) {
-                    if ( node.hasOwnProperty(props[i]) ) {
-                        if ( seen ) {
-                            errors.push( error.annotateNotUniqueError(c, props[i]) );
-                            break;
-                        }
-                        seen = true;
-                    }
-                }
+            return errors;
+        };
 
-                return errors;
-            };
-        }());
+        return that;
+    };
+
+    SGFGrove.validator.rule.moveAnnotation = function () {
+        var that = SGFGrove.validator.rule("moveAnnotation");
+        var error = SGFGrove.validator.error;
+
+        that.FF4_validateNode = function (c, node) {
+            var props = ["BM", "DO", "IT", "TE"];
+            var errors = [];
+
+            if ( isMixed(node, props) ) {
+                errors.push( error.annotateNotUniqueError(c, props) );
+            }
+
+            return errors;
+        };
 
         return that;
     };
@@ -457,18 +484,19 @@
         });
     };
 
-    SGFGrove.validator.error.positionNotUniqueError = function (c, propIdent) {
+    SGFGrove.validator.error.positionNotUniqueError = function (c, props) {
         return SGFGrove.validator.error(c, {
             name: "PositionNotUniqueError",
-            message: "'"+propIdent+"' position not unique"
+            message: props.join(", ")+" must have unique points"
         });
     };
 
-    SGFGrove.validator.error.annotateNotUnique = function (c, propIdent) {
+    SGFGrove.validator.error.annotateNotUnique = function (c, props) {
         return SGFGrove.validator.error(c, {
             name: "AnnotateNotUniqueError",
-            message: "annotation property '"+propIdent+"' contradicts previous property"
+            message: props.join(", ")+" must not be mixed within a single node"
         });
     };
 
 }());
+
