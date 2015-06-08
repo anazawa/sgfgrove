@@ -572,6 +572,42 @@ Adds FF[1]-FF[3] properties and their Go (GM[1]) specific properties
 to SGFGrove. Note that FF[2] is simply treated as FF[1]. See the test cases
 for details.
 
+### sgfgrove/collection.js
+
+Given a SGF collection, constructs the iterator/mutator object.
+See `sgfgrove/collection.md` for details.
+
+```js
+var collection = SGFGrove.collection("(;FF[4];B[pd])");
+var gameTree = collection[0];
+
+gameTree.next(); // => { FF: 4 }
+gameTree.next(); // => { B: "pd" }
+
+gameTree.appendChild({ W: "qp" });
+collection.toString(); // => "(;FF[4];B[pd];W[qp])"
+```
+
+### sgfgrove/validator.js
+
+```js
+var collection = SGFGrove.parse("(;FF[4])");
+var validator = SGFGrove.validator(...);
+
+validator.validate(collection, {
+    onRootPropNotInRootNodeError: function (error) {
+        delete this.node[this.propIdent]; // this error is acceptable, so fix it
+    },
+    onTwoMovesInNodeError: function (error) {
+        throw error; // this SGF does not make sense, so reject it
+    },
+    onGameInfoAlreadySetError: function (error) {
+        // do nothing (ignore this error)
+    },
+    ...
+});
+```
+
 ## Versioning
 
 If the changes contain an incompatible change that may break the user's
