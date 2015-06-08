@@ -283,14 +283,19 @@
             "HA", "KM"
         ];
 
+        that.FF4_dateRegExp = /^(?:\d{4}(?:-\d\d(?:-\d\d)?)?(?:,(?=\d))?)+$/;
+        that.FF4_resultRegExp = /^(?:0|Draw|Void|\?|[B|W]\+(?:\d+(?:\.\d+)?|R(?:esign)?|T(?:ime)?|F(?:orfeit)?)?)$/;
+
         that.validateCollection = function (c) {
             c.gameInfo = null;
         };
 
-        that.FF4_validateProperty = function (c, propIdent) {
+        that.FF4_validateProperty = function (c, propIdent, propValue) {
+            var gm = c.root.GM || 1;
+            var props = gm === 1 ? this.FF4_GM1_gameInfoProps : this.FF4_gameInfoProps;
             var errors = [];
             
-            if ( contains(this.FF4_gameInfoProps, propIdent) ) {
+            if ( contains(props, propIdent) ) {
                 if ( !c.gameInfo ) {
                     c.gameInfo = c.node;
                 }
@@ -299,24 +304,19 @@
                 }
             }
 
-            return errors;
-        };
-
-        that.FF4_GM1_validateProperty = function (c, propIdent) {
-            var errors = [];
-            
-            if ( contains(this.FF4_GM1_gameInfoProps, propIdent) ) {
-                if ( !c.gameInfo ) {
-                    c.gameInfo = c.node;
-                }
-                else if ( c.node !== c.gameInfo ) {
-                    errors.push( error.gameInfoAlreadySetError(c, propIdent) );
-                }
+            if ( propIdent === "RE" && !this.FF4_resultRegExp.test(propValue) ) {
+                errors.push( error.invalidFormatError(c, propIdent) );
+            }
+            else if ( propIdent === "DT" && !this.FF4_dateRegExp.test(propValue) ) {
+                errors.push( error.invalidFormatError(c, propIdent) );
+            }
+            else if ( gm === 1 && propIdent === "HA" && propValue < 2 ) {
+                errors.push( error.invalidFormatError(c, propIdent) );
             }
 
             return errors;
         };
- 
+
         that.FF4_revalidateNode = function (c, node) {
             if ( node === c.gameInfo ) {
                 c.gameInfo = null;
@@ -572,6 +572,14 @@
             message: propIdent+" contains a zero-length line"
         });
     };
+
+    SGFGrove.validator.error.invalidFromatError = function (c, propIdent) {
+        return SGFGrove.validator.error(c, {
+            name: "InvalidFormatError",
+            message: "Invalid "+propIdent+" format"
+        });
+    };
+
 
 }());
 
