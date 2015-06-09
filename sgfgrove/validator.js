@@ -270,28 +270,45 @@
             return errors;
         };
 
+        that.FF4_GM1_validateProperty = function (c, propIdent, propValue) {
+            var errors = [];
+
+            if ( c.node !== c.root && contains(this.FF4_rootProps, propIdent) ) {
+                errors.push( error.rootPropNotInRootNodeError(c, propIdent) );
+            }
+
+            if ( propIdent === "ST" && !this.FF4_checkStyle(c, propValue) ) {
+                errors.push( error.invalidFormat(c, propIdent) );
+            }
+            else if ( propIdent === "SZ" && !this.FF4_GM1_checkBoardSize(c, propValue) ) {
+                errors.push( error.invalidFormat(c, propIdent) );
+            }
+
+            return errors;
+        };
+
         that.FF4_checkStyle = function (c, style) {
             return style >= 0 && style <= 3;
         };
 
         that.FF4_checkBoardSize = function (c, size) {
-            var gm = c.root.GM || 1;
-
             if ( SGFGrove.Util.isArray(size) ) {
                 if ( size[0] === size[1] ) {
                     return false;
                 }
-                if ( gm === 1 && (size[0] > 52 || size[1] > 52) ) {
-                    return false;
-                }
                 return size[0] >= 1 && size[1] >= 1;
             }
-
-            if ( gm === 1 && size > 52 ) {
-                return false;
-            }
-
             return size >= 1;
+        };
+
+        that.FF4_GM1_checkBoardSize = function (c, size) {
+            if ( this.FF4_checkBoardSize(c, size) ) {
+                if ( SGFGrove.Util.isArray(size) ) {
+                    return size[0] <= 52 && size[1] <= 52;
+                }
+                return size <= 52;
+            }
+            return false;
         };
 
         return that;
@@ -307,26 +324,16 @@
             "RO", "RU", "SO", "TM", "US", "WR", "WT"
         ];
 
-        that.FF4_GM1_gameInfoProps = [
-            "AN", "BR", "BT", "CP", "DT", "EV", "GN",
-            "GC", "ON", "OT", "PB", "PC", "PW", "RE",
-            "RO", "RU", "SO", "TM", "US", "WR", "WT",
-            "HA", "KM"
-        ];
-
-        that.FF4_dateRegExp = /^(?:\d{4}(?:-\d\d(?:-\d\d)?)?(?:,|$))+$/;
-        that.FF4_resultRegExp = /^(?:0|Draw|Void|\?|[B|W]\+(?:\d+(?:\.\d+)?|R(?:esign)?|T(?:ime)?|F(?:orfeit)?)?)$/;
+        that.FF4_GM1_gameInfoProps = [ "HA", "KM" ];
 
         that.validateCollection = function (c) {
             c.gameInfo = null;
         };
 
         that.FF4_validateProperty = function (c, propIdent, propValue) {
-            var gm = c.root.GM || 1;
-            var props = gm === 1 ? this.FF4_GM1_gameInfoProps : this.FF4_gameInfoProps;
             var errors = [];
             
-            if ( contains(props, propIdent) ) {
+            if ( contains(this.FF4_gameInfoProps, propIdent) ) {
                 if ( !c.gameInfo ) {
                     c.gameInfo = c.node;
                 }
@@ -335,13 +342,29 @@
                 }
             }
 
-            if ( propIdent === "RE" && !this.FF4_resultRegExp.test(propValue) ) {
+            if ( propIdent === "RE" && !this.FF4_checkResult(propValue) ) {
                 errors.push( error.invalidFormatError(c, propIdent) );
             }
-            else if ( propIdent === "DT" && !this.FF4_dateRegExp.test(propValue) ) {
+            else if ( propIdent === "DT" && !this.FF4_checkDate(propValue) ) {
                 errors.push( error.invalidFormatError(c, propIdent) );
             }
-            else if ( gm === 1 && propIdent === "HA" && propValue < 2 ) {
+
+            return errors;
+        };
+
+        that.FF4_GM1_validateProperty = function (c, propIdent, propValue) {
+            var errors = this.FF4_validateProperty(c, propIdent, propValue);
+
+            if ( contains(this.FF4_GM1_gameInfoProps, propIdent) ) {
+                if ( !c.gameInfo ) {
+                    c.gameInfo = c.node;
+                }
+                else if ( c.node !== c.gameInfo ) {
+                    errors.push( error.gameInfoAlreadySetError(c, propIdent) );
+                }
+            }
+
+            if ( propIdent === "HA" && !this.FF4_GM1_checkHandicap(propValue) ) {
                 errors.push( error.invalidFormatError(c, propIdent) );
             }
 
@@ -352,6 +375,22 @@
             if ( node === c.gameInfo ) {
                 c.gameInfo = null;
             }
+        };
+
+        that.FF4_checkDate = function (c, date) {
+            return /^\d{4}(?:-\d\d){0,2}(?:,\d{4}(?:-\d\d){0,2})*$/.test(date);
+        };
+
+        that.FF4_checkResult = function (c, result) {
+            return result === "0"    ||
+                   result === "Draw" ||
+                   result === "Void" ||
+                   result === "?"    ||
+                   /^[B|W]\+(?:\d+(?:\.\d+)?|R|Resign|T|Time|F|Forfeit)?$/.test(result);
+        };
+
+        that.FF4_GM1_checkHandicap = function (c, handicap) {
+            return handicap >= 2;
         };
 
         return that;
@@ -501,6 +540,23 @@
                 if ( !isUnique(map(propValue, toString)) ) {
                     errors.push( error.lineNotUniqueError(c, propIdent) );
                 }
+            }
+
+            return errors;
+        };
+
+        return that;
+    };
+
+    SGFGrove.validator.rule.misc = function () {
+        var that = SGFGrove.validator.rule("misc");
+        var error = SGFGrove.validator.error;
+
+        that.FF4_GM1_validateProperty = function (c, propIdent, propValue) {
+            var errors = [];
+
+            if ( (propIdent === "TB" || propIdent === "TW") && !isUnique(propValue) ) {
+                errors.push( error.positionNotUniqueError(c, [propIdent]) );
             }
 
             return errors;
