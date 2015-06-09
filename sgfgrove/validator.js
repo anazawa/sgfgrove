@@ -253,14 +253,45 @@
 
         that.FF4_rootProps = ["AP", "CA", "FF", "GM", "ST", "SZ"];
 
-        that.FF4_validateProperty = function (c, propIdent) {
+        that.FF4_validateProperty = function (c, propIdent, propValue) {
             var errors = [];
 
             if ( c.node !== c.root && contains(this.FF4_rootProps, propIdent) ) {
                 errors.push( error.rootPropNotInRootNodeError(c, propIdent) );
             }
 
+            if ( propIdent === "ST" && !this.FF4_checkStyle(c, propValue) ) {
+                errors.push( error.invalidFormat(c, propIdent) );
+            }
+            else if ( propIdent === "SZ" && !this.FF4_checkBoardSize(c, propValue) ) {
+                errors.push( error.invalidFormat(c, propIdent) );
+            }
+
             return errors;
+        };
+
+        that.FF4_checkStyle = function (c, style) {
+            return style >= 0 && style <= 3;
+        };
+
+        that.FF4_checkBoardSize = function (c, size) {
+            var gm = c.root.GM || 1;
+
+            if ( SGFGrove.Util.isArray(size) ) {
+                if ( size[0] === size[1] ) {
+                    return false;
+                }
+                if ( gm === 1 && (size[0] > 52 || size[1] > 52) ) {
+                    return false;
+                }
+                return size[0] >= 1 && size[1] >= 1;
+            }
+
+            if ( gm === 1 && size > 52 ) {
+                return false;
+            }
+
+            return size >= 1;
         };
 
         return that;
@@ -283,7 +314,7 @@
             "HA", "KM"
         ];
 
-        that.FF4_dateRegExp = /^(?:\d{4}(?:-\d\d(?:-\d\d)?)?(?:,(?=\d))?)+$/;
+        that.FF4_dateRegExp = /^(?:\d{4}(?:-\d\d(?:-\d\d)?)?(?:,|$))+$/;
         that.FF4_resultRegExp = /^(?:0|Draw|Void|\?|[B|W]\+(?:\d+(?:\.\d+)?|R(?:esign)?|T(?:ime)?|F(?:orfeit)?)?)$/;
 
         that.validateCollection = function (c) {
