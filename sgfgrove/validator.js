@@ -10,15 +10,6 @@
         }
     }());
 
-    var contains = function (array, item) {
-        for ( var i = 0; i < array.length; i++ ) {
-            if ( array[i] === item ) {
-                return true;
-            }
-        }
-        return false;
-    };
-
     var isUnique = function (array) {
         var seen = {};
 
@@ -47,30 +38,47 @@
         return false;
     };
 
-    var map = function (array, cb) {
+    var map = function (array, callback) {
         var result = [];
-
         for ( var i = 0; i < array.length; i++ ) {
-            result[i] = cb(array[i], i, array);
+            result[i] = callback(array[i]);
         }
-
         return result;
     };
 
-    var find = function (array, cb) {
+    var find = function (array, callback) {
         for ( var i = 0; i < array.length; i++ ) {
-            if ( cb(array[i], i, array) ) {
+            if ( callback(array[i]) ) {
                 return array[i];
             }
         }
     };
 
-    var reduce = function (array, cb) {
+    var reduce = function (array, callback) {
         var result = array[0];
         for ( var i = 1; i < array.length; i++ ) {
-            result = cb(result, array[i], i, array);
+            result = callback(result, array[i]);
         }
         return result;
+    };
+
+    var filter = function (array, callback) {
+        var result = [];
+        for ( var i = 0; i < array.length; i++ ) {
+            if ( callback(array[i]) ) {
+                result.push( array[i] );
+            }
+        }
+        return result;
+    };
+
+    var contains = function (array, item) {
+        for ( var i = 0; i < array.length; i++ ) {
+            if ( array[i] === item ) {
+                return true;
+            }
+        }
+        return false;
     };
 
     SGFGrove.validator = function () {
@@ -482,13 +490,16 @@
     SGFGrove.validator.rule.moveAnnotation = function () {
         var that = SGFGrove.validator.rule("moveAnnotation");
         var error = SGFGrove.validator.error;
+        var makeHas = function (o) { return function (k) { return o.hasOwnProperty(k); }; };
+
+        that.FF4_moveAnnotationProps = ["BM", "DO", "IT", "TE"];
 
         that.FF4_validateNode = function (c, node) {
-            var props = ["BM", "DO", "IT", "TE"];
             var errors = [];
 
-            if ( isMixed(node, props) ) {
-                errors.push( error.annotateNotUniqueError(c, props) );
+            //if ( isMixed(node, props) ) {
+            if ( filter(this.FF4_moveAnnotationProps, makeHas(node)).length > 1 ) { 
+                errors.push( error.annotateNotUniqueError(c, this.FF4_moveAnnotationProps) );
             }
 
             return errors;
@@ -502,7 +513,7 @@
         var error = SGFGrove.validator.error;
         var first = function (array) { return array[0]; };
         var isZeroLength = function (line) { return line[0] === line[1]; };
-        var toString = function (line) { return line[0]+line[1]; };
+        var toString = function (line) { return line[0] + line[1]; };
         var concat = function (a, b) { return (a || []).concat(b || []); };
 
         that.FF4_validateNode = function (c, node) {
