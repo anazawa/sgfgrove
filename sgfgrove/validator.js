@@ -65,6 +65,14 @@
         }
     };
 
+    var reduce = function (array, cb) {
+        var result = array[0];
+        for ( var i = 1; i < array.length; i++ ) {
+            result = cb(result, array[i], i, array);
+        }
+        return result;
+    };
+
     SGFGrove.validator = function () {
         var that = {};
 
@@ -261,10 +269,10 @@
             }
 
             if ( propIdent === "ST" && !this.FF4_checkStyle(c, propValue) ) {
-                errors.push( error.invalidFormat(c, propIdent) );
+                errors.push( error.invalidFormatError(c, propIdent) );
             }
             else if ( propIdent === "SZ" && !this.FF4_checkBoardSize(c, propValue) ) {
-                errors.push( error.invalidFormat(c, propIdent) );
+                errors.push( error.invalidFormatError(c, propIdent) );
             }
 
             return errors;
@@ -278,10 +286,10 @@
             }
 
             if ( propIdent === "ST" && !this.FF4_checkStyle(c, propValue) ) {
-                errors.push( error.invalidFormat(c, propIdent) );
+                errors.push( error.invalidFormatError(c, propIdent) );
             }
             else if ( propIdent === "SZ" && !this.FF4_GM1_checkBoardSize(c, propValue) ) {
-                errors.push( error.invalidFormat(c, propIdent) );
+                errors.push( error.invalidFormatError(c, propIdent) );
             }
 
             return errors;
@@ -386,44 +394,11 @@
                    result === "Draw" ||
                    result === "Void" ||
                    result === "?"    ||
-                   /^[B|W]\+(?:\d+(?:\.\d+)?|R|Resign|T|Time|F|Forfeit)?$/.test(result);
+                   /^[BW]\+(?:\d+(?:\.\d+)?|R|Resign|T|Time|F|Forfeit)?$/.test(result);
         };
 
         that.FF4_GM1_checkHandicap = function (c, handicap) {
             return handicap >= 2;
-        };
-
-        return that;
-    };
-
-    SGFGrove.validator.rule.moveSetup = function () {
-        var that = SGFGrove.validator.rule("moveSetup");
-        var error = SGFGrove.validator.error;
-
-        that.FF4_moveProps = ["B", "KO", "MN", "W"];
-        that.FF4_setupProps = ["AB", "AE", "AW", "PL"];
-
-        that.FF4_validateNode = function (c, node) {
-            var errors = [];
-            var hasSetupProp = false;
-            var hasMoveProp = false;
-
-            for ( var propIdent in node ) {
-                if ( node.hasOwnProperty(propIdent) ) {
-                    if ( contains(this.FF4_moveProps, propIdent) ) {
-                        hasSetupProp = true;
-                    }
-                    else if ( contains(this.FF4_setupProps, propIdent) ) {
-                        hasMoveProp = true;
-                    }
-                    if ( hasSetupProp && hasMoveProp ) {
-                        errors.push( error.moveSetupMixedError(c) );
-                        break;
-                    }
-                }
-            }
-
-            return errors;
         };
 
         return that;
@@ -455,11 +430,28 @@
     SGFGrove.validator.rule.setup = function () {
         var that = SGFGrove.validator.rule("setup");
         var error = SGFGrove.validator.error;
+        var concat = function (a, b) { return (a || []).concat(b || []); };
+
+        that.FF4_moveProps = ["B", "KO", "MN", "W"];
+        that.FF4_setupProps = ["AB", "AE", "AW", "PL"];
 
         that.FF4_validateNode = function (c, node) {
             var errors = [];
+            var hasMoveProp = false;
+            var hasSetupProp = false;
 
-            if ( !isUnique((node.AB||[]).concat(node.AW||[], node.AE||[])) ) {
+            for ( var propIdent in node ) {
+                if ( node.hasOwnProperty(propIdent) ) {
+                    hasMoveProp = hasMoveProp || contains(this.FF4_moveProps, propIdent);
+                    hasSetupProp = hasSetupProp || contains(this.FF4_setupProps, propIdent);
+                    if ( hasSetupProp && hasMoveProp ) {
+                        errors.push( error.moveSetupMixedError(c) );
+                        break;
+                    }
+                }
+            }
+
+            if ( !isUnique(reduce([node.AB, node.AW, node.AE], concat)) ) {
                 errors.push( error.positionNotUniqueError(c, ["AB", "AW", "AE"]) );
             }
 
@@ -511,16 +503,12 @@
         var first = function (array) { return array[0]; };
         var isZeroLength = function (line) { return line[0] === line[1]; };
         var toString = function (line) { return line[0]+line[1]; };
+        var concat = function (a, b) { return (a || []).concat(b || []); };
 
         that.FF4_validateNode = function (c, node) {
             var errors = [];
-            var CR = node.CR || [];
-            var MA = node.MA || [];
-            var SL = node.SL || [];
-            var SQ = node.SQ || [];
-            var TR = node.TR || [];
 
-            if ( !isUnique(CR.concat(MA, SL, SQ, TR)) ) {
+            if ( !isUnique(reduce([node.CR, node.MA, node.SL, node.SQ, node.TR], concat)) ) {
                 errors.push( error.positionNotUniqueError(c, ["CR", "MA", "SL", "SQ", "TR"]) );
             }
 
