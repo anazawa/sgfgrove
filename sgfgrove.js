@@ -51,7 +51,7 @@
         Types.scalar = function (args) {
             var spec = args || {};
 
-            var like = spec.like || new RegExp("");
+            var like = spec.like || { test: function () { return true; } };
             var isa  = spec.isa  || function (v) { return typeof v === "string" && like.test(v); };
 
             var parse     = spec.parse     || function (v) { return v; };
@@ -481,7 +481,7 @@
         // None = ""
         Types.None = Types.scalar({
             name: "None",
-            like: /^$/,
+            like: { test: function (v) { return v === ""; } },
             isa: function (v) { return v === null; },
             parse: function () { return null; },
             stringify: function () { return ""; }
@@ -498,7 +498,7 @@
         // Double = ("1" | "2")
         Types.Double = Types.scalar({
             name: "Double",
-            like: /^[12]$/,
+            like: { test: function (v) { return v === "1" || v === "2"; } },
             isa: function (v) { return v === 1 || v === 2; },
             parse: parseInt
         });
@@ -506,7 +506,7 @@
         // Color = ("B" | "W")
         Types.Color = Types.scalar({
             name: "Color",
-            like: /^[BW]$/
+            like: { test: function (v) { return v === "B" || v === "W"; } }
         });
 
         // Text = { any character }
