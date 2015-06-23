@@ -14,6 +14,7 @@
 
     var FF = {};
 
+    /*
     var dump = function (value) {
         return (JSON.stringify(value) || "").slice(0, 32);
     };
@@ -23,6 +24,7 @@
             throw new TypeError("Assertion"+(name ? " ("+name+")" : "")+" failed");
         }
     };
+    */
 
     SGFGrove.Util = (function () {
         var Util = {};
@@ -46,29 +48,32 @@
 
     FF.Types = (function () {
         var Types = {};
+        var isArray = SGFGrove.Util.isArray;
         var isNumber = SGFGrove.Util.isNumber;
 
-        Types.scalar = function (args) {
-            var spec = args || {};
+        Types.scalar = function () {
+            var args = arguments[0] || {};
 
-            var like = spec.like || { test: function () { return true; } };
-            var isa  = spec.isa  || function (v) { return typeof v === "string" && like.test(v); };
+            var like = args.like || { test: function () { return true; } };
+            var parse = args.parse || function (v) { return v; };
 
-            var parse     = spec.parse     || function (v) { return v; };
-            var stringify = spec.stringify || function (v) { return String(v); };
+            var isa = args.isa || function (v) { return typeof v === "string" && like.test(v); };
+            var stringify = args.stringify || String;
 
             var that = {
-                name: spec.name || ""
+                name: args.name || ""
             };
 
             that.parse = function (values) {
-                assert( values.length === 1 && like.test(values[0]), this.name );
-                return parse(values[0]);
+                if ( values.length === 1 && like.test(values[0]) ) {
+                    return parse( values[0] );
+                }
             };
 
             that.stringify = function (value) {
-                assert( isa(value), this.name );
-                return [ stringify(value) ];
+                if ( isa(value) ) {
+                    return [ stringify(value) ];
+                }
             };
 
             return that;
@@ -82,88 +87,75 @@
             parse: function (v) { return parseInt(v, 10); }
         });
 
+        Types.Unknown = {
+            name: "Unknown",
+            parse: function (values) {
+                var result = [];
+
+                for ( var i = 0; i < values.length; i++ ) {
+                    result[i] = values[i].replace(/\\\]/g, "]");
+                }
+
+                return result;
+            },
+            stringify: function (values) {
+                var result = [];
+
+                if ( !isArray(values) ) {
+                    return;
+                }
+
+                for ( var i = 0; i < values.length; i++ ) {
+                    if ( typeof values[i] === "string" ) {
+                        result[i] = values[i].replace(/\]/g, "\\]");
+                    }
+                    else {
+                        result[i] = undefined;
+                    }
+                }
+
+                return result;
+            }
+        };
+
         return Types;
     }());
 
-    FF.properties = (function () {
-        var Properties = function (args) {
-            var props = args || {};
-            for ( var key in props ) {
-                if ( props.hasOwnProperty(key) ) {
-                    this[key] = props[key];
+    FF.properties = function (types) {
+        var prop2type = {};
+
+        var that = {
+            defaultType: (types && types.Unknown) || FF.Types.Unknown
+        };
+
+        that.getType = function (ident) {
+            return prop2type[ident] || this.defaultType;
+        };
+
+        that.merge = function (other) {
+            for ( var ident in other ) {
+                if ( other.hasOwnProperty(ident) && other[ident] !== undefined ) {
+                    prop2type[ident] = other[ident];
                 }
             }
+            return this;
         };
 
-        Properties.prototype.unknown = {
-            name: "Unknown",
-            parse: function (values) {
-                var vals = [];
+        return that;
+    };
 
-                for ( var i = 0; i < values.length; i++ ) {
-                    vals[i] = values[i].replace(/\\\]/g, "]");
-                }
-
-                return vals;
-            },
-            stringify: function (values) {
-                var vals = [];
-
-                assert( SGFGrove.Util.isArray(values), this.name );
-
-                for ( var i = 0; i < values.length; i++ ) {
-                    assert( typeof values[i] === "string", this.name );
-                    vals[i] = values[i].replace(/\]/g, "\\]");
-                }
-
-                return vals;
-            }
-        };
-
-        Properties.prototype.get = function (key) {
-            return (this.hasOwnProperty(key) && this[key]) || this.unknown;
-        };
-
-        return function (args) {
-            return new Properties(args);
-        };
-    }());
-
-    FF.getProperties = function (ff, gm) {
-        if ( FF.hasOwnProperty(ff) ) {
-            if ( FF[ff].hasOwnProperty(gm) ) {
-                return FF[ff][gm].Properties;
+    FF.createProperties = function (ff, gm) {
+        if ( ff && FF.hasOwnProperty(ff) ) {
+            if ( gm && FF[ff].hasOwnProperty(gm) ) {
+                return FF[ff][gm].properties();
             }
             return FF[ff].properties();
         }
         return FF.properties();
     };
 
-    SGFGrove.define = function (ff, gm, cb) {
-        var def = {};
-
-        if ( ff && gm ) {
-            FF[ff] = FF[ff] || {};
-            FF[ff][gm] = cb.call(def, FF) || def;
-        }
-        else if ( ff ) {
-            FF[ff] = cb.call(def, FF) || def;
-        }
-        else {
-            FF = cb.call(def, FF) || def;
-        }
-
-        return;
-    };
-
     SGFGrove.parse = (function () {
-        var Num = FF.Types.Number;
-        var source, lastIndex, reviver;
-
-        var error = function (message) {
-            var tail = source.slice(lastIndex).replace(/^\s*/, "").slice(0, 32);
-            throw new SyntaxError( message+" at octet "+lastIndex+", '"+tail+"'" );
-        };
+        var source, lastIndex;
 
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
@@ -201,7 +193,7 @@
                     values = [];
 
                     if ( node.hasOwnProperty(ident) ) {
-                        error( "Property '"+ident+"' already exists" );
+                        throw new SyntaxError("Property '"+ident+"' already exists");
                     }
 
                     while ( val = exec.call(/^\[((?:\\]|[^\]])*)\]\s*/g) ) { // PropValue
@@ -209,7 +201,7 @@
                     }
 
                     if ( !values.length ) {
-                        error( "PropValue of "+ident+" is missing" );
+                        throw new SyntaxError("PropValue of "+ident+" is missing");
                     }
 
                     node[ident] = values;
@@ -219,7 +211,7 @@
             }
 
             if ( !sequence.length ) {
-                error( "GameTree must contain at least one Node" );
+                throw new SyntaxError("GameTree must contain at least one Node");
             }
 
             while ( child = parseGameTree() ) {
@@ -227,52 +219,31 @@
             }
 
             if ( !test.call(/^\)\s*/g) ) { // end of GameTree
-                error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
+                throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
             return [ sequence, children ];
         };
         /* jshint boss:false */
 
-        // Copied and rearranged from json2.js so that we can pass the same
-        // callback to both of SGF.parse and JSON.parse
-        // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
-        var walk = function (holder, key) {
-            var k, v, value = holder[key];
-            if ( value && typeof value === "object" ) {
-                for ( k in value ) {
-                    if ( Object.prototype.hasOwnProperty.call(value, k) ) {
-                        v = walk( value, k );
-                        if ( v !== undefined ) {
-                            value[k] = v;
-                        } else {
-                            delete value[k];
-                        }
-                    }
-                }
-            }
-            return reviver.call(holder, key, value);
-        };
-
-        return function (text, rev) {
+        return function (text, reviver) {
+            var Num = FF.Types.Number, props;
             var collection = [], gameTree;
-            var props, id = 0;
 
             source = String(text);
             lastIndex = 0;
-            reviver = typeof rev === "function" && rev;
 
             while ( gameTree = parseGameTree() ) { // jshint ignore:line
                 collection.push( gameTree );
             }
 
             if ( lastIndex !== source.length ) {
-                error( "Unexpected token '"+source.charAt(lastIndex)+"'" );
+                throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
-            (function finalize (gameTrees) {
-                var i, gameTree, sequence, root, ff, gm;
-                var j, node, ident;
+            (function parsePropValues (gameTrees) {
+                var i, gameTree, sequence, root;
+                var j, node, ident, type, values, str;
 
                 for ( i = 0; i < gameTrees.length; i++ ) {
                     gameTree = gameTrees[i];
@@ -280,39 +251,54 @@
 
                     if ( gameTrees === collection ) {
                         root = sequence[0];
-
-                        try {
-                            ff = root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1;
-                            gm = root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1;
-                        }
-                        catch (error) {
-                            error.message += " at FF/GM of node #"+id+", "+dump(root);
-                            throw error;
-                        }
-
-                        props = FF.getProperties( ff, gm );
+                        props = FF.createProperties(
+                            root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1,
+                            root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1
+                        );
                     }
 
-                    for ( j = 0; j < sequence.length; j++, id++ ) {
+                    for ( j = 0; j < sequence.length; j++ ) {
                         node = sequence[j];
                         for ( ident in node ) {
                             if ( node.hasOwnProperty(ident) ) {
-                                try {
-                                    node[ident] = props.get(ident).parse(node[ident]);
-                                }
-                                catch (error) {
-                                    error.message += " at "+ident+" of node #"+id+", "+dump(node);
-                                    throw error;
+                                type = props.getType(ident);
+                                values = node[ident];
+                                node[ident] = type.parse(values);
+                                if ( node[ident] === undefined ) {
+                                    str = ((JSON && JSON.stringify) || String)(values);
+                                    throw new SyntaxError(type.name+" expected, got"+str);
                                 }
                             }
                         }
                     }
 
-                    finalize( gameTree[1] );
+                    parsePropValues( gameTree[1] );
                 }
             }(collection));
 
-            return reviver ? walk({ "": collection }, "") : collection;
+            // Copied and rearranged from json2.js so that we can pass the same
+            // callback to both of SGF.parse and JSON.parse
+            // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
+            if ( typeof reviver === "function" ) {
+                collection = (function walk (holder, key) {
+                    var k, v, value = holder[key];
+                    if ( value && typeof value === "object" ) {
+                        for ( k in value ) {
+                            if ( Object.prototype.hasOwnProperty.call(value, k) ) {
+                                v = walk( value, k );
+                                if ( v !== undefined ) {
+                                    value[k] = v;
+                                } else {
+                                    delete value[k];
+                                }
+                            }
+                        }
+                    }
+                    return reviver.call(holder, key, value);
+                }({ "": collection }, ""));
+            }
+
+            return collection;
         };
     }());
 
@@ -323,6 +309,7 @@
         var isArray  = SGFGrove.Util.isArray;
         var isNumber = SGFGrove.Util.isNumber;
 
+        /*
         var finalize = function (key, holder) {
             var value = holder[key];
             var i, k, v;
@@ -365,6 +352,7 @@
 
             return v;
         };
+        */
 
         return function (collection, rep, space) {
             var props, propIdents, id = 0;
@@ -399,26 +387,84 @@
             }
 
             lf = indent ? "\n" : "";
-            collection = finalize( "", { "": collection } );
+            //collection = finalize( "", { "": collection } );
+
+            collection = (function finalize (key, holder) {
+                var value = holder[key];
+                var i, k, v;
+
+                if ( value && typeof value === "object" &&
+                     typeof value.toSGF === "function" ) {
+                    value = value.toSGF();
+                }
+
+                if ( replacer ) {
+                    value = replacer.call( holder, key, value );
+                }
+
+                if ( !value || typeof value !== "object" ) {
+                    v = value;
+                }
+                else if ( isArray(value) ) {
+                    v = [];
+                    for ( i = 0; i < value.length; i++ ) {
+                        v[i] = finalize( i, value );
+                    }
+                }
+                else if ( select ) {
+                    v = {};
+                    for ( i = 0; i < select.length; i++ ) {
+                        k = select[i];
+                        if ( value.hasOwnProperty(k) ) {
+                            v[k] = finalize( k, value );
+                        }
+                    }
+                }
+                else {
+                    v = {};
+                    for ( k in value ) {
+                        if ( value.hasOwnProperty(k) ) {
+                            v[k] = finalize( k, value );
+                        }
+                    }
+                }
+
+                return v;
+            }("", { "": collection }));
 
             return (function stringify (gameTrees) {
-                var isCollection = gameTrees === collection;
+                //var isCollection = gameTrees === collection;
                 var text = "", mind, prefix;
                 var i, gameTree, sequence, root, ff, gm;
                 var j, node, ident, values;
 
-                assert( isArray(gameTrees), isCollection ? "Collection" : "GameTrees" );
+                //assert( isArray(gameTrees), isCollection ? "Collection" : "GameTrees" );
+                
+                if ( !isArray(gameTrees) ) {
+                    return;
+                }
 
                 for ( i = 0; i < gameTrees.length; i++ ) {
                     gameTree = gameTrees[i];
-                    assert( isArray(gameTree), "GameTree" );
+                    //assert( isArray(gameTree), "GameTree" );
+
+                    if ( !isArray(gameTree) ) {
+                        continue;
+                    }
 
                     sequence = gameTree[0];
-                    assert( isArray(sequence) && sequence.length, "Sequence" );
+                    //assert( isArray(sequence) && sequence.length, "Sequence" );
 
-                    if ( isCollection ) {
-                        root = sequence[0];
+                    if ( !isArray(sequence) || !sequence.length ) {
+                        continue;
+                    }
 
+                    //if ( isCollection ) {
+                    if ( gameTrees === collection ) {
+                        root = (typeof sequence[0] === "object" && sequence[0]) || {};
+                        ff = root.hasOwnProperty("FF") ? Num.parse(Num.stringify(root.FF)) : 1;
+                        gm = root.hasOwnProperty("GM") ? Num.parse(Num.stringify(root.GM)) : 1;
+                        /*
                         try {
                             ff = root.hasOwnProperty("FF") ?
                                  Num.parse( Num.stringify(root.FF) ) : 1;
@@ -429,9 +475,10 @@
                             error.message += " at FF/GM of node #"+id+", "+dump(root);
                             throw error;
                         }
-
-                        propIdents = ff < 4 ? /^[A-Z][A-Z0-9]?$/ : /^[A-Z]+$/;
-                        props = FF.getProperties( ff, gm );
+                        */
+                        propIdents = (ff && ff > 0) ? ff < 4 ? /^[A-Z][A-Z0-9]?$/ : /^[A-Z]+$/ : /^$/;
+                        //props = FF.getProperties( ff, gm );
+                        props = FF.createProperties( ff, gm );
                     }
  
                     text += gap + "(" + lf; // Open GameTree
@@ -440,11 +487,17 @@
                     gap += indent;
                     for ( j = 0; j < sequence.length; j++, id++ ) {
                         node = sequence[j];
-                        assert( node && typeof node === "object", "Node" );
+                        //assert( node && typeof node === "object", "Node" );
+                        
+                        if ( !node || typeof node !== "object" ) {
+                            text += gap + ";" + lf;
+                            continue;
+                        }
 
                         prefix = gap + ";";
                         for ( ident in node ) {
                             if ( node.hasOwnProperty(ident) && propIdents.test(ident) ) {
+                            /*
                                 try {
                                     values = props.get(ident).stringify(node[ident]);
                                 }
@@ -452,8 +505,12 @@
                                     error.message += " at "+ident+" of node #"+id+", "+dump(node);
                                     throw error;
                                 }
-                                text += prefix + ident + "[" + values.join("][") + "]" + lf;
-                                prefix = indent ? gap+" " : "";
+                                */
+                                values = props.getType(ident).stringify(node[ident]);
+                                if ( values !== undefined ) {
+                                    text += prefix + ident + "[" + values.join("][") + "]" + lf;
+                                    prefix = indent ? gap+" " : "";
+                                }
                             }
                         }
                     }
@@ -469,14 +526,108 @@
         };
     }());
 
+    SGFGrove.define = function (ff, gm, cb) {
+        var def = {};
+
+        if ( ff && gm ) {
+            FF[ff] = FF[ff] || {};
+            FF[ff][gm] = cb.call(def, FF) || def;
+        }
+        else if ( ff ) {
+            FF[ff] = cb.call(def, FF) || def;
+        }
+        else {
+            FF = cb.call(def, FF) || def;
+        }
+
+        return;
+    };
+
     // File Format (;FF[4])
     // http://www.red-bean.com/sgf/sgf4.html
     // http://www.red-bean.com/sgf/properties.html
-    SGFGrove.define("4", null, function (FF) {
+    SGFGrove.define(4, null, function (FF) {
         var Types = SGFGrove.Util.create( FF.Types );
-
-        var isArray  = SGFGrove.Util.isArray;
+        var isArray = SGFGrove.Util.isArray;
         var isNumber = SGFGrove.Util.isNumber;
+
+        Types.compose = function (left, right) {
+            return left && right && {
+                name: "composed "+left.name+' ":" '+right.name,
+                parse: function (values) {
+                    if ( values.length === 1 ) {
+                        var v = /^((?:\\:|[^:])*):([\s\S]*)$/.exec(values[0]);
+                        if ( v ) {
+                            var l = left.parse( [v[1]] );
+                            var r = right.parse( [v[2]] );
+                            if ( l !== undefined && r !== undefined ) {
+                                return [l, r];
+                            }
+                        }
+                    }
+                },
+                stringify: function (value) {
+                    if ( isArray(value) && value.length === 2 ) {
+                        var l = left.stringify(value[0])[0];
+                        var r = right.stringify(value[1])[0];
+                        if ( l !== undefined && r !== undefined ) {
+                            return [l+":"+r];
+                        }
+                    }
+                }
+            };
+        };
+
+        Types.listOf = function (scalar, args) {
+            var canBeEmpty = (args || {}).canBeEmpty;
+
+            return scalar && {
+                name: (canBeEmpty ? "elist of " : "list of ")+scalar.name,
+                canBeEmpty: canBeEmpty,
+                parse: function (values) {
+                    var result = [];
+
+                    if ( values.length === 1 && values[0] === "" ) {
+                        return this.canBeEmpty ? result : undefined;
+                    }
+
+                    for ( var i = 0; i < values.length; i++ ) {
+                        result[i] = scalar.parse([values[i]]);
+                        if ( result[i] === undefined ) {
+                            return;
+                        }
+                    }
+
+                    return result;
+                },
+                stringify: function (values) {
+                    var result = [""];
+
+                    if ( !isArray(values) ) {
+                        return;
+                    }
+
+                    if ( !values.length ) {
+                        return this.canBeEmpty ? result : undefined;
+                    }
+
+                    for ( var i = 0; i < values.length; i++ ) {
+                        result[i] = scalar.stringify(values[i])[0];
+                        if ( result[i] === undefined ) {
+                            return;
+                        }
+                    }
+
+                    return result;
+                }
+            };
+        };
+
+        Types.elistOf = function (scalar) {
+            return Types.listOf(scalar, {
+                canBeEmpty: true
+            });
+        };
 
         // None = ""
         Types.None = Types.scalar({
@@ -543,95 +694,16 @@
             }
         });
 
-        Types.Compose = function (left, right) {
-            return left && right && {
-                name: "composed "+left.name+' ":" '+right.name,
+        Types.or = function (a, b) {
+            return a && b && {
+                name: "("+a.name+" | "+b.name+")",
                 parse: function (values) {
-                    var value = values[0].match(/^((?:\\:|[^:])*):([\S\s]*)$/);
-
-                    assert( values.length === 1 && value, this.name );
-
-                    return [
-                         left.parse( [value[1]] ),
-                        right.parse( [value[2]] )
-                    ];
+                    var result = a.parse(values);
+                    return result !== undefined ? result : b.parse(values);
                 },
                 stringify: function (value) {
-                    assert( isArray(value) && value.length === 2, this.name );
-
-                    return [
-                        left.stringify(value[0])[0] +
-                        ":" +
-                        right.stringify(value[1])[0]
-                    ];
-                }
-            };
-        };
- 
-        Types.listOf = function (scalar, args) {
-            var canBeEmpty = args && args.canBeEmpty === true;
-
-            return scalar && {
-                name: (canBeEmpty ? "elist of " : "list of ")+scalar.name,
-                canBeEmpty: canBeEmpty,
-                parse: function (values) {
-                    var vals = [];
-
-                    if ( values.length === 1 && values[0] === "" ) {
-                        assert( this.canBeEmpty, this.name );
-                        return vals;
-                    }
-
-                    for ( var i = 0; i < values.length; i++ ) {
-                        vals[i] = scalar.parse([values[i]]);
-                    }
-
-                    return vals;
-                },
-                stringify: function (values) {
-                    var vals = [];
-
-                    assert( isArray(values), this.name );
-
-                    if ( values.length ) {
-                        for ( var i = 0; i < values.length; i++ ) {
-                            vals[i] = scalar.stringify(values[i])[0];
-                        }
-                    }
-                    else {
-                        assert( this.canBeEmpty, this.name );
-                        vals[0] = "";
-                    }
-
-                    return vals;
-                }
-            };
-        };
-
-        Types.elistOf = function (scalar) {
-            return Types.listOf(scalar, { canBeEmpty: true });
-        };
-
-        Types.BoardSize = function (square, rectangular) {
-            return square && rectangular && {
-                name: "("+square.name+" | "+rectangular.name+")",
-                parse: function (values) {
-                    return (/:/.test(values[0]) ? rectangular : square).parse(values);
-                },
-                stringify: function (values) {
-                    return (isArray(values) ? rectangular : square).stringify(values);
-                }
-            };
-        };
-
-        Types.Figure = function (none, compose) {
-            return none && compose && {
-                name: "("+none.name+" | "+compose.name+")",
-                parse: function (values) {
-                    return (/:/.test(values[0]) ? compose : none).parse(values);
-                },
-                stringify: function (values) {
-                    return (isArray(values) ? compose : none).stringify(values);
+                    var result = a.stringify(value);
+                    return result !== undefined ? result : b.stringify(value);
                 }
             };
         };
@@ -641,16 +713,16 @@
         this.properties = function (args) {
             var t = args || Types;
 
-            return FF.properties({
+            return FF.properties(t).merge({
                 // Move properties
                 B  : t.Move,
                 KO : t.None,
                 MN : t.Number,
                 W  : t.Move,
                 // Setup properties
-                AB : t.listOfStone || t.listOf( t.Stone ),
-                AE : t.listOfPoint || t.listOf( t.Point ),
-                AW : t.listOfStone || t.listOf( t.Stone ),
+                AB : t.listOfStone || t.listOf(t.Stone),
+                AE : t.listOfPoint,
+                AW : t.listOfStone || t.listOf(t.Stone),
                 PL : t.Color,
                 // Node annotation properties
                 C  : t.Text,
@@ -667,22 +739,22 @@
                 IT : t.None,
                 TE : t.Double,
                 // Markup properties
-                AR : t.listOf( t.Compose(t.Point, t.Point) ),
-                CR : t.listOfPoint || t.listOf( t.Point ),
-                DD : t.elistOfPoint || t.elistOf( t.Point ),
-                LB : t.listOf( t.Compose(t.Point, t.SimpleText) ),
-                LN : t.listOf( t.Compose(t.Point, t.Point) ),
-                MA : t.listOfPoint || t.listOf( t.Point ),
-                SL : t.listOfPoint || t.listOf( t.Point ),
-                SQ : t.listOfPoint || t.listOf( t.Point ),
-                TR : t.listOfPoint || t.listOf( t.Point ),
+                AR : t.listOf( t.compose(t.Point, t.Point) ),
+                CR : t.listOfPoint,
+                DD : t.elistOfPoint,
+                LB : t.listOf( t.compose(t.Point, t.SimpleText) ),
+                LN : t.listOf( t.compose(t.Point, t.Point) ),
+                MA : t.listOfPoint,
+                SL : t.listOfPoint,
+                SQ : t.listOfPoint,
+                TR : t.listOfPoint,
                 // Root properties
-                AP : t.Compose( t.SimpleText, t.SimpleText ),
+                AP : t.compose( t.SimpleText, t.SimpleText ),
                 CA : t.SimpleText,
                 FF : t.Number,
                 GM : t.Number,
                 ST : t.Number,
-                SZ : t.BoardSize( t.Number, t.Compose(t.Number, t.Number) ),
+                SZ : t.or( t.Number, t.compose(t.Number, t.Number) ),
                 // Game info properties
                 AN : t.SimpleText,
                 BR : t.SimpleText,
@@ -711,9 +783,9 @@
                 OW : t.Number,
                 WL : t.Real,
                 // Miscellaneous properties
-                FG : t.Figure( t.None, t.Compose(t.Number, t.SimpleText) ),
+                FG : t.or( t.None, t.compose(t.Number, t.SimpleText) ),
                 PM : t.Number,
-                VM : t.elistOfPoint || t.elistOf( t.Point )
+                VM : t.elistOfPoint
             });
         };
 
@@ -722,13 +794,9 @@
 
     // Go (;FF[4]GM[1]) specific properties
     // http://www.red-bean.com/sgf/go.html
-    SGFGrove.define("4", "1", function (FF) {
-        var create  = SGFGrove.Util.create;
-        var isArray = SGFGrove.Util.isArray;
-        var push    = Array.prototype.push;
-
+    SGFGrove.define(4, 1, function (FF) {
+        var create = SGFGrove.Util.create;
         var Types = create( FF[4].Types );
-        var Props;
 
         var expandPointList = (function () {
             var coord = "abcdefghijklmnopqrstuvwxyz";
@@ -747,6 +815,10 @@
                 var y1 = charCoordAt.call( p1, 1 );
                 var x2 = charCoordAt.call( p2, 0 );
                 var y2 = charCoordAt.call( p2, 1 );
+
+                if ( p1 === p2 ) {
+                    return;
+                }
 
                 if ( x1 > x2 ) {
                     h = x1; x1 = x2; x2 = h;
@@ -777,55 +849,34 @@
         Types.Move = Types.scalar({
             name: "Move",
             like: /^(?:[a-zA-Z]{2})?$/,
-            isa: function (v) {
-                return v === null || (typeof v === "string" && /^[a-zA-Z]{2}$/.test(v));
+            isa: function (value) {
+                return value === null ||
+                       (typeof value === "string" && /^[a-zA-Z]{2}$/.test(value));
             },
             parse: function (v) { return v === "" ? null : v; },
             stringify: function (v) { return v === null ? "" : v; }
         });
 
-        Types.listOfPoint = {
-            name: "list of Point",
-            canBeEmpty: false,
-            parse: function (values) {
-                var vals = [];
-                var i, points;
+        Types.listOfPoint = (function (t) {
+            var listOfPoint = t.listOf(t.or(
+                t.Point,
+                t.scalar({
+                    name: 'composed Point ":" Point',
+                    like: /^[a-zA-Z]{2}:[a-zA-Z]{2}$/,
+                    parse: function (v) { return expandPointList.apply(null, v.split(":")); }
+                })
+            ));
 
-                if ( this.canBeEmpty && values.length === 1 && values[0] === "" ) {
-                    return vals;
-                }
+            var parse = listOfPoint.parse;
+            var array = [];
+                    
+            listOfPoint.parse = function (values) {
+                var result = parse.call(this, values);
+                return result && array.concat.apply(array, result);
+            };
 
-                for ( i = 0; i < values.length; i++ ) {
-                    points = /^([a-zA-Z]{2})(?::([a-zA-Z]{2}))?$/.exec( values[i] );
-                    assert( points, this.name );
-
-                    if ( points[2] ) {
-                        push.apply( vals, expandPointList(points[1], points[2]) );
-                    }
-                    else {
-                        vals.push( points[0] );
-                    }
-                }
-
-                return vals;
-            },
-            stringify: function (values) {
-                assert(
-                    isArray(values) && (this.canBeEmpty || values.length > 0),
-                    this.name
-                );
-
-                for ( var i = 0; i < values.length; i++ ) {
-                    assert(
-                        typeof values[i] === "string" &&
-                        /^[a-zA-Z]{2}(?::[a-zA-Z]{2})?$/.test(values[i]),
-                        this.name
-                    );
-                }
-
-                return values;
-            }
-        };
+            return listOfPoint;
+        }(Types));
 
         Types.elistOfPoint = create( Types.listOfPoint );
         Types.elistOfPoint.name = "elist of Point";
@@ -837,15 +888,18 @@
         Types.elistOfStone = create( Types.elistOfPoint );
         Types.elistOfStone.name = "elist of Stone";
     
-        Props = FF[4].properties( Types );
-
-        Props.HA = Types.Number;
-        Props.KM = Types.Real;
-        Props.TB = Types.elistOfPoint;
-        Props.TW = Types.elistOfPoint;
-
         this.Types = Types;
-        this.Properties = Props;
+
+        this.properties = function (args) {
+            var t = args || Types;
+
+            return FF[4].properties(t).merge({
+                HA : t.Number,
+                KM : t.Real,
+                TB : t.elistOfPoint,
+                TW : t.elistOfPoint
+            });
+        };
 
         return;
     });
