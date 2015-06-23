@@ -8,23 +8,11 @@
 (function () {
     "use strict";
 
+    var FF = {};
+
     var SGFGrove = {
         VERSION: "1.0.1"
     };
-
-    var FF = {};
-
-    /*
-    var dump = function (value) {
-        return (JSON.stringify(value) || "").slice(0, 32);
-    };
-
-    var assert = function (bool, name) {
-        if ( !bool ) {
-            throw new TypeError("Assertion"+(name ? " ("+name+")" : "")+" failed");
-        }
-    };
-    */
 
     SGFGrove.Util = (function () {
         var Util = {};
@@ -110,7 +98,7 @@
                         result[i] = values[i].replace(/\]/g, "\\]");
                     }
                     else {
-                        result[i] = undefined;
+                        return;
                     }
                 }
 
@@ -193,7 +181,7 @@
                     values = [];
 
                     if ( node.hasOwnProperty(ident) ) {
-                        throw new SyntaxError("Property '"+ident+"' already exists");
+                        throw new SyntaxError("Property "+ident+" already exists");
                     }
 
                     while ( val = exec.call(/^\[((?:\\]|[^\]])*)\]\s*/g) ) { // PropValue
@@ -211,7 +199,7 @@
             }
 
             if ( !sequence.length ) {
-                throw new SyntaxError("GameTree must contain at least one Node");
+                throw new SyntaxError("GameTree does not contain any Nodes");
             }
 
             while ( child = parseGameTree() ) {
@@ -243,7 +231,7 @@
 
             (function parsePropValues (gameTrees) {
                 var i, gameTree, sequence, root;
-                var j, node, ident, type, values, str;
+                var j, node, ident, type, values;
 
                 for ( i = 0; i < gameTrees.length; i++ ) {
                     gameTree = gameTrees[i];
@@ -265,8 +253,7 @@
                                 values = node[ident];
                                 node[ident] = type.parse(values);
                                 if ( node[ident] === undefined ) {
-                                    str = ((JSON && JSON.stringify) || String)(values);
-                                    throw new SyntaxError(type.name+" expected, got"+str);
+                                    throw new SyntaxError(type.name+" expected, got ["+values.join("][")+"]");
                                 }
                             }
                         }
