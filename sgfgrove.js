@@ -31,6 +31,22 @@
             return new Ctor();
         };
 
+        Util.forEach = function (array, cb) {
+            for ( var i = 0; i < array.length; i++ ) {
+                cb(array[i]);
+            }
+        };
+
+        Util.traverse = function (gameTree, pre, post) {
+            Util.forEach(gameTree[0], pre);
+            Util.forEach(gameTree[1], function (child) {
+                Util.traverse(child, pre, post);
+            });
+            if ( post ) {
+                Util.forEach(gameTree[0].slice(0).reverse(), post);
+            }
+        };
+
         return Util;
     }());
 
@@ -110,20 +126,20 @@
     }());
 
     FF.properties = function (types) {
-        var prop2type = {};
-
         var that = {
+            types: {},
             defaultType: (types && types.Unknown) || FF.Types.Unknown
         };
 
         that.getType = function (ident) {
-            return prop2type[ident] || this.defaultType;
+            return this.types[ident] || this.defaultType;
         };
 
         that.merge = function (other) {
             for ( var ident in other ) {
-                if ( other.hasOwnProperty(ident) && other[ident] !== undefined ) {
-                    prop2type[ident] = other[ident];
+                if ( other.hasOwnProperty(ident) &&
+                     typeof other[ident] === "object" ) {
+                    this.types[ident] = other[ident];
                 }
             }
             return this;
@@ -143,12 +159,16 @@
     };
 
     SGFGrove.parse = (function () {
-        var source, lastIndex;
+        var Num = FF.Types.Number;
+        var forEach = SGFGrove.Util.forEach;
+        var traverse = SGFGrove.Util.traverse;
 
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
         // http://perldoc.perl.org/perlop.html#Regexp-Quote-Like-Operators
-    
+        
+        var source, lastIndex;
+
         var test = function () {
             this.lastIndex = 0;
             var bool = this.test( source.slice(lastIndex) );
@@ -215,7 +235,6 @@
         /* jshint boss:false */
 
         return function (text, reviver) {
-            var Num = FF.Types.Number, props;
             var collection = [], gameTree;
 
             source = String(text);
@@ -229,39 +248,30 @@
                 throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
-            (function parsePropValues (gameTrees) {
-                var i, gameTree, sequence, root;
-                var j, node, ident, type, values;
+            forEach(collection, function (gameTree) {
+                var root = gameTree[0][0];
 
-                for ( i = 0; i < gameTrees.length; i++ ) {
-                    gameTree = gameTrees[i];
-                    sequence = gameTree[0];
+                var properties = FF.createProperties(
+                    root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1,
+                    root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1
+                );
 
-                    if ( gameTrees === collection ) {
-                        root = sequence[0];
-                        props = FF.createProperties(
-                            root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1,
-                            root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1
-                        );
-                    }
+                traverse(gameTree, function (node) {
+                    for ( var ident in node ) {
+                        if ( node.hasOwnProperty(ident) ) {
+                            var type = properties.getType(ident);
+                            var result = type.parse(node[ident]);
 
-                    for ( j = 0; j < sequence.length; j++ ) {
-                        node = sequence[j];
-                        for ( ident in node ) {
-                            if ( node.hasOwnProperty(ident) ) {
-                                type = props.getType(ident);
-                                values = node[ident];
-                                node[ident] = type.parse(values);
-                                if ( node[ident] === undefined ) {
-                                    throw new SyntaxError(type.name+" expected, got ["+values.join("][")+"]");
-                                }
+                            if ( result === undefined ) {
+                                var values = "["+node[ident].join("][")+"]";
+                                throw new SyntaxError(type.name+" expected, got "+values);
                             }
+
+                            node[ident] = result;
                         }
                     }
-
-                    parsePropValues( gameTree[1] );
-                }
-            }(collection));
+                });
+            });
 
             // Copied and rearranged from json2.js so that we can pass the same
             // callback to both of SGF.parse and JSON.parse
