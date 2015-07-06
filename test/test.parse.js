@@ -141,5 +141,13 @@
         t.end();
     });
 
+    test("SGFGrove.parse: redundant parentheses are ignored", function (t) {
+        t.deepEqual(
+            SGF.parse("(;FF[4]C[root](;C[a](;C[b])))"),
+            [[[{ FF: 4, C: "root" }, { C: "a" }, { C: "b" }], []]]
+        );
+        t.end();
+    });
+
 }());
 

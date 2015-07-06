@@ -163,7 +163,7 @@
     };
 
     SGFGrove.parse = (function () {
-        var Num = FF.Types.Number;
+        var SGFNumber = FF.Types.Number;
         var forEach = SGFGrove.Util.forEach;
         var traverse = SGFGrove.Util.traverse;
 
@@ -234,6 +234,11 @@
                 throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
+            if ( children.length === 1 ) {
+                sequence = sequence.concat(children[0][0]);
+                children = children[0][1];
+            }
+
             return [ sequence, children ];
         };
         /* jshint boss:false */
@@ -256,8 +261,8 @@
                 var root = gameTree[0][0];
 
                 var properties = FF.createProperties(
-                    root.hasOwnProperty("FF") ? Num.parse(root.FF) : 1,
-                    root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1
+                    root.hasOwnProperty("FF") ? SGFNumber.parse(root.FF) : 1,
+                    root.hasOwnProperty("GM") ? SGFNumber.parse(root.GM) : 1
                 );
 
                 traverse(gameTree, function (tree) {
