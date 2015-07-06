@@ -164,8 +164,6 @@
 
     SGFGrove.parse = (function () {
         var SGFNumber = FF.Types.Number;
-        var forEach = SGFGrove.Util.forEach;
-        var traverse = SGFGrove.Util.traverse;
 
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
@@ -188,10 +186,10 @@
         };
 
         /* jshint boss:true */
-        var parseGameTree = function () {
+        var parseGameTree = function (properties) {
             var sequence = [];
             var children = [], child;
-            var node, ident, values, val;
+            var node, ident, values, val, type;
 
             if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
                 return;
@@ -219,6 +217,25 @@
                     node[ident] = values;
                 }
 
+                properties = properties || FF.createProperties(
+                    node.hasOwnProperty("FF") ? SGFNumber.parse(node.FF) : 1,
+                    node.hasOwnProperty("GM") ? SGFNumber.parse(node.GM) : 1
+                );
+
+                for ( ident in node ) {
+                    if ( node.hasOwnProperty(ident) ) {
+                        type = properties.getType(ident);
+                        values = type.parse(node[ident]);
+
+                        if ( values === undefined ) {
+                            values = "["+node[ident].join("][")+"]";
+                            throw new SyntaxError(type.name+" expected, got "+values);
+                        }
+
+                        node[ident] = values;
+                    }
+                }
+ 
                 sequence.push( node );
             }
 
@@ -226,7 +243,7 @@
                 throw new SyntaxError("GameTree does not contain any Nodes");
             }
 
-            while ( child = parseGameTree() ) {
+            while ( child = parseGameTree(properties) ) {
                 children.push( child );
             }
 
@@ -234,6 +251,7 @@
                 throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
+            // (;a(;b(;c))) => (;a;b;c)
             if ( children.length === 1 ) {
                 sequence = sequence.concat(children[0][0]);
                 children = children[0][1];
@@ -256,33 +274,6 @@
             if ( lastIndex !== source.length ) {
                 throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
-
-            forEach(collection, function (gameTree) {
-                var root = gameTree[0][0];
-
-                var properties = FF.createProperties(
-                    root.hasOwnProperty("FF") ? SGFNumber.parse(root.FF) : 1,
-                    root.hasOwnProperty("GM") ? SGFNumber.parse(root.GM) : 1
-                );
-
-                traverse(gameTree, function (tree) {
-                    forEach(tree[0], function (node) {
-                        for ( var ident in node ) {
-                            if ( node.hasOwnProperty(ident) ) {
-                                var type = properties.getType(ident);
-                                var result = type.parse(node[ident]);
-
-                                if ( result === undefined ) {
-                                    var values = "["+node[ident].join("][")+"]";
-                                    throw new SyntaxError(type.name+" expected, got "+values);
-                                }
-
-                                node[ident] = result;
-                            }
-                        }
-                    });
-                });
-            });
 
             // Copied and rearranged from json2.js so that we can pass the same
             // callback to both of SGF.parse and JSON.parse
