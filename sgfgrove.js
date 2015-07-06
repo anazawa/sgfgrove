@@ -33,18 +33,22 @@
 
         Util.forEach = function (array, cb) {
             for ( var i = 0; i < array.length; i++ ) {
-                cb(array[i]);
+                cb(array[i], i);
             }
         };
 
         Util.traverse = function (gameTree, pre, post) {
-            Util.forEach(gameTree[0], pre);
-            Util.forEach(gameTree[1], function (child) {
-                Util.traverse(child, pre, post);
-            });
-            if ( post ) {
-                Util.forEach(gameTree[0].slice(0).reverse(), post);
-            }
+            (function traverse (tree, i, parent) {
+                if (pre) {
+                    pre(tree, i, parent);
+                }
+                Util.forEach(tree[1], function (child, j) {
+                    traverse(child, j, tree);
+                });
+                if (post) {
+                    post(tree, i, parent);
+                }
+            }(gameTree, null, null));
         };
 
         return Util;
@@ -256,20 +260,22 @@
                     root.hasOwnProperty("GM") ? Num.parse(root.GM) : 1
                 );
 
-                traverse(gameTree, function (node) {
-                    for ( var ident in node ) {
-                        if ( node.hasOwnProperty(ident) ) {
-                            var type = properties.getType(ident);
-                            var result = type.parse(node[ident]);
+                traverse(gameTree, function (tree) {
+                    forEach(tree[0], function (node) {
+                        for ( var ident in node ) {
+                            if ( node.hasOwnProperty(ident) ) {
+                                var type = properties.getType(ident);
+                                var result = type.parse(node[ident]);
 
-                            if ( result === undefined ) {
-                                var values = "["+node[ident].join("][")+"]";
-                                throw new SyntaxError(type.name+" expected, got "+values);
+                                if ( result === undefined ) {
+                                    var values = "["+node[ident].join("][")+"]";
+                                    throw new SyntaxError(type.name+" expected, got "+values);
+                                }
+
+                                node[ident] = result;
                             }
-
-                            node[ident] = result;
                         }
-                    }
+                    });
                 });
             });
 
