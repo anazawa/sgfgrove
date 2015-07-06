@@ -169,19 +169,19 @@
         // the \G assertion (/\G.../gc). See also:
         // http://perldoc.perl.org/perlop.html#Regexp-Quote-Like-Operators
         
-        var source, lastIndex;
+        var text, lastIndex;
 
         var test = function () {
+            var bool = this.test( text.slice(lastIndex) );
+            lastIndex += this.lastIndex;
             this.lastIndex = 0;
-            var bool = this.test( source.slice(lastIndex) );
-            lastIndex = bool ? lastIndex+this.lastIndex : lastIndex;
             return bool;
         };
 
         var exec = function () {
+            var array = this.exec( text.slice(lastIndex) );
+            lastIndex += this.lastIndex;
             this.lastIndex = 0;
-            var array = this.exec( source.slice(lastIndex) );
-            lastIndex = array ? lastIndex+this.lastIndex : lastIndex;
             return array;
         };
 
@@ -248,10 +248,10 @@
             }
 
             if ( !test.call(/^\)\s*/g) ) { // end of GameTree
-                throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
+                throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
             }
 
-            // (;a(;b(;c))) => (;a;b;c)
+            // (;a(;b)) => (;a;b)
             if ( children.length === 1 ) {
                 sequence = sequence.concat(children[0][0]);
                 children = children[0][1];
@@ -261,18 +261,18 @@
         };
         /* jshint boss:false */
 
-        return function (text, reviver) {
+        return function (source, reviver) {
             var collection = [], gameTree;
 
-            source = String(text);
+            text = String(source);
             lastIndex = 0;
 
             while ( gameTree = parseGameTree() ) { // jshint ignore:line
                 collection.push( gameTree );
             }
 
-            if ( lastIndex !== source.length ) {
-                throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
+            if ( lastIndex !== text.length ) {
+                throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
             }
 
             // Copied and rearranged from json2.js so that we can pass the same
