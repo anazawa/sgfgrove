@@ -21,6 +21,10 @@
             return typeof value === "number" && isFinite(value);
         };
 
+        Util.isInteger = function (value) {
+            return Util.isNumber(value) && Math.floor(value) === value;
+        };
+
         Util.isArray = Array.isArray || function (value) {
             return Object.prototype.toString.call(value) === "[object Array]";
         };
@@ -37,7 +41,6 @@
     FF.Types = (function () {
         var Types = {};
         var isArray = SGFGrove.Util.isArray;
-        var isNumber = SGFGrove.Util.isNumber;
 
         Types.scalar = function (args) {
             args = args || {};
@@ -69,7 +72,7 @@
         Types.Number = Types.scalar({
             name: "Number",
             like: /^[+-]?\d+$/,
-            isa: function (v) { return isNumber(v) && Math.floor(v) === v; },
+            isa: SGFGrove.Util.isInteger,
             parse: function (v) { return parseInt(v, 10); }
         });
 
@@ -148,8 +151,8 @@
     };
 
     FF.createProperties = function (ff, gm) {
-        if ( SGFGrove.Util.isNumber(ff) && FF.hasOwnProperty(ff) ) {
-            if ( SGFGrove.Util.isNumber(gm) && FF[ff].hasOwnProperty(gm) ) {
+        if ( SGFGrove.Util.isInteger(ff) && FF.hasOwnProperty(ff) ) {
+            if ( SGFGrove.Util.isInteger(gm) && FF[ff].hasOwnProperty(gm) ) {
                 return FF[ff][gm].properties();
             }
             return FF[ff].properties();
@@ -343,24 +346,25 @@
             return v;
         };
  
-        var stringify = function (gameTree, properties) {
+        var stringifyGameTree = function (gameTree, properties) {
             var text = "";
-            var mind = gap;
 
             if ( isArray(gameTree) ) {
                 var sequence = gameTree[0];
                 var children = gameTree[1];
 
                 if ( isArray(sequence) && sequence.length ) {
-                    text += gap + "(" + lf; // Open GameTree
+                    var mind = gap;
+
+                    text += gap+"("+lf; // Open GameTree
                     gap += indent;
 
                     for ( var i = 0; i < sequence.length; i++ ) {
                         var node = sequence[i];
-                        var prefix = gap + ";";
+                        var semicolon = gap+";";
                         
                         if ( !node || typeof node !== "object" ) {
-                            text += prefix + lf;
+                            text += semicolon+lf;
                             continue;
                         }
 
@@ -373,8 +377,8 @@
                             if ( node.hasOwnProperty(ident) ) {
                                 var values = properties.stringify(ident, node[ident]);
                                 if ( values !== undefined ) {
-                                    text += prefix + ident + "[" + values.join("][") + "]" + lf;
-                                    prefix = indent ? gap+" " : "";
+                                    text += semicolon+ident+"["+values.join("][")+"]"+lf;
+                                    semicolon = indent ? gap+" " : "";
                                 }
                             }
                         }
@@ -382,12 +386,12 @@
 
                     if ( isArray(children) ) {
                         for ( var j = 0; j < children.length; j++ ) {
-                            text += stringify( children[j], properties );
+                            text += stringifyGameTree(children[j], properties);
                         }
                     }
 
                     gap = mind;
-                    text += gap + ")" + lf; // close GameTree
+                    text += gap+")"+lf; // close GameTree
                 }
             }
 
@@ -396,11 +400,10 @@
 
         return function (collection, rep, space) {
             var text = "";
-            var gameTrees;
 
+            replacer = isArray(rep) ? makeSelector(rep) : rep;
             indent = "";
             gap = "";
-            replacer = isArray(rep) ? makeSelector(rep) : rep;
 
             if ( replacer && typeof replacer !== "function" )  {
                 throw new Error("replacer must be array or function");
@@ -416,10 +419,12 @@
             }
 
             lf = indent ? "\n" : "";
-            gameTrees = finalize("", { "": collection });
+            collection = finalize("", { "": collection });
 
-            for ( var j = 0; j < gameTrees.length; j++ ) {
-                text += stringify( gameTrees[j] );
+            if ( isArray(collection) ) {
+                for ( var j = 0; j < collection.length; j++ ) {
+                    text += stringifyGameTree(collection[j]);
+                }
             }
 
             return text;
