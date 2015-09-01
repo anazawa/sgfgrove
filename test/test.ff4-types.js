@@ -149,9 +149,14 @@
     test("FF[4]GM[1] Move", function (t) {
         var Move = FF[4][1].Types.Move;
 
-        t.equal( Move.name, "Move" );
+        t.equal( Move.name, "(None | Point)" );
 
+        t.equal( Move.parse(["aa"]), "aa" );
+        t.equal( Move.parse(["AA"]), "AA" );
         t.equal( Move.parse([""]), null, "pass" );
+
+        t.deepEqual( Move.stringify("aa"), ["aa"] );
+        t.deepEqual( Move.stringify("AA"), ["AA"] );
         t.deepEqual( Move.stringify(null), [""], "pass" );
 
         t.end();

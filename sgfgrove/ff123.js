@@ -41,10 +41,14 @@
 
         this.Types = Types;
 
-        this.properties = function (args) {
-            var t = args || Types;
+        this.properties = function (t) {
+            t = t || Types;
 
-            return FF.properties(t).merge({
+            var that = FF.properties(t, {
+                identifiers: /^[A-Z][A-Z0-9]?$/
+            });
+
+            that.merge({
                 B  : t.Move,
                 W  : t.Move,
                 C  : t.Text,
@@ -94,6 +98,8 @@
                 M  : t.listOf(t.Point),
                 L  : t.listOf(t.Point)
             });
+
+            return that;
         };
 
         return;
@@ -116,8 +122,8 @@
 
         this.Types = Types;
 
-        this.properties = function (args) {
-            var t = args || Types;
+        this.properties = function (t) {
+            t = t || Types;
 
             return FF[1].properties(t).merge({
                 BR : t.Text,
