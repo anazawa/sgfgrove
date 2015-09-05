@@ -44,62 +44,59 @@
         this.properties = function (t) {
             t = t || Types;
 
-            var that = FF.properties(t, {
-                identifiers: /^[A-Z][A-Z0-9]?$/
+            return FF.properties(t, {
+                identifiers: /^[A-Z][A-Z0-9]?$/,
+                types: {
+                    B  : t.Move,
+                    W  : t.Move,
+                    C  : t.Text,
+                    N  : t.Text,
+                    //
+                    V  : t.Number,
+                    //
+                    CH : t.Triple,
+                    GB : t.Triple,
+                    GW : t.Triple,
+                    TE : t.Triple,
+                    BM : t.Triple,
+                    // times
+                    BL : t.Real,
+                    WL : t.Real,
+                    // figure
+                    FG : t.None,
+                    // set up
+                    AB : t.listOf(t.Point),
+                    AW : t.listOf(t.Point),
+                    AE : t.listOf(t.Point),
+                    PL : t.Color,
+                    // game info
+                    GN : t.Text, 
+                    GC : t.Text,
+                    EV : t.Text,
+                    RO : t.Text,
+                    DT : t.Text,
+                    PC : t.Text,
+                    PB : t.Text,
+                    PW : t.Text,
+                    RE : t.Text,
+                    US : t.Text,
+                    TM : t.Text,
+                    SO : t.Text,
+                    // root
+                    GM : t.Number,
+                    SZ : t.Number,
+                    VW : t.elistOf(t.Point), // "an empty list denotes the whole board"
+                    BS : t.Number,
+                    WS : t.Number,
+                    // computer algorithms
+                    EL : t.Number,
+                    EX : t.Move,
+                    // marking
+                    SL : t.listOf(t.Point),
+                    M  : t.listOf(t.Point),
+                    L  : t.listOf(t.Point)
+                }
             });
-
-            that.merge({
-                B  : t.Move,
-                W  : t.Move,
-                C  : t.Text,
-                N  : t.Text,
-                //
-                V  : t.Number,
-                //
-                CH : t.Triple,
-                GB : t.Triple,
-                GW : t.Triple,
-                TE : t.Triple,
-                BM : t.Triple,
-                // times
-                BL : t.Real,
-                WL : t.Real,
-                // figure
-                FG : t.None,
-                // set up
-                AB : t.listOf(t.Point),
-                AW : t.listOf(t.Point),
-                AE : t.listOf(t.Point),
-                PL : t.Color,
-                // game info
-                GN : t.Text, 
-                GC : t.Text,
-                EV : t.Text,
-                RO : t.Text,
-                DT : t.Text,
-                PC : t.Text,
-                PB : t.Text,
-                PW : t.Text,
-                RE : t.Text,
-                US : t.Text,
-                TM : t.Text,
-                SO : t.Text,
-                // root
-                GM : t.Number,
-                SZ : t.Number,
-                VW : t.elistOf(t.Point), // "an empty list denotes the whole board"
-                BS : t.Number,
-                WS : t.Number,
-                // computer algorithms
-                EL : t.Number,
-                EX : t.Move,
-                // marking
-                SL : t.listOf(t.Point),
-                M  : t.listOf(t.Point),
-                L  : t.listOf(t.Point)
-            });
-
-            return that;
         };
 
         return;
@@ -125,7 +122,9 @@
         this.properties = function (t) {
             t = t || Types;
 
-            return FF[1].properties(t).merge({
+            var that = FF[1].properties(t);
+
+            that.mergeTypes({
                 BR : t.Text,
                 WR : t.Text,
                 HA : t.Number,
@@ -135,6 +134,8 @@
                 SC : t.listOf(t.Point),
                 RG : t.listOf(t.Point)
             });
+
+            return that;
         };
 
         return;
@@ -160,75 +161,78 @@
         this.properties = function (args) {
             var t = args || Types;
 
-            return FF.properties(t).merge({
-                // Moves
-                B  : t.Move,
-                W  : t.Move,
-                // Setup Position or Problem
-                AB : t.listOf(t.Point),
-                AW : t.listOf(t.Point),
-                AE : t.listOf(t.Point),
-                PL : t.Color,
-                // Node Annotation
-                C  : t.Text,
-                N  : t.Text,
-                SE : t.listOf(t.Point),
-                // Move Annotation
-                V  : t.Real,
-                CH : t.Triple,
-                GB : t.Triple,
-                GW : t.Triple,
-                TE : t.Triple,
-                BM : t.Triple,
-                DO : t.None,
-                IT : t.None,
-                UC : t.Triple,
-                DM : t.Triple,
-                HO : t.Triple,
-                SI : t.Triple,
-                // Time Control
-                BL : t.Real,
-                WL : t.Real,
-                OB : t.Number,
-                OM : t.Number,
-                OP : t.Real,
-                OV : t.Number,
-                OW : t.Number,
-                // Diagrams and Printing
-                FG : t.None,
-                MN : t.Number,
-                // Root Properties
-                FF : t.Number,
-                GM : t.Number,
-                SZ : t.Number,
-                BS : t.Number,
-                WS : t.Number,
-                LT : t.None,
-                // Game Info
-                GN : t.Text,
-                GC : t.Text,
-                EV : t.Text,
-                RO : t.Text,
-                DT : t.Text,
-                PC : t.Text,
-                PB : t.Text,
-                PW : t.Text,
-                BT : t.Text,
-                WT : t.Text,
-                RE : t.Text,
-                US : t.Text,
-                TM : t.Text,
-                SO : t.Text,
-                AN : t.Text,
-                CP : t.Text,
-                ID : t.Text,
-                ON : t.Text,
-                // Position Annotation
-                SL : t.listOf(t.Point),
-                MA : t.listOf(t.Point),
-                TR : t.listOf(t.Point),
-                CR : t.listOf(t.Point),
-                LB : t.listOf( t.compose(t.Point, t.Text) )
+            return FF.properties(t, {
+                identifiers: /^[A-Z][A-Z0-9]?$/,
+                types: {
+                    // Moves
+                    B  : t.Move,
+                    W  : t.Move,
+                    // Setup Position or Problem
+                    AB : t.listOf(t.Point),
+                    AW : t.listOf(t.Point),
+                    AE : t.listOf(t.Point),
+                    PL : t.Color,
+                    // Node Annotation
+                    C  : t.Text,
+                    N  : t.Text,
+                    SE : t.listOf(t.Point),
+                    // Move Annotation
+                    V  : t.Real,
+                    CH : t.Triple,
+                    GB : t.Triple,
+                    GW : t.Triple,
+                    TE : t.Triple,
+                    BM : t.Triple,
+                    DO : t.None,
+                    IT : t.None,
+                    UC : t.Triple,
+                    DM : t.Triple,
+                    HO : t.Triple,
+                    SI : t.Triple,
+                    // Time Control
+                    BL : t.Real,
+                    WL : t.Real,
+                    OB : t.Number,
+                    OM : t.Number,
+                    OP : t.Real,
+                    OV : t.Number,
+                    OW : t.Number,
+                    // Diagrams and Printing
+                    FG : t.None,
+                    MN : t.Number,
+                    // Root Properties
+                    FF : t.Number,
+                    GM : t.Number,
+                    SZ : t.Number,
+                    BS : t.Number,
+                    WS : t.Number,
+                    LT : t.None,
+                    // Game Info
+                    GN : t.Text,
+                    GC : t.Text,
+                    EV : t.Text,
+                    RO : t.Text,
+                    DT : t.Text,
+                    PC : t.Text,
+                    PB : t.Text,
+                    PW : t.Text,
+                    BT : t.Text,
+                    WT : t.Text,
+                    RE : t.Text,
+                    US : t.Text,
+                    TM : t.Text,
+                    SO : t.Text,
+                    AN : t.Text,
+                    CP : t.Text,
+                    ID : t.Text,
+                    ON : t.Text,
+                    // Position Annotation
+                    SL : t.listOf(t.Point),
+                    MA : t.listOf(t.Point),
+                    TR : t.listOf(t.Point),
+                    CR : t.listOf(t.Point),
+                    LB : t.listOf( t.compose(t.Point, t.Text) )
+                }
             });
         };
 
@@ -244,10 +248,12 @@
 
         this.Types = Types;
         
-        this.properties = function (args) {
-            var t = args || Types;
+        this.properties = function (t) {
+            t = t || Types;
 
-            return FF[3].properties(t).merge({
+            var that = FF[3].properties(t);
+            
+            that.mergeTypes({
                 KO : t.None,
                 RU : t.Text,
                 BR : t.Text,
@@ -260,6 +266,8 @@
                 SC : t.listOf(t.Point),
                 RG : t.listOf(t.Point)
             });
+
+            return that;
         };
 
         return;

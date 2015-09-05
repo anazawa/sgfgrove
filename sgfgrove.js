@@ -115,36 +115,29 @@
         args = args || {};
 
         var that = {
-            types: {},
-            defaultType: args.defaultType || t.Unknown,
-            identifiers: args.identifiers || { test: function () { return false; } }
+            types       : args.types       || {},
+            defaultType : args.defaultType || t.Unknown,
+            identifiers : args.identifiers || { test: function () { return false; } }
         };
 
-        that.merge = function (other) {
+        that.getType = function (ident) {
+            return this.types[ident] || this.defaultType;
+        };
+
+        that.mergeTypes = function (other) {
+            var types = this.types;
+
             for ( var ident in other ) {
-                if ( other.hasOwnProperty(ident) && other[ident] &&
-                     typeof other[ident] === "object" ) {
-                    this.types[ident] = other[ident];
+                if ( other.hasOwnProperty(ident) && other[ident] ) {
+                    types[ident] = other[ident];
                 }
             }
-            return this;
+
+            return types;
         };
 
-        that.parse = function (ident, values) {
-            var type = this.types[ident] || this.defaultType;
-            var result = type.parse(values);
-
-            if ( result === undefined ) {
-                throw new SyntaxError(type.name+" expected, got "+"["+values.join("][")+"]");
-            }
-
-            return result;
-        };
-
-        that.stringify = function (ident, values) {
-            if ( this.identifiers.test(ident) ) {
-                 return (this.types[ident] || this.defaultType).stringify(values);
-            }
+        that.isIdentifier = function (ident) {
+            return this.identifiers.test(ident);
         };
 
         return that;
@@ -185,7 +178,7 @@
 
         /* jshint boss:true */
         var parseGameTree = function (properties) {
-            var sequence = [], node, ident, values, v;
+            var sequence = [], node, ident, values, v, type;
             var children = [], child;
 
             if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
@@ -199,7 +192,10 @@
                     ident = ident[1].replace(/[a-z]/g, ""); // for FF[3]
                     values = [];
 
-                    if ( node.hasOwnProperty(ident) ) {
+                    if ( !ident ) {
+                        throw new SyntaxError("PropIdent is missing");
+                    }
+                    else if ( node.hasOwnProperty(ident) ) {
                         throw new SyntaxError("Property "+ident+" already exists");
                     }
 
@@ -221,7 +217,15 @@
 
                 for ( ident in node ) {
                     if ( node.hasOwnProperty(ident) ) {
-                        node[ident] = properties.parse(ident, node[ident]);
+                        type = properties.getType(ident);
+                        values = type.parse(node[ident]);
+                        if ( values !== undefined ) {
+                            node[ident] = values;
+                        }
+                        else {
+                            var str = "["+node[ident].join("][")+"]";
+                            throw new SyntaxError(type.name+" expected, got "+str);
+                        }
                     }
                 }
  
@@ -361,10 +365,10 @@
 
                     for ( var i = 0; i < sequence.length; i++ ) {
                         var node = sequence[i];
-                        var semicolon = gap+";";
+                        var separator = gap+";";
                         
                         if ( !node || typeof node !== "object" ) {
-                            text += semicolon+lf;
+                            text += separator+lf;
                             continue;
                         }
 
@@ -374,11 +378,12 @@
                         );
 
                         for ( var ident in node ) {
-                            if ( node.hasOwnProperty(ident) ) {
-                                var values = properties.stringify(ident, node[ident]);
+                            if ( node.hasOwnProperty(ident) &&
+                                 properties.isIdentifier(ident) ) {
+                                var values = properties.getType(ident).stringify(node[ident]);
                                 if ( values !== undefined ) {
-                                    text += semicolon+ident+"["+values.join("][")+"]"+lf;
-                                    semicolon = indent ? gap+" " : "";
+                                    text += separator+ident+"["+values.join("][")+"]"+lf;
+                                    separator = indent ? gap+" " : "";
                                 }
                             }
                         }
@@ -612,86 +617,83 @@
         this.properties = function (t) {
             t = t || Types;
 
-            var that = FF.properties(t, {
-                identifiers: /^[A-Z]+$/
+            return FF.properties(t, {
+                identifiers: /^[A-Z]+$/,
+                types: {
+                    // Move properties
+                    B  : t.Move,
+                    KO : t.None,
+                    MN : t.Number,
+                    W  : t.Move,
+                    // Setup properties
+                    AB : t.listOfStone || t.listOf(t.Stone),
+                    AE : t.listOfPoint,
+                    AW : t.listOfStone || t.listOf(t.Stone),
+                    PL : t.Color,
+                    // Node annotation properties
+                    C  : t.Text,
+                    DM : t.Double,
+                    GB : t.Double,
+                    GW : t.Double,
+                    HO : t.Double,
+                    N  : t.SimpleText,
+                    UC : t.Double,
+                    V  : t.Real,
+                    // Move annotation properties
+                    BM : t.Double,
+                    DO : t.None,
+                    IT : t.None,
+                    TE : t.Double,
+                    // Markup properties
+                    AR : t.listOf( t.compose(t.Point, t.Point) ),
+                    CR : t.listOfPoint,
+                    DD : t.elistOfPoint,
+                    LB : t.listOf( t.compose(t.Point, t.SimpleText) ),
+                    LN : t.listOf( t.compose(t.Point, t.Point) ),
+                    MA : t.listOfPoint,
+                    SL : t.listOfPoint,
+                    SQ : t.listOfPoint,
+                    TR : t.listOfPoint,
+                    // Root properties
+                    AP : t.compose( t.SimpleText, t.SimpleText ),
+                    CA : t.SimpleText,
+                    FF : t.Number,
+                    GM : t.Number,
+                    ST : t.Number,
+                    SZ : t.or( t.Number, t.compose(t.Number, t.Number) ),
+                    // Game info properties
+                    AN : t.SimpleText,
+                    BR : t.SimpleText,
+                    BT : t.SimpleText,
+                    CP : t.SimpleText,
+                    DT : t.SimpleText,
+                    EV : t.SimpleText,
+                    GN : t.SimpleText,
+                    GC : t.Text,
+                    ON : t.SimpleText,
+                    OT : t.SimpleText,
+                    PB : t.SimpleText,
+                    PC : t.SimpleText,
+                    PW : t.SimpleText,
+                    RE : t.SimpleText,
+                    RO : t.SimpleText,
+                    RU : t.SimpleText,
+                    SO : t.SimpleText,
+                    TM : t.Real,
+                    US : t.SimpleText,
+                    WR : t.SimpleText,
+                    WT : t.SimpleText,
+                    // Timing properties
+                    BL : t.Real,
+                    OB : t.Number,
+                    OW : t.Number,
+                    WL : t.Real,
+                    // Miscellaneous properties
+                    FG : t.or( t.None, t.compose(t.Number, t.SimpleText) ),
+                    PM : t.Number,
+                    VM : t.elistOfPoint
+                }
             });
-
-            that.merge({
-                // Move properties
-                B  : t.Move,
-                KO : t.None,
-                MN : t.Number,
-                W  : t.Move,
-                // Setup properties
-                AB : t.listOfStone || t.listOf(t.Stone),
-                AE : t.listOfPoint,
-                AW : t.listOfStone || t.listOf(t.Stone),
-                PL : t.Color,
-                // Node annotation properties
-                C  : t.Text,
-                DM : t.Double,
-                GB : t.Double,
-                GW : t.Double,
-                HO : t.Double,
-                N  : t.SimpleText,
-                UC : t.Double,
-                V  : t.Real,
-                // Move annotation properties
-                BM : t.Double,
-                DO : t.None,
-                IT : t.None,
-                TE : t.Double,
-                // Markup properties
-                AR : t.listOf( t.compose(t.Point, t.Point) ),
-                CR : t.listOfPoint,
-                DD : t.elistOfPoint,
-                LB : t.listOf( t.compose(t.Point, t.SimpleText) ),
-                LN : t.listOf( t.compose(t.Point, t.Point) ),
-                MA : t.listOfPoint,
-                SL : t.listOfPoint,
-                SQ : t.listOfPoint,
-                TR : t.listOfPoint,
-                // Root properties
-                AP : t.compose( t.SimpleText, t.SimpleText ),
-                CA : t.SimpleText,
-                FF : t.Number,
-                GM : t.Number,
-                ST : t.Number,
-                SZ : t.or( t.Number, t.compose(t.Number, t.Number) ),
-                // Game info properties
-                AN : t.SimpleText,
-                BR : t.SimpleText,
-                BT : t.SimpleText,
-                CP : t.SimpleText,
-                DT : t.SimpleText,
-                EV : t.SimpleText,
-                GN : t.SimpleText,
-                GC : t.Text,
-                ON : t.SimpleText,
-                OT : t.SimpleText,
-                PB : t.SimpleText,
-                PC : t.SimpleText,
-                PW : t.SimpleText,
-                RE : t.SimpleText,
-                RO : t.SimpleText,
-                RU : t.SimpleText,
-                SO : t.SimpleText,
-                TM : t.Real,
-                US : t.SimpleText,
-                WR : t.SimpleText,
-                WT : t.SimpleText,
-                // Timing properties
-                BL : t.Real,
-                OB : t.Number,
-                OW : t.Number,
-                WL : t.Real,
-                // Miscellaneous properties
-                FG : t.or( t.None, t.compose(t.Number, t.SimpleText) ),
-                PM : t.Number,
-                VM : t.elistOfPoint
-            });
-
-            return that;
         };
 
         return;
@@ -782,12 +784,16 @@
         this.properties = function (t) {
             t = t || Types;
 
-            return FF[4].properties(t).merge({
+            var that = FF[4].properties(t);
+
+            that.mergeTypes({
                 HA : t.Number,
                 KM : t.Real,
                 TB : t.elistOfPoint,
                 TW : t.elistOfPoint
             });
+
+            return that;
         };
 
         return;

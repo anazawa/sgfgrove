@@ -16,6 +16,7 @@ Type-aware SGF parser/composer intended for the browser
     - [sgfgrove/ff123.js](#sgfgroveff123js)
     - [sgfgrove/collection.js](#sgfgrovecollectionjs)
     - [sgfgrove/validator.js](#sgfgrovevalidatorjs)
+- [Limitations](#limitations)
 - [Versioning](#versioning)
 - [History](#history)
 - [See Also](#see-also)
@@ -654,6 +655,15 @@ validator.validate(collection, {
     ...
 });
 ```
+
+## Limitations
+
+- FF[3] and FF[4] specs do not allow duplicate PropIdents in a Node.
+  FF[1]\(=FF[2]) does not refer to the uniqueness. This module follows
+  the former specs.
+
+- Only FF[3] allows lowercased letters in a PropIdent.
+  This module always allows them.
 
 ## Versioning
 
