@@ -46,23 +46,6 @@
             'SGF.parse: reviver should be called'
         );
 
-        t.equal(
-            SGF.stringify([[
-                [{
-                    FF: 4,
-                    FOO: {
-                        bar: 'baz',
-                        toSGF: function () {
-                            return [this.bar];
-                        }
-                    }
-                }],
-                []
-            ]]),
-            '(;FF[4]FOO[baz])',
-            'SGF.stringify: toSGF method should be invoked'
-        );
-
         /*
         t.throws(
             function () {

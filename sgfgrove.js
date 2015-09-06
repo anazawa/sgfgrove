@@ -14,6 +14,13 @@
         VERSION: "1.0.1"
     };
 
+    if ( typeof exports !== "undefined" ) {
+        module.exports = SGFGrove; // jshint ignore:line
+    }
+    else {
+        window.SGFGrove = SGFGrove;
+    }
+
     SGFGrove.Util = (function () {
         var Util = {};
 
@@ -155,12 +162,11 @@
 
     SGFGrove.parse = (function () {
         var SGFNumber = FF.Types.Number;
+        var text, lastIndex, reviver;
 
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
         // http://perldoc.perl.org/perlop.html#Regexp-Quote-Like-Operators
- 
-        var text, lastIndex;
 
         var test = function () {
             var bool = this.test( text.slice(lastIndex) );
@@ -178,7 +184,7 @@
 
         /* jshint boss:true */
         var parseGameTree = function (properties) {
-            var sequence = [], node, ident, values, v, type;
+            var sequence = [], node, ident, values, v, type, str;
             var children = [], child;
 
             if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
@@ -223,7 +229,7 @@
                             node[ident] = values;
                         }
                         else {
-                            var str = "["+node[ident].join("][")+"]";
+                            str = "["+node[ident].join("][")+"]";
                             throw new SyntaxError(type.name+" expected, got "+str);
                         }
                     }
@@ -254,11 +260,35 @@
         };
         /* jshint boss:false */
 
-        return function (source, reviver) {
+        // Copied and rearranged from json2.js so that we can pass the same
+        // callback to both of SGF.parse and JSON.parse
+        // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
+        var walk = function (holder, key) {
+            var value = holder[key];
+
+            if ( value && typeof value === "object" ) {
+                for ( var k in value ) {
+                    if ( value.hasOwnProperty(k) ) {
+                        var v = walk(value, k);
+                        if ( v !== undefined ) {
+                            value[k] = v;
+                        }
+                        else {
+                            delete value[k];
+                        }
+                    }
+                }
+            }
+
+            return reviver.call(holder, key, value);
+        };
+
+        return function (source, rev) {
             var collection = [], gameTree;
 
             text = String(source);
             lastIndex = 0;
+            reviver = typeof rev === "function" && rev;
 
             while ( gameTree = parseGameTree() ) { // jshint ignore:line
                 collection.push( gameTree );
@@ -268,57 +298,18 @@
                 throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
             }
 
-            // Copied and rearranged from json2.js so that we can pass the same
-            // callback to both of SGF.parse and JSON.parse
-            // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
-            if ( typeof reviver === "function" ) {
-                collection = (function walk (holder, key) {
-                    var k, v, value = holder[key];
-                    if ( value && typeof value === "object" ) {
-                        for ( k in value ) {
-                            if ( Object.prototype.hasOwnProperty.call(value, k) ) {
-                                v = walk( value, k );
-                                if ( v !== undefined ) {
-                                    value[k] = v;
-                                } else {
-                                    delete value[k];
-                                }
-                            }
-                        }
-                    }
-                    return reviver.call(holder, key, value);
-                }({ "": collection }, ""));
-            }
-
-            return collection;
+            return reviver ? walk({ "": collection }, "") : collection;
         };
     }());
 
     SGFGrove.stringify = (function () {
         var isArray  = SGFGrove.Util.isArray;
         var isNumber = SGFGrove.Util.isNumber;
-        var replacer, indent, gap, lf;
-
-        var makeSelector = function (keys) {
-            var isSelected = {};
-
-            for ( var i = 0; i < keys.length; i++ ) {
-                if ( typeof keys[i] === "string" ) {
-                    isSelected[keys[i]] = null;
-                }
-            }
-
-            return function (key, value) {
-                if ( typeof key !== "string" ||
-                     isSelected.hasOwnProperty(key) ) {
-                    return value;
-                }
-            };
-        };
+        var replacer, selected, indent, gap, lf;
 
         var finalize = function (key, holder) {
             var value = holder[key];
-            var k, v;
+            var i, k, v;
 
             if ( value && typeof value === "object" &&
                  typeof value.toSGF === "function" ) {
@@ -334,15 +325,22 @@
             }
             else if ( isArray(value) ) {
                 v = [];
-                for ( var i = 0; i < value.length; i++ ) {
+                for ( i = 0; i < value.length; i++ ) {
                     v[i] = finalize(i, value);
                 }
             }
             else {
                 v = {};
-                for ( k in value ) {
-                    if ( value.hasOwnProperty(k) ) {
-                        v[k] = finalize(k, value);
+                if ( selected ) {
+                    for ( i = 0; i < selected.length; i++ ) {
+                        v[selected[i]] = finalize(selected[i], value);
+                    }
+                }
+                else {
+                    for ( k in value ) {
+                        if ( value.hasOwnProperty(k) ) {
+                            v[k] = finalize(k, value);
+                        }
                     }
                 }
             }
@@ -405,17 +403,30 @@
 
         return function (collection, rep, space) {
             var text = "";
+            var i;
 
-            replacer = isArray(rep) ? makeSelector(rep) : rep;
+            replacer = null;
+            selected = null;
             indent = "";
             gap = "";
 
-            if ( replacer && typeof replacer !== "function" )  {
+            if ( isArray(rep) ) {
+                selected = [];
+                for ( i = 0; i < rep.length; i++ ) {
+                    if ( typeof rep[i] === "string" ) {
+                        selected.push( rep[i] );
+                    }
+                }
+            }
+            else if ( typeof rep === "function" ) {
+                replacer = rep;
+            }
+            else if ( rep ) {
                 throw new Error("replacer must be array or function");
             }
 
             if ( isNumber(space) ) {
-                for ( var i = 0; i < space; i++ ) {
+                for ( i = 0; i < space; i++ ) {
                     indent += " ";
                 }
             }
@@ -427,8 +438,8 @@
             collection = finalize("", { "": collection });
 
             if ( isArray(collection) ) {
-                for ( var j = 0; j < collection.length; j++ ) {
-                    text += stringifyGameTree(collection[j]);
+                for ( i = 0; i < collection.length; i++ ) {
+                    text += stringifyGameTree(collection[i]);
                 }
             }
 
@@ -798,13 +809,6 @@
 
         return;
     });
-
-    if ( typeof exports !== "undefined" ) {
-        module.exports = SGFGrove; // jshint ignore:line
-    }
-    else {
-        window.SGFGrove = SGFGrove;
-    }
 
 }());
 
