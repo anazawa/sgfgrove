@@ -18,6 +18,12 @@
         );
 
         t.equal(
+            SGF.stringify([[[{}], []]]),
+            "(;)",
+            "empty node"
+        );
+
+        t.equal(
             SGF.stringify([[
                 [{
                     FF: 4,

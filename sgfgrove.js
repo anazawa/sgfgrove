@@ -364,10 +364,10 @@
                     for ( var i = 0; i < sequence.length; i++ ) {
                         var node = sequence[i];
                         var separator = gap+";";
+                        var partial = "";
                         
                         if ( !node || typeof node !== "object" ) {
-                            text += separator+lf;
-                            continue;
+                            node = {};
                         }
 
                         properties = properties || FF.createProperties(
@@ -376,15 +376,16 @@
                         );
 
                         for ( var ident in node ) {
-                            if ( node.hasOwnProperty(ident) &&
-                                 properties.isIdentifier(ident) ) {
+                            if ( node.hasOwnProperty(ident) && properties.isIdentifier(ident) ) {
                                 var values = properties.getType(ident).stringify(node[ident]);
                                 if ( values !== undefined ) {
-                                    text += separator+ident+"["+values.join("][")+"]"+lf;
+                                    partial += separator+ident+"["+values.join("][")+"]"+lf;
                                     separator = indent ? gap+" " : "";
                                 }
                             }
                         }
+
+                        text += partial || separator+lf;
                     }
 
                     if ( isArray(children) ) {
