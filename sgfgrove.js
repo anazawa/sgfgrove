@@ -303,27 +303,26 @@
     }());
 
     SGFGrove.stringify = (function () {
-        var isArray  = SGFGrove.Util.isArray;
-        var isNumber = SGFGrove.Util.isNumber;
-        var replacer, selected, indent, gap, lf;
+        var isArray = SGFGrove.Util.isArray;
+        var replacer, selected, indent, gap;
 
         var finalize = function (key, holder) {
             var value = holder[key];
             var i, k, v;
 
-            if ( value && typeof value === "object" &&
-                 typeof value.toSGF === "function" ) {
-                value = value.toSGF();
+            if (value && typeof value === "object" &&
+                typeof value.toSGF === "function") {
+                value = value.toSGF(key);
             }
 
-            if ( replacer ) {
+            if (replacer) {
                 value = replacer.call(holder, key, value);
             }
 
-            if ( !value || typeof value !== "object" ) {
+            if (!value || typeof value !== "object") {
                 v = value;
             }
-            else if ( isArray(value) ) {
+            else if (isArray(value)) {
                 v = [];
                 for ( i = 0; i < value.length; i++ ) {
                     v[i] = finalize(i, value);
@@ -331,14 +330,14 @@
             }
             else {
                 v = {};
-                if ( selected ) {
-                    for ( i = 0; i < selected.length; i++ ) {
+                if (selected) {
+                    for (i = 0; i < selected.length; i++) {
                         v[selected[i]] = finalize(selected[i], value);
                     }
                 }
                 else {
-                    for ( k in value ) {
-                        if ( value.hasOwnProperty(k) ) {
+                    for (k in value) {
+                        if (value.hasOwnProperty(k)) {
                             v[k] = finalize(k, value);
                         }
                     }
@@ -349,24 +348,27 @@
         };
  
         var stringifyGameTree = function (gameTree, properties) {
-            var text = "";
+            var text = "",
+                lf = indent ? "\n" : "",
+                mind = gap,
+                partial, semicolon, space;
+            var sequence, node, ident, values, children, i;
 
-            if ( isArray(gameTree) ) {
-                var sequence = gameTree[0];
-                var children = gameTree[1];
+            if (isArray(gameTree)) {
+                sequence = gameTree[0];
+                children = gameTree[1];
 
-                if ( isArray(sequence) && sequence.length ) {
-                    var mind = gap;
-
-                    text += gap+"("+lf; // Open GameTree
+                if (isArray(sequence) && sequence.length) {
+                    text += gap+"("+lf; // open GameTree
                     gap += indent;
+                    semicolon = gap+";";
+                    space = gap+(indent ? " " : "");
 
-                    for ( var i = 0; i < sequence.length; i++ ) {
-                        var node = sequence[i];
-                        var separator = gap+";";
-                        var partial = "";
+                    for (i = 0; i < sequence.length; i++) {
+                        node = sequence[i];
+                        partial = [];
                         
-                        if ( !node || typeof node !== "object" ) {
+                        if (!node || typeof node !== "object") {
                             node = {};
                         }
 
@@ -375,27 +377,26 @@
                             node.hasOwnProperty("GM") ? node.GM : 1
                         );
 
-                        for ( var ident in node ) {
-                            if ( node.hasOwnProperty(ident) && properties.isIdentifier(ident) ) {
-                                var values = properties.getType(ident).stringify(node[ident]);
-                                if ( values !== undefined ) {
-                                    partial += separator+ident+"["+values.join("][")+"]"+lf;
-                                    separator = indent ? gap+" " : "";
+                        for (ident in node) {
+                            if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
+                                values = properties.getType(ident).stringify(node[ident]);
+                                if (values) {
+                                    partial.push( ident+"["+values.join("][")+"]" );
                                 }
                             }
                         }
 
-                        text += partial || separator+lf;
+                        text += semicolon+partial.join(lf+space)+lf; // add Node
                     }
 
-                    if ( isArray(children) ) {
-                        for ( var j = 0; j < children.length; j++ ) {
-                            text += stringifyGameTree(children[j], properties);
+                    if (isArray(children)) {
+                        for (i = 0; i < children.length; i++) {
+                            text += stringifyGameTree(children[i], properties); // add GameTree
                         }
                     }
 
+                    text += mind+")"+lf; // close GameTree
                     gap = mind;
-                    text += gap+")"+lf; // close GameTree
                 }
             }
 
@@ -426,7 +427,7 @@
                 throw new Error("replacer must be array or function");
             }
 
-            if ( isNumber(space) ) {
+            if ( typeof space === "number" ) {
                 for ( i = 0; i < space; i++ ) {
                     indent += " ";
                 }
@@ -435,7 +436,6 @@
                 indent = space;
             }
 
-            lf = indent ? "\n" : "";
             collection = finalize("", { "": collection });
 
             if ( isArray(collection) ) {
