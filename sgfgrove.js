@@ -348,98 +348,98 @@
         };
  
         var stringifyGameTree = function (gameTree, properties) {
+            gameTree = isArray(gameTree) ? gameTree : [];
+
+            var sequence = isArray(gameTree[0]) ? gameTree[0] : [],
+                children = isArray(gameTree[1]) ? gameTree[1] : [],
+                node, ident, values, i;
+
             var text = "",
                 lf = indent ? "\n" : "",
                 mind = gap,
                 partial, semicolon, space;
-            var sequence, node, ident, values, children, i;
 
-            if (isArray(gameTree)) {
-                sequence = gameTree[0];
-                children = gameTree[1];
+            // (;a(;b)) => (;a;b)
+            if (children.length === 1) {
+                sequence = sequence.concat(isArray(children[0][0]) ? children[0][0] : []);
+                children = isArray(children[0][1]) ? children[0][1] : [];
+            }
 
-                if (isArray(sequence) && sequence.length) {
-                    text += gap+"("+lf; // open GameTree
-                    gap += indent;
-                    semicolon = gap+";";
-                    space = gap+(indent ? " " : "");
+            if (sequence.length) {
+                text += gap+"("+lf; // open GameTree
+                gap += indent;
+                semicolon = gap+";";
+                space = gap+(indent ? " " : "");
 
-                    for (i = 0; i < sequence.length; i++) {
-                        node = sequence[i];
-                        partial = [];
+                for (i = 0; i < sequence.length; i++) {
+                    node = sequence[i] && typeof sequence[i] === "object" ? sequence[i] : {};
+                    partial = [];
                         
-                        if (!node || typeof node !== "object") {
-                            node = {};
-                        }
+                    properties = properties || FF.createProperties(
+                        node.hasOwnProperty("FF") ? node.FF : 1,
+                        node.hasOwnProperty("GM") ? node.GM : 1
+                    );
 
-                        properties = properties || FF.createProperties(
-                            node.hasOwnProperty("FF") ? node.FF : 1,
-                            node.hasOwnProperty("GM") ? node.GM : 1
-                        );
-
-                        for (ident in node) {
-                            if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
-                                values = properties.getType(ident).stringify(node[ident]);
-                                if (values) {
-                                    partial.push( ident+"["+values.join("][")+"]" );
-                                }
+                    for (ident in node) {
+                        if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
+                            values = properties.getType(ident).stringify(node[ident]);
+                            if (values) {
+                                partial.push(ident+"["+values.join("][")+"]");
                             }
                         }
-
-                        text += semicolon+partial.join(lf+space)+lf; // add Node
                     }
 
-                    if (isArray(children)) {
-                        for (i = 0; i < children.length; i++) {
-                            text += stringifyGameTree(children[i], properties); // add GameTree
-                        }
-                    }
-
-                    text += mind+")"+lf; // close GameTree
-                    gap = mind;
+                    text += semicolon+partial.join(lf+space)+lf; // add Node
                 }
+
+                for (i = 0; i < children.length; i++) {
+                    text += stringifyGameTree(children[i], properties); // add GameTree
+                }
+
+                text += mind+")"+lf; // close GameTree
+                gap = mind;
             }
 
             return text;
         };
 
         return function (collection, rep, space) {
-            var text = "";
-            var i;
+            var text, i;
 
             replacer = null;
             selected = null;
             indent = "";
             gap = "";
 
-            if ( isArray(rep) ) {
+            if (isArray(rep)) {
                 selected = [];
-                for ( i = 0; i < rep.length; i++ ) {
-                    if ( typeof rep[i] === "string" ) {
-                        selected.push( rep[i] );
+                for (i = 0; i < rep.length; i++) {
+                    if (typeof rep[i] === "string") {
+                        selected.push(rep[i]);
                     }
                 }
             }
-            else if ( typeof rep === "function" ) {
+            else if (typeof rep === "function") {
                 replacer = rep;
             }
-            else if ( rep ) {
+            else if (rep) {
                 throw new Error("replacer must be array or function");
             }
 
-            if ( typeof space === "number" ) {
-                for ( i = 0; i < space; i++ ) {
+            if (typeof space === "number") {
+                for (i = 0; i < space; i++) {
                     indent += " ";
                 }
             }
-            else if ( typeof space === "string" ) {
+            else if (typeof space === "string") {
                 indent = space;
             }
 
             collection = finalize("", { "": collection });
 
-            if ( isArray(collection) ) {
-                for ( i = 0; i < collection.length; i++ ) {
+            if (isArray(collection)) {
+                text = "";
+                for (i = 0; i < collection.length; i++) {
                     text += stringifyGameTree(collection[i]);
                 }
             }
