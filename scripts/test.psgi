@@ -73,15 +73,41 @@ $static->{'index.html'} = <<'HTML';
 <!doctype html>
 <html>
   <head>
+    <title>SGFGrove.js</title>
     <link rel="stylesheet" href="index.css">
-    <script src="index.js"></script>
-    <script src="test.js"></script>
   </head>
   <body>
     <pre id="console"></pre>
+    <script src="index.js"></script>
+    <script src="test.js"></script>
   </body>
 </html>
 HTML
 
 $app;
+
+__END__
+
+=head1 NAME
+
+test.psgi - run browser tests
+
+=head1 SYNOPSIS
+
+    $ plackup scripts/test.psgi
+    $ open http://localhost:5000/
+
+=head1 DESCRIPTION
+
+This L<PSGI> script allows you to run browser tests.
+
+=head1 REQUIREMENTS
+
+=over 4
+
+=item L<perl>
+
+=item L<Plack>
+
+=back
 

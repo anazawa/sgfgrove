@@ -1,5 +1,16 @@
 Revision history for SGFGrove.js.
 
+## 1.0.2 Sep 14th, 2015
+
+- add a table of contents to README.md
+- add "SGF Property Types" to README.md
+- add "Limitations" to README.md
+- add scripts/test.psgi
+- add sgfgrove/validator.js
+- add test/test.stringify.js
+- #stringify does not throw an exception anymore
+  but simply ignores properties that have invalid values
+
 ## 1.0.1
 
 - add examples/

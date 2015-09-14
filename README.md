@@ -376,24 +376,21 @@ You tried to #parse a property that has no value.
 SGFGrove.parse("(;FF[4];B)"); // => SyntaxError
 ```
 
-### SyntaxError/TypeError: GameTree must contain at least one node
+### SyntaxError: GameTree does not contain any Nodes
 
-You tried to #parse/#stringify an empty game tree.
+You tried to #parse an empty game tree.
 It's prohibited by the SGF specification.
 
 ```js
 SGFGrove.parse("()"); // => SyntaxError
-SGFGrove.stringify([[[], []]]); // => TypeError
 ```
 
-### TypeError: Assersion (%s) failed
+### SyntaxError: %s expected, got %s
 
-You tried to #parse a malformed property value or #stringify data that
-has an invalid data type. See "SGF Properties" for details.
+You tried to #parse a malformed property value.
 
 ```js
 SGFGrove.parse("(;FF[four])"); // => TypeError
-SGFGrove.stringify([[[{ FF: "four" }], []]]); // => TypeError
 ```
 
 ## Examples
@@ -572,9 +569,8 @@ var nodeId = 0;
 // and so the following code may be wrong. This example is based on
 // the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
 
-SGFGrove.define("4", "2", function (FF) {
+SGFGrove.define(4, 2, function (FF) {
     var Types = Object.create( FF[4].Types ); // inherit from FF[4] types
-    var Props;
 
     // define Othello-specific type
     Types.Point = Types.scalar({
@@ -586,26 +582,34 @@ SGFGrove.define("4", "2", function (FF) {
     Types.Move = Object.create( Types.Point );
     Types.Move.name = "Move";
 
-    // inherit from FF[4] properties, overriding Point and Move types
-    Props = FF[4].properties( Types );
-
-    // add Othello-specific properties
-    Props.PE = Types.Number;
-    Props.OS = Types.Number;
-    Props.OE = Types.Number;
-
     this.Types = Types;
-    this.Properties = Props; // "Properties" is the canonical name
+
+    this.properties = function (t) {
+        t = t || Types;
+
+        // inherit from FF[4] properties, overriding Point and Move types
+        var that = FF[4].properties(t);
+
+        // add Othello-specific properties
+        that.mergeTypes({
+            PE: t.Number,
+            OS: t.Number,
+            OE: t.Number
+        });
+
+        return that;
+    };
 
     return;
 });
 
 // SGFGrove knows how to handle Othello game records now
-var othello = SGFGrove.parse("(;FF[4]GM[2]B[a1])");
+var othello = SGFGrove.parse("(;FF[4]GM[2];B[a1])");
 // => [[
 //     [{
 //         FF: 4,
-//         GM: 2,
+//         GM: 2
+//     }, {
 //         B: "a1"
 //     }],
 //     []
