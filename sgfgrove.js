@@ -1,7 +1,7 @@
 /**
  * @overview SGFGrove.js
  * @author Ryo Anazawa
- * @version 1.0.1
+ * @version 1.0.2
  * @license MIT
  * @see http://www.red-bean.com/sgf/
  */
@@ -11,7 +11,7 @@
     var FF = {};
 
     var SGFGrove = {
-        VERSION: "1.0.1"
+        VERSION: "1.0.2"
     };
 
     if ( typeof exports !== "undefined" ) {
