@@ -26,18 +26,16 @@
                 }
             }
 
-            that.init.apply(that, arguments);
-
-            return that;
+            return that.init.apply(that, arguments) || that;
         };
 
-        that.init = function (trees, replacer) {
-            trees = typeof trees === "string" ? this.parse(trees, replacer) : trees;
-            trees = trees || [this.createGameTree()];
+        that.init = function (trees, reviver) {
+            trees = typeof trees === "string" && this.parse(trees, reviver);
+            trees = trees || [];
 
             for (var i = 0; i < trees.length; i++) {
                 if (trees[i] && typeof trees[i] === "object" &&
-                    SGFGrove.Util.isArray(trees[i].tree)) {
+                    typeof trees[i].clone === "function") {
                     this[i] = trees[i];
                 }
                 else {
@@ -48,20 +46,20 @@
             return;
         };
 
-        that.parse = function (text, replacer) {
-            return SGFGrove.parse(text, replacer);
+        that.createGameTree = function (tree, parent) {
+            return SGFGrove.collection.gameTree(tree, parent);
         };
 
-        that.createGameTree = function (tree) {
-            return SGFGrove.collection.gameTree(tree);
+        that.parse = function (text, reviver) {
+            return SGFGrove.parse(text, reviver);
         };
 
-        that.toString = function (reviver, space) {
-            return SGFGrove.stringify(this, reviver, space);
+        that.toString = function (replacer, space) {
+            return SGFGrove.stringify(this, replacer, space);
         };
 
         that.clone = function () {
-            var clone = this.create([]);
+            var clone = this.create();
 
             for (var i = 0; i < this.length; i++) {
                 clone[i] = this[i].clone();
@@ -82,11 +80,205 @@
             return this.create(concat.apply(this, arguments));
         };
 
-        that.init.apply(that, arguments);
+        return that.init.apply(that, arguments) || that;
+    };
+
+    SGFGrove.collection.gameTree = function () {
+        var that = {};
+
+        that.create = function () {
+            var that = SGFGrove.Util.create(this.getRoot());
+            return that.init.apply(that, arguments) || that;
+        };
+
+        that.init = function (tree, parent) {
+            tree = tree || [[{}], []];
+
+            this.node     = tree[0][0];
+            this.parent   = parent || null;
+            this.children = [];
+
+            parent = this;
+            for (var i = 1; i < tree[0].length; i++) {
+                var child = this.create([[tree[0][i]], []], parent);
+                parent.addChild(child);
+                parent = child;
+            }
+
+            for (var j = 0; j < tree[1].length; j++) {
+                parent.addChild(this.create(tree[1][j], parent));
+            }
+
+            return;
+        };
+
+        that.getParent = function () {
+            return this.parent;
+        };
+
+        that.getChildren = function () {
+            return this.children.slice(0);
+        };
+
+        that.getChildCount = function () {
+            return this.children.length;
+        };
+
+        that.getChild = function (index) {
+            return this.children[index];
+        };
+
+        that.getSiblings = function () {
+            return !this.isRoot() ? this.getParent().getChildren() : null;
+        };
+
+        that.getSibling = function (index) {
+            return !this.isRoot() ? this.getParent().getChild(index) : null;
+        };
+
+        that.getRoot = function () {
+            var root = this;
+
+            while (!root.isRoot()) {
+                root = root.getParent();
+            }
+
+            return root;
+        };
+
+        that.isRoot = function () {
+            return this.getParent() === null;
+        };
+
+        that.isLeaf = function () {
+            return this.getChildCount() === 0;
+        };
+
+        that.clone = function () {
+            var clone = this.create((function cloneNode(node) {
+                var clone;
+
+                if (!node || typeof node !== "object") {
+                    clone = node;
+                }
+                else if (typeof node.clone === "function") {
+                    clone = node.clone();
+                }
+                else if (SGFGrove.Util.isArray(node)) {
+                    clone = [];
+                    for (var i = 0; i < node.length; i++) {
+                        clone[i] = cloneNode(node[i]);
+                    }
+                }
+                else {
+                    clone = {};
+                    for (var key in node) {
+                        if (node.hasOwnProperty(key)) {
+                            clone[key] = cloneNode(node[key]);
+                        }
+                    }
+                }
+
+                return clone;
+            }(this.node)));
+
+            for (var i = 0; i < this.getChildCount(); i++) {
+                clone.addChild(this.getChild(i).clone());
+            }
+
+            return clone;
+        };
+
+        that.toSGF = function () {
+            var gameTree = this;
+            var sequence = [gameTree.node];
+
+            while (gameTree.getChildCount() === 1) {
+                gameTree = gameTree.getChild(0);
+                sequence.push(gameTree.node);
+            }
+
+            return [sequence, gameTree.getChildren()];
+        };
+
+        that.toJSON = function () {
+            return this.toSGF();
+        };
+
+        SGFGrove.collection.gameTree.node(that);
+        SGFGrove.collection.gameTree.mutable(that);
+        SGFGrove.collection.gameTree.iterable(that);
+
+        return that.init.apply(that, arguments) || that;
+    };
+
+    SGFGrove.collection.gameTree.node = function (that) {
+        that = that || {};
+
+        that.get = function (key) {
+            return this.node[key];
+        };
+
+        that.has = function (key) {
+            return this.node.hasOwnProperty(key);
+        };
+
+        that.set = function (key, value) {
+            this.node[key] = value;
+            return value;
+        };
+
+        that.remove = function (key) {
+            var value = this.get(key);
+            delete this.node[key];
+            return value;
+        };
+
+        that.extend = function (other) {
+            for (var key in other) {
+                if (other.hasOwnProperty(key)) {
+                    this.set(key, other[key]);
+                }
+            }
+            return this;
+        };
+
+        that.forEach = function (iterator, context) {
+            for (var key in this.node) {
+                if (this.node.hasOwnProperty(key)) {
+                    iterator.call(context, this.get(key), key);
+                }
+            }
+            return this;
+        };
 
         return that;
     };
 
+    SGFGrove.collection.gameTree.mutable = function (that) {
+        that = that || {};
+
+        that.setParent = function (parent) {
+            this.parent = parent;
+            return;
+        };
+
+        that.addChild = function (child) {
+            this.children.push(child);
+            child.setParent(this);
+            return;
+        };
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.iterable = function (that) {
+        that = that || {};
+
+        return that;
+    };
+
+    /*
     SGFGrove.collection.gameTree = function () {
         var that = {};
 
@@ -516,6 +708,7 @@
 
         return that;
     };
+    */
 
 }());
 
