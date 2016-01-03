@@ -213,6 +213,7 @@
         SGFGrove.collection.gameTree.node(that);
         SGFGrove.collection.gameTree.mutable(that);
         SGFGrove.collection.gameTree.iterable(that);
+        SGFGrove.collection.gameTree.visitor(that);
 
         that.init.apply(that, arguments);
 
@@ -340,6 +341,38 @@
             }
 
             return previous;
+        };
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.visitor = function (that) {
+        that = that || {};
+
+        that.getMainLine = function () {
+            var gameTree = this.getRoot();
+            var mainLine = [gameTree];
+
+            while (!gameTree.isLeaf()) {
+                gameTree = gameTree.getChild(0);
+                mainLine.push(gameTree);
+            }
+
+            return mainLine;
+        };
+
+        that.getPath = function () {
+            var gameTree = this;
+            var path = [gameTree];
+
+            while (!gameTree.isRoot()) {
+                gameTree = gameTree.getParent();
+                path.push(gameTree);
+            }
+
+            path.reverse();
+
+            return path;
         };
 
         return that;
