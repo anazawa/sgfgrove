@@ -35,7 +35,8 @@
 
             for (var i = 0; i < trees.length; i++) {
                 if (trees[i] && typeof trees[i] === "object" &&
-                    typeof trees[i].clone === "function") {
+                    typeof trees[i].clone === "function" &&
+                    typeof trees[i].toSGF === "function") {
                     this[i] = trees[i];
                 }
                 else {
@@ -88,7 +89,8 @@
 
         that.create = function () {
             var that = SGFGrove.Util.create(this.getRoot());
-            return that.init.apply(that, arguments) || that;
+            that.init.apply(that, arguments);
+            return that;
         };
 
         that.init = function (tree, parent) {
@@ -155,35 +157,38 @@
         };
 
         that.clone = function () {
-            var clone = this.create((function cloneNode(node) {
-                var clone;
-
-                if (!node || typeof node !== "object") {
-                    clone = node;
-                }
-                else if (typeof node.clone === "function") {
-                    clone = node.clone();
-                }
-                else if (SGFGrove.Util.isArray(node)) {
-                    clone = [];
-                    for (var i = 0; i < node.length; i++) {
-                        clone[i] = cloneNode(node[i]);
-                    }
-                }
-                else {
-                    clone = {};
-                    for (var key in node) {
-                        if (node.hasOwnProperty(key)) {
-                            clone[key] = cloneNode(node[key]);
-                        }
-                    }
-                }
-
-                return clone;
-            }(this.node)));
+            var clone = this.create([[this.cloneNode()], []]);
 
             for (var i = 0; i < this.getChildCount(); i++) {
                 clone.addChild(this.getChild(i).clone());
+            }
+
+            return clone;
+        };
+
+        that.cloneNode = function () {
+            var node = !arguments.length ? this.node : arguments[0];
+            var clone;
+
+            if (!node || typeof node !== "object") {
+                clone = node;
+            }
+            else if (typeof node.clone === "function") {
+                clone = node.clone();
+            }
+            else if (SGFGrove.Util.isArray(node)) {
+                clone = [];
+                for (var i = 0; i < node.length; i++) {
+                    clone[i] = this.cloneNode(node[i]);
+                }
+            }
+            else {
+                clone = {};
+                for (var key in node) {
+                    if (node.hasOwnProperty(key)) {
+                        clone[key] = this.cloneNode(node[key]);
+                    }
+                }
             }
 
             return clone;
@@ -209,7 +214,9 @@
         SGFGrove.collection.gameTree.mutable(that);
         SGFGrove.collection.gameTree.iterable(that);
 
-        return that.init.apply(that, arguments) || that;
+        that.init.apply(that, arguments);
+
+        return that;
     };
 
     SGFGrove.collection.gameTree.node = function (that) {
@@ -274,6 +281,66 @@
 
     SGFGrove.collection.gameTree.iterable = function (that) {
         that = that || {};
+
+        that.getNext = function () {
+            var next;
+
+            if (!this.isLeaf()) {
+                next = this.getChild(0);
+            }
+            else {
+                var sibling = this;
+                while (!next && sibling) {
+                    next = sibling.getNextSibling();
+                    sibling = sibling.getParent();
+                }
+            }
+
+            return next;
+        };
+
+        that.getPrevious = function () {
+            var previous = this.getPreviousSibling();
+
+            if (!previous) {
+                previous = this.getParent();
+            }
+            else {
+                while (!previous.isLeaf()) {
+                    previous = previous.getChild(previous.getChildCount()-1);
+                }
+            }
+
+            return previous;
+        };
+
+        that.getNextSibling = function () {
+            var siblings = this.getSiblings() || [];
+            var next = null;
+
+            for (var i = 0; i < siblings.length; i++) {
+                if (siblings[i] === this && i+1 < siblings.length) {
+                    next = siblings[i+1];
+                    break;
+                }
+            }
+
+            return next;
+        };
+
+        that.getPreviousSibling = function () {
+            var siblings = this.getSiblings() || [];
+            var previous = null;
+
+            for (var i = siblings.length-1; i >= 0; i--) {
+                if (siblings[i] === this && i-1 >= 0) {
+                    previous = siblings[i-1];
+                    break;
+                }
+            }
+
+            return previous;
+        };
 
         return that;
     };
