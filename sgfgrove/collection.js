@@ -26,7 +26,9 @@
                 }
             }
 
-            return that.init.apply(that, arguments) || that;
+            that.init.apply(that, arguments);
+
+            return that;
         };
 
         that.init = function (trees, reviver) {
@@ -81,7 +83,9 @@
             return this.create(concat.apply(this, arguments));
         };
 
-        return that.init.apply(that, arguments) || that;
+        that.init.apply(that, arguments);
+
+        return that;
     };
 
     SGFGrove.collection.gameTree = function () {
@@ -102,13 +106,13 @@
 
             parent = this;
             for (var i = 1; i < tree[0].length; i++) {
-                var child = this.create([[tree[0][i]], []], parent);
+                var child = this.create([[tree[0][i]], []]);
                 parent.addChild(child);
                 parent = child;
             }
 
             for (var j = 0; j < tree[1].length; j++) {
-                parent.addChild(this.create(tree[1][j], parent));
+                parent.addChild(this.create(tree[1][j]));
             }
 
             return;
@@ -211,6 +215,7 @@
         };
 
         SGFGrove.collection.gameTree.node(that);
+        SGFGrove.collection.gameTree.metrics(that);
         SGFGrove.collection.gameTree.mutable(that);
         SGFGrove.collection.gameTree.iterable(that);
         SGFGrove.collection.gameTree.visitor(that);
@@ -263,18 +268,114 @@
         return that;
     };
 
+    SGFGrove.collection.gameTree.metrics = function (that) {
+        that = that || {};
+
+        /*
+         *  Returns the index of this tree within its sibling list.
+         *  Returns -1 if the tree is the root.
+         */
+        that.getIndex = function () {
+            var siblings = this.getSiblings() || [];
+            var index = -1;
+
+            for (var i = 0; i < siblings.length; i++) {
+                if (siblings[i] === this) {
+                    index = i;
+                    break;
+                }
+            }
+
+            return index;
+        };
+
+        /*
+         *  Returns the depth of this node in its tree. The depth of a node
+         *  is defined as the length of the node's path to its root.
+         *  The depth of a root node is zero.
+         */
+        that.getDepth = function () {
+            var gameTree = this;
+            var depth = 0;
+
+            while (!gameTree.isRoot()) {
+                gameTree = gameTree.getParent();
+                depth += 1;
+            }
+
+            return depth;
+        };
+
+        /*
+         *  Returns the height of the (sub)tree from this node.
+         *  The height of a node is defined as the length of the longest
+         *  downward path to a leaf from the node.
+         *  The height from a root node is the height of the entire tree.
+         *  The height of a leaf node is zero.
+         */
+        that.getHeight = function () {
+            var children = this.getChildren() || [];
+            var max = 0;
+
+            for (var i = 0; i < children.length; i++) {
+                var height = children[i].getHeight()+1;
+                max = height > max ? height : max;
+            }
+
+            return max;
+        };
+
+        that.getLeafCount = function () {
+            var children = this.getChildren() || [];
+            var sum = 0;
+
+            for (var i = 0; i < children.length; i++) {
+                sum += !children[i].isLeaf() ? children[i].getLeafCount() : 1;
+            }
+
+            return sum;
+        };
+
+        return that;
+    };
+
     SGFGrove.collection.gameTree.mutable = function (that) {
         that = that || {};
 
-        that.setParent = function (parent) {
-            this.parent = parent;
+        var isInteger = SGFGrove.Util.isInteger;
+
+        that.addChild = function (child) {
+            return this.insertChild(this.getChildCount(), child);
+        };
+
+        that.insertChild = function (index, child) {
+            index = isInteger(index) ? index : index.getIndex();
+
+            if (index < 0 || index > this.getChildCount()) {
+                throw new Error("Index out of bounds: "+index);
+            }
+
+            if (!child.isRoot()) {
+                throw new Error("Not a root node");
+            }
+
+            this.children.splice(index, 0, child);
+            child.parent = this;
+
             return;
         };
 
-        that.addChild = function (child) {
-            this.children.push(child);
-            child.setParent(this);
-            return;
+        that.removeChild = function (index) {
+            index = isInteger(index) ? index : index.getIndex();
+
+            if (index < 0 || index >= this.getChildCount()) {
+                throw new Error("Index out of bounds: "+index);
+            }
+
+            var child = this.children.splice(index, 1)[0];
+                child.parent = null;
+
+            return child;
         };
 
         return that;
@@ -283,6 +384,7 @@
     SGFGrove.collection.gameTree.iterable = function (that) {
         that = that || {};
 
+        /*
         that.getNext = function () {
             var next;
 
@@ -342,6 +444,7 @@
 
             return previous;
         };
+        */
 
         return that;
     };
