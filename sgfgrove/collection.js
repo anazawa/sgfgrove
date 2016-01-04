@@ -97,14 +97,14 @@
             return that;
         };
 
-        that.init = function (tree, parent) {
+        that.init = function (tree) {
             tree = tree || [[{}], []];
 
             this.node     = tree[0][0];
-            this.parent   = parent || null;
+            this.parent   = null;
             this.children = [];
 
-            parent = this;
+            var parent = this;
             for (var i = 1; i < tree[0].length; i++) {
                 var child = this.create([[tree[0][i]], []]);
                 parent.addChild(child);
@@ -344,6 +344,15 @@
 
         var isInteger = SGFGrove.Util.isInteger;
 
+        /*
+         *  Protected method to set the parent node for this node.
+         *  This method cannot be invoked by client code.
+         */
+        var setParent = function (parent) {
+            this.parent = parent;
+            return;
+        };
+
         that.addChild = function (child) {
             return this.insertChild(this.getChildCount(), child);
         };
@@ -360,7 +369,7 @@
             }
 
             this.children.splice(index, 0, child);
-            child.parent = this;
+            setParent.call(child, this);
 
             return;
         };
@@ -373,8 +382,19 @@
             }
 
             var child = this.children.splice(index, 1)[0];
-                child.parent = null;
+                setParent.call(child, null);
 
+            return child;
+        };
+
+        /*
+         *  Replaces the specified child node with another node
+         *  on this node.
+         */
+        that.replaceChild = function (index, other) {
+            index = isInteger(index) ? index : index.getIndex();
+            var child = this.removeChild(index);
+            this.insertChild(index, other);
             return child;
         };
 
