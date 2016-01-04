@@ -100,7 +100,7 @@
         that.init = function (tree) {
             tree = tree || [[{}], []];
 
-            this.node     = tree[0][0];
+            this.node     = this.createNode(tree[0][0]);
             this.parent   = null;
             this.children = [];
 
@@ -116,6 +116,14 @@
             }
 
             return;
+        };
+
+        that.createNode = function (node) {
+            return node;
+        };
+
+        that.getNode = function () {
+            return this.node;
         };
 
         that.getParent = function () {
@@ -214,56 +222,12 @@
             return this.toSGF();
         };
 
-        SGFGrove.collection.gameTree.node(that);
         SGFGrove.collection.gameTree.metrics(that);
         SGFGrove.collection.gameTree.mutable(that);
         SGFGrove.collection.gameTree.iterable(that);
         SGFGrove.collection.gameTree.visitor(that);
 
         that.init.apply(that, arguments);
-
-        return that;
-    };
-
-    SGFGrove.collection.gameTree.node = function (that) {
-        that = that || {};
-
-        that.get = function (key) {
-            return this.node[key];
-        };
-
-        that.has = function (key) {
-            return this.node.hasOwnProperty(key);
-        };
-
-        that.set = function (key, value) {
-            this.node[key] = value;
-            return value;
-        };
-
-        that.remove = function (key) {
-            var value = this.get(key);
-            delete this.node[key];
-            return value;
-        };
-
-        that.extend = function (other) {
-            for (var key in other) {
-                if (other.hasOwnProperty(key)) {
-                    this.set(key, other[key]);
-                }
-            }
-            return this;
-        };
-
-        that.forEach = function (iterator, context) {
-            for (var key in this.node) {
-                if (this.node.hasOwnProperty(key)) {
-                    iterator.call(context, this.get(key), key);
-                }
-            }
-            return this;
-        };
 
         return that;
     };
@@ -350,6 +314,11 @@
          */
         var setParent = function (parent) {
             this.parent = parent;
+            return;
+        };
+
+        that.setNode = function (node) {
+            this.node = node;
             return;
         };
 
