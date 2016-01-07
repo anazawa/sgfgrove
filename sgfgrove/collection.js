@@ -380,10 +380,10 @@
                 next = this.getChild(0);
             }
             else {
-                var sibling = this;
-                while (!next && sibling) {
-                    next = sibling.nextSibling();
-                    sibling = sibling.getParent();
+                var gameTree = this;
+                while (!next && gameTree) {
+                    next = gameTree.nextSibling();
+                    gameTree = gameTree.getParent();
                 }
             }
 
@@ -486,6 +486,10 @@
 
         that.hasNext = function () {
             return this.length ? true : false;
+        };
+
+        that.peek = function () {
+            return this[0] || null;
         };
 
         return that;
