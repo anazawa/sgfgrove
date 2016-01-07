@@ -309,17 +309,17 @@
         var isInteger = SGFGrove.Util.isInteger;
 
         /*
-         *  Protected method to set the parent node for this node.
+         *  Private method to set the parent node for this node.
          *  This method cannot be invoked by client code.
          */
         var setParent = function (parent) {
             this.parent = parent;
-            return;
+            return parent;
         };
 
         that.setNode = function (node) {
             this.node = node;
-            return;
+            return node;
         };
 
         that.addChild = function (child) {
@@ -373,8 +373,7 @@
     SGFGrove.collection.gameTree.iterable = function (that) {
         that = that || {};
 
-        /*
-        that.getNext = function () {
+        that.next = function () {
             var next;
 
             if (!this.isLeaf()) {
@@ -383,7 +382,7 @@
             else {
                 var sibling = this;
                 while (!next && sibling) {
-                    next = sibling.getNextSibling();
+                    next = sibling.nextSibling();
                     sibling = sibling.getParent();
                 }
             }
@@ -391,8 +390,8 @@
             return next;
         };
 
-        that.getPrevious = function () {
-            var previous = this.getPreviousSibling();
+        that.previous = function () {
+            var previous = this.previousSibling();
 
             if (!previous) {
                 previous = this.getParent();
@@ -406,7 +405,7 @@
             return previous;
         };
 
-        that.getNextSibling = function () {
+        that.nextSibling = function () {
             var siblings = this.getSiblings() || [];
             var next = null;
 
@@ -420,7 +419,7 @@
             return next;
         };
 
-        that.getPreviousSibling = function () {
+        that.previousSibling = function () {
             var siblings = this.getSiblings() || [];
             var previous = null;
 
@@ -433,7 +432,61 @@
 
             return previous;
         };
-        */
+
+        that.forEach = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (iterator.hasNext()) {
+                var next = iterator.next();
+                callback.call(context, next, next.getIndex(), next.getParent());
+            }
+
+            return this;
+        };
+
+        that.toIterator = function () {
+            return SGFGrove.collection.gameTree.iterable.iterator(this);
+        };
+
+        if (typeof Symbol === "function" &&
+            typeof Symbol.iterator === "symbol") {
+            that[Symbol.iterator] = function () {
+                var iterator = this.toIterator();
+                var next = iterator.next;
+
+                iterator.next = function () {
+                    if (this.hasNext()) {
+                        return { value: next.call(this) };
+                    }
+                    else {
+                        return { done: true };
+                    }
+                };
+
+                return iterator;
+            };
+        }
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.iterable.iterator = function (gameTree) {
+        var that = [gameTree];
+
+        that.next = function () {
+            var next = null;
+
+            if (this.length) {
+                next = this.shift();
+                this.unshift.apply(this, next.getChildren());
+            }
+
+            return next;
+        };
+
+        that.hasNext = function () {
+            return this.length ? true : false;
+        };
 
         return that;
     };
