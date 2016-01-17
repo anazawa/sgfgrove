@@ -10,32 +10,47 @@
     test("SGFGrove.collection: default", function (t) {
         var collection = SGF.collection();
 
-        t.ok( typeof collection.create === "function" );
-        t.ok( typeof collection.parse === "function" );
+        t.ok(
+            SGF.Util.isArray(collection),
+            "collection should inherit from Array"
+        );
 
-        t.equal( collection.length, 1 );
+        t.equal(typeof collection.create, "function");
+        t.equal(typeof collection.init, "function");
+        t.equal(typeof collection.parse, "function");
+        t.equal(typeof collection.createGameTree, "function");
+        t.equal(typeof collection.clone, "function");
+
+        t.equal(collection.length, 0);
 
         t.end();
     });
 
     test("SGFGrove.collection: #create", function (t) {
         var collection = SGF.collection();
-            collection.foo = function () { return "bar"; };
-
         var newCollection = collection.create();
 
-        t.equal( typeof newCollection.create, "function" );
-        t.equal( newCollection.foo, collection.foo );
-        t.notEqual( newCollection[0], collection[0] );
+        for (var key in collection) {
+            if (collection.hasOwnProperty(key) && /[^\d]/.test(key)) {
+                t.equal(
+                    newCollection[key], collection[key],
+                    "newCollection should inherit "+
+                    key+" method from collection"
+                );
+            }
+        };
 
         t.end();
     });
 
     test("SGFGrove.collection: #toString", function (t) {
-        var collection = SGF.collection();
+        var text = "(;FF[4])";
+        var collection = SGF.collection(text);
 
-        t.ok( /^\(;/.test(collection.toString()) );
-        t.ok( /^\(;/.test(""+collection) );
+        //t.ok( /^\(;/.test(collection.toString()) );
+        //t.ok( /^\(;/.test(""+collection) );
+
+        t.equal(collection.toString(), text)
 
         t.end();
     });
