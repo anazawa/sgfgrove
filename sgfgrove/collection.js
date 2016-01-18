@@ -92,10 +92,16 @@
     };
 
     SGFGrove.collection.gameTree = function () {
+        var that = SGFGrove.collection.gameTree.node.apply(null, arguments);
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node = function () {
         var that = {};
 
         that.create = function () {
-            var that = SGFGrove.Util.create(this.getRoot());
+            var that = SGFGrove.Util.create(this.root());
             that.init.apply(that, arguments);
             return that;
         };
@@ -107,15 +113,15 @@
             this.parent   = null;
             this.children = [];
 
-            var parent = this;
+            var node = this;
             for (var i = 1; i < tree[0].length; i++) {
                 var child = this.create([[tree[0][i]], []]);
-                parent.appendChild(child);
-                parent = child;
+                node.appendChild(child);
+                node = child;
             }
 
             for (var j = 0; j < tree[1].length; j++) {
-                parent.appendChild(this.create(tree[1][j]));
+                node.appendChild(this.create(tree[1][j]));
             }
 
             return;
@@ -129,6 +135,14 @@
             return this.node;
         };
 
+        that.setNode = function (node) {
+            this.node = node;
+            return node;
+        };
+
+        /*
+         *  Returns this node's parent or null if this node has no parent.
+         */
         that.getParent = function () {
             return this.parent;
         };
@@ -137,23 +151,56 @@
             return this.children.slice(0);
         };
 
+        /*
+         *  Returns the number of children of this node.
+         */
         that.getChildCount = function () {
             return this.children.length;
         };
 
+        /*
+         *  Returns the child at the specified index in this node's child
+         *  array.
+         */
         that.getChild = function (index) {
             return this.children[index];
         };
 
-        that.getSiblings = function () {
-            return !this.isRoot() ? this.getParent().getChildren() : null;
+        /*
+         *  Returns this node's first child. If this node has no children,
+         *  returns undefined.
+         */
+        that.firstChild = function () {
+            return this.getChild(0);
         };
 
-        that.getSibling = function (index) {
-            return !this.isRoot() ? this.getParent().getChild(index) : null;
+        /*
+         *  Returns this node's last child. If this node has no children,
+         *  returns undefined.
+         */
+        that.lastChild = function () {
+            return this.getChild(Math.max(0, this.getChildCount()-1));
         };
 
-        that.getRoot = function () {
+        /*
+         *  Returns true if this node is the root of the tree.
+         */
+        that.isRoot = function () {
+            return this.getParent() === null;
+        };
+
+        /*
+         *  Returns true if this node has no children.
+         */
+        that.isLeaf = function () {
+            return this.getChildCount() === 0;
+        };
+
+        /*
+         *  Returns the root of the tree that contains this node.
+         *  The root is the ancestor with a null parent.
+         */
+        that.root = function () {
             var root = this;
 
             while (!root.isRoot()) {
@@ -163,28 +210,206 @@
             return root;
         };
 
-        that.isRoot = function () {
-            return this.getParent() === null;
+        /*
+         *  Return an array of siblings for this node.
+         *  This node is included.
+         */
+        that.siblings = function () {
+            return !this.isRoot() ? this.getParent().getChildren() : null;
         };
 
-        that.isLeaf = function () {
-            return this.getChildCount() === 0;
+        /*
+         *  Returns the depth of this node in its tree. The depth of a node
+         *  is defined as the length of the node's path to its root.
+         *  The depth of a root node is zero.
+         */
+        that.depth = function () {
+            var node = this;
+            var depth = 0;
+
+            while (!node.isRoot()) {
+                node = node.getParent();
+                depth += 1;
+            }
+
+            return depth;
         };
+
+        /*
+         *  Returns the height of the (sub)tree from this node.
+         *  The height of a node is defined as the length of the longest
+         *  downward path to a leaf from the node.
+         *  The height from a root node is the height of the entire tree.
+         *  The height of a leaf node is zero.
+         */
+        that.height = function () {
+            var children = this.getChildren();
+            var heights = [0];
+
+            for (var i = 0; i < children.length; i++) {
+                heights[i+1] = children[i].height()+1;
+            }
+
+            return Math.max.apply(null, heights);
+        };
+
+        /*
+         *  Returns the index of this tree within its sibling list.
+         *  Returns -1 if the tree is the root.
+         */
+        that.index = function () {
+            var index = -1;
+
+            if (!this.isRoot()) {
+                var siblings = this.getParent().getChildren();
+                for (var i = 0; i < siblings.length; i++) {
+                    if (siblings[i] === this) {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+
+            return index;
+        };
+
+        SGFGrove.collection.gameTree.node.serializable(that);
+        SGFGrove.collection.gameTree.node.mutable(that);
+        SGFGrove.collection.gameTree.node.cloneable(that);
+        SGFGrove.collection.gameTree.node.iterable(that);
+        SGFGrove.collection.gameTree.node.visitor(that);
+
+        that.init.apply(that, arguments);
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node.serializable = function (that) {
+        that = that || {};
+
+        that.createCollection = function () {
+            return SGFGrove.collection.apply(null, arguments);
+        };
+
+        that.toSGF = function () {
+            var node = this;
+            var sequence = [node.getNode()];
+
+            while (node.getChildCount() === 1) {
+                node = node.firstChild();
+                sequence.push(node.getNode());
+            }
+
+            return [sequence, node.getChildren()];
+        };
+
+        that.toJSON = that.toSGF;
+
+        that.toCollection = function () {
+            if (this.isRoot()) {
+                return this.createCollection(this);
+            }
+            throw new Error("Not a root node");
+        };
+
+        that.toString = function (replacer, space) {
+            return this.toCollection().toString(replacer, space);
+        };
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node.mutable = function (that) {
+        that = that || {};
+
+        var isInteger = SGFGrove.Util.isInteger;
+
+        /*
+         *  Private method to set the parent node for this node.
+         *  This method cannot be invoked by client code.
+         */
+        var setParent = function (parent) {
+            this.parent = parent;
+            return parent;
+        };
+
+        /*
+         *  Adds the child to the end of this node's child array.
+         */
+        that.appendChild = function (child) {
+            return this.insertChild(this.getChildCount(), child);
+        };
+
+        /*
+         *  Adds the child to this node's child array at the specified index
+         *  and sets the child's parent to this node.
+         */
+        that.insertChild = function (index, child) {
+            index = isInteger(index) ? index : index.index();
+
+            if (index < 0 || index > this.getChildCount()) {
+                throw new Error("Index out of bounds: "+index);
+            }
+
+            if (!child.isRoot()) {
+                throw new Error("Not a root node");
+            }
+
+            this.children.splice(index, 0, child);
+            setParent.call(child, this);
+
+            return;
+        };
+
+        /*
+         *  Removes the child at the specified index from this node's children
+         *  and sets that node's parent to null.
+         */
+        that.removeChild = function (index) {
+            index = isInteger(index) ? index : index.index();
+
+            if (index < 0 || index >= this.getChildCount()) {
+                throw new Error("Index out of bounds: "+index);
+            }
+
+            var child = this.children.splice(index, 1)[0];
+                setParent.call(child, null);
+
+            return child;
+        };
+
+        /*
+         *  Replaces the specified child node with another node
+         *  on this node.
+         */
+        that.replace = function (index, other) {
+            index = isInteger(index) ? index : index.index();
+            var child = this.removeChild(index);
+            this.insertChild(index, other);
+            return child;
+        };
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node.cloneable = function (that) {
+        that = that || {};
 
         that.clone = function () {
             var clone = this.create([[this.cloneNode()], []]);
 
-            for (var i = 0; i < this.getChildCount(); i++) {
-                clone.appendChild(this.getChild(i).clone());
+            var children = this.getChildren();
+            for (var i = 0; i < children.length; i++) {
+                clone.appendChild(children[i].clone());
             }
 
             return clone;
         };
 
         that.cloneNode = function () {
-            var node = !arguments.length ? this.node : arguments[0];
-            var clone;
+            var node = !arguments.length ? this.getNode() : arguments[0];
 
+            var clone;
             if (!node || typeof node !== "object") {
                 clone = node;
             }
@@ -209,210 +434,39 @@
             return clone;
         };
 
-        SGFGrove.collection.gameTree.serializable(that);
-        SGFGrove.collection.gameTree.metrics(that);
-        SGFGrove.collection.gameTree.mutable(that);
-        SGFGrove.collection.gameTree.iterable(that);
-        SGFGrove.collection.gameTree.visitor(that);
-
-        that.init.apply(that, arguments);
-
         return that;
     };
 
-    SGFGrove.collection.gameTree.metrics = function (that) {
+    SGFGrove.collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
         /*
-         *  Returns the index of this tree within its sibling list.
-         *  Returns -1 if the tree is the root.
+         *  Returns the node that follows this node in a depth-first traversal
+         *  of this node's tree. Returns undefined if this node is the last
+         *  node of the traversal.
          */
-        that.getIndex = function () {
-            var siblings = this.getSiblings() || [];
-            var index = -1;
-
-            for (var i = 0; i < siblings.length; i++) {
-                if (siblings[i] === this) {
-                    index = i;
-                    break;
-                }
-            }
-
-            return index;
-        };
-
-        /*
-         *  Returns the depth of this node in its tree. The depth of a node
-         *  is defined as the length of the node's path to its root.
-         *  The depth of a root node is zero.
-         */
-        that.getDepth = function () {
-            var gameTree = this;
-            var depth = 0;
-
-            while (!gameTree.isRoot()) {
-                gameTree = gameTree.getParent();
-                depth += 1;
-            }
-
-            return depth;
-        };
-
-        /*
-         *  Returns the height of the (sub)tree from this node.
-         *  The height of a node is defined as the length of the longest
-         *  downward path to a leaf from the node.
-         *  The height from a root node is the height of the entire tree.
-         *  The height of a leaf node is zero.
-         */
-        that.getHeight = function () {
-            var children = this.getChildren() || [];
-            var max = 0;
-
-            for (var i = 0; i < children.length; i++) {
-                var height = children[i].getHeight()+1;
-                max = height > max ? height : max;
-            }
-
-            return max;
-        };
-
-        that.getLeafCount = function () {
-            var children = this.getChildren() || [];
-            var sum = 0;
-
-            for (var i = 0; i < children.length; i++) {
-                sum += !children[i].isLeaf() ? children[i].getLeafCount() : 1;
-            }
-
-            return sum;
-        };
-
-        return that;
-    };
-
-    SGFGrove.collection.gameTree.serializable = function (that) {
-        that = that || {};
-
-        that.createCollection = function () {
-            return SGFGrove.collection.apply(null, arguments);
-        };
-
-        that.toSGF = function () {
-            var gameTree = this;
-            var sequence = [gameTree.getNode()];
-
-            while (gameTree.getChildCount() === 1) {
-                gameTree = gameTree.getChild(0);
-                sequence.push(gameTree.getNode());
-            }
-
-            return [sequence, gameTree.getChildren()];
-        };
-
-        that.toJSON = that.toSGF;
-
-        that.toCollection = function () {
-            if (this.isRoot()) {
-                return this.createCollection(this);
-            }
-            throw new Error("Not a root node");
-        };
-
-        that.toString = function (replacer, space) {
-            return this.toCollection().toString(replacer, space);
-        };
-
-        return that;
-    };
-
-    SGFGrove.collection.gameTree.mutable = function (that) {
-        that = that || {};
-
-        var isInteger = SGFGrove.Util.isInteger;
-
-        /*
-         *  Private method to set the parent node for this node.
-         *  This method cannot be invoked by client code.
-         */
-        var setParent = function (parent) {
-            this.parent = parent;
-            return parent;
-        };
-
-        that.setNode = function (node) {
-            this.node = node;
-            return node;
-        };
-
-        that.appendChild = function (child) {
-            return this.insertChild(this.getChildCount(), child);
-        };
-
-        that.insertChild = function (index, child) {
-            index = isInteger(index) ? index : index.getIndex();
-
-            if (index < 0 || index > this.getChildCount()) {
-                throw new Error("Index out of bounds: "+index);
-            }
-
-            if (!child.isRoot()) {
-                throw new Error("Not a root node");
-            }
-
-            this.children.splice(index, 0, child);
-            setParent.call(child, this);
-
-            return;
-        };
-
-        that.removeChild = function (index) {
-            index = isInteger(index) ? index : index.getIndex();
-
-            if (index < 0 || index >= this.getChildCount()) {
-                throw new Error("Index out of bounds: "+index);
-            }
-
-            var child = this.children.splice(index, 1)[0];
-                setParent.call(child, null);
-
-            return child;
-        };
-
-        /*
-         *  Replaces the specified child node with another node
-         *  on this node.
-         */
-        that.replaceChild = function (index, other) {
-            index = isInteger(index) ? index : index.getIndex();
-            var child = this.removeChild(index);
-            this.insertChild(index, other);
-            return child;
-        };
-
-        return that;
-    };
-
-    SGFGrove.collection.gameTree.iterable = function (that) {
-        that = that || {};
-
         that.next = function () {
             var next;
 
             if (!this.isLeaf()) {
-                next = this.getChild(0);
+                next = this.firstChild();
             }
             else {
-                var gameTree = this;
-                while (!next && gameTree) {
-                    next = gameTree.nextSibling();
-                    gameTree = gameTree.getParent();
+                var node = this;
+                while (!next && node) {
+                    next = node.nextSibling();
+                    node = node.getParent();
                 }
             }
 
             return next;
         };
 
+        /*
+         *  Returns the node that precedes this node in a depth-first traversal
+         *  of this node's tree. Returns null if this node is the first node of
+         *  the traversal, the root of the tree.
+         */
         that.previous = function () {
             var previous = this.previousSibling();
 
@@ -421,39 +475,56 @@
             }
             else {
                 while (!previous.isLeaf()) {
-                    previous = previous.getChild(previous.getChildCount()-1);
+                    previous = previous.lastChild();
                 }
             }
 
             return previous;
         };
 
+        /*
+         *  Returns the next sibling of this node in the parent's children
+         *  array. Returns null if this node has no parent. Returns undefined
+         *  if this node is the parent's last child.
+         */
         that.nextSibling = function () {
-            var siblings = this.getSiblings() || [];
+            var index = this.index();
             var next;
 
-            for (var i = 0; i < siblings.length; i++) {
-                if (siblings[i] === this && i+1 < siblings.length) {
-                    next = siblings[i+1];
-                    break;
+            if (index < 0) {
+                next = null;
+            }
+            else {
+                var parent = this.getParent();
+                if (index+1 < parent.getChildCount()) {
+                    next = parent.getChild(index+1);
                 }
             }
 
             return next;
         };
 
+        /*
+         *  Returns the previous sibling of this node in the parent's children
+         *  array. Returns null if this node has no parent. Returns undefined
+         *  if this node is the parent's first child.
+         */
         that.previousSibling = function () {
-            var siblings = this.getSiblings() || [];
+            var index = this.index();
             var previous;
 
-            for (var i = siblings.length-1; i >= 0; i--) {
-                if (siblings[i] === this && i-1 >= 0) {
-                    previous = siblings[i-1];
-                    break;
-                }
+            if (index < 0) {
+                previous = null;
+            }
+            else if (index-1 >= 0) {
+                previous = this.getParent().getChild(index-1);
             }
 
             return previous;
+        };
+
+        that.toIterator = function () {
+            return SGFGrove.collection.gameTree.node.iterable.iterator(this);
         };
 
         that.forEach = function (callback, context) {
@@ -464,10 +535,6 @@
             }
 
             return this;
-        };
-
-        that.toIterator = function () {
-            return SGFGrove.collection.gameTree.iterable.iterator(this);
         };
 
         if (typeof Symbol === "function" &&
@@ -492,8 +559,8 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.iterable.iterator = function (gameTree) {
-        var that = [gameTree];
+    SGFGrove.collection.gameTree.node.iterable.iterator = function (node) {
+        var that = [node];
 
         that.next = function () {
             var next;
@@ -517,469 +584,59 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.visitor = function (that) {
+    SGFGrove.collection.gameTree.node.visitor = function (that) {
         that = that || {};
 
-        that.getMainLine = function () {
-            var gameTree = this.getRoot();
-            var mainLine = [gameTree];
+        /*
+         *  Returns the total number of leaves that are descendants of this 
+         *  node. If this node is a leaf, returns 1.
+         */
+        that.leafCount = function () {
+            var children = this.getChildren();
+            var sum = 0;
 
-            while (!gameTree.isLeaf()) {
-                gameTree = gameTree.getChild(0);
-                mainLine.push(gameTree);
+            for (var i = 0; i < children.length; i++) {
+                sum += children[i].leafCount();
+            }
+
+            return sum || 1;
+        };
+
+        that.mainLine = function () {
+            var node = this.root();
+            var mainLine = [node];
+
+            while (!node.isLeaf()) {
+                node = node.firstChild();
+                mainLine.push(node);
             }
 
             return mainLine;
         };
 
-        that.getPath = function () {
-            var gameTree = this;
-            var path = [gameTree];
+        /*
+         *  Returns an array of nodes giving the path from the root
+         *  to this node, where the first item in the array is the root
+         *  and the last item is this node.
+         */
+        that.path = function () {
+            return this.pathToRoot().reverse();
+        };
 
-            while (!gameTree.isRoot()) {
-                gameTree = gameTree.getParent();
-                path.push(gameTree);
+        that.pathToRoot = function () {
+            var node = this;
+            var path = [node];
+
+            while (!node.isRoot()) {
+                node = node.getParent();
+                path.push(node);
             }
-
-            path.reverse();
 
             return path;
         };
 
         return that;
     };
-
-    /*
-    SGFGrove.collection.gameTree = function () {
-        var that = {};
-
-        var isArray   = SGFGrove.Util.isArray,
-            isInteger = SGFGrove.Util.isInteger;
-
-        that.create = function () {
-            var that = SGFGrove.Util.create(this);
-            that.init.apply(that, arguments);
-            return that;
-        };
-
-        that.init = function (tree, parent) {
-            tree = tree || this.createTree();
-            parent = parent || null;
-
-            this.tree = tree;
-
-            this.current = this;
-            this.parent = parent;
-            this.history = [];
-
-            this.sequence = tree[0];
-            this.baseDepth = parent ? parent.baseDepth+parent.depth : 0;
-            this.depth = 0;
-
-            this.children = tree[1];
-            this.index = 0;
-
-            return;
-        };
-
-        that.createTree = function () {
-            return [
-                [{
-                    FF: 4,
-                    GM: 1,
-                    CA: "UTF-8",
-                    AP: ["SGFGrove", SGFGrove.VERSION]
-                }],
-                []
-            ];
-        };
-
-        that.toSGF = function () {
-            return this.tree;
-        };
-
-        that.toJSON = function () {
-            return this.tree;
-        };
-
-        that.clone = function () {
-            var tree = (function clone (value) {
-                var i, key, val;
-
-                if (!value || typeof value !== "object") {
-                    val = value;
-                }
-                else if (typeof value.clone === "function") {
-                    val = value.clone();
-                }
-                else if (isArray(value)) {
-                    val = [];
-                    for (i = 0; i < value.length; i++) {
-                        val[i] = clone(value[i]);
-                    }
-                }
-                else {
-                    val = {};
-                    for (key in value) {
-                        if (value.hasOwnProperty(key)) {
-                            val[key] = clone(value[key]);
-                        }
-                    }
-                }
-
-                return val;
-            }(this.tree));
-
-            return this.create(tree);
-        };
-
-        that.getHeight = function () {
-            var current = this.current;
-            var max = current.sequence.length - this.getRelativeDepth() - 1;
-
-            (function findLeaf (children, height) {
-                for (var i = 0; i < children.length; i++) {
-                    var h = height + children[i][0].length;
-                    if (!children[i][1].length) {
-                        max = h > max ? h : max;
-                    }
-                    else {
-                        findLeaf(children[i][1], h);
-                    }
-                }
-            }(current.children, max));
-
-            return max;
-        };
-
-        that.getLeafCount = function () {
-            var found = 0;
-
-            (function findLeaf (children) {
-                for (var i = 0; i < children.length; i++) {
-                    if (!children[i][1].length) {
-                        found += 1;
-                    }
-                    else {
-                        findLeaf(children[i][1]);
-                    }
-                }
-            }([this.current.tree]));
-
-            return found;
-        };
-
-        that.getRoot = function () {
-            return this.sequence[0];
-        };
-
-        that.getRelativeDepth = function () {
-            return this.current.depth !== 0 ? this.current.depth-1 : 0;
-        };
-
-        that.getDepth = function () {
-            return this.current.baseDepth + this.getRelativeDepth();
-        };
-
-        that.getNode = function () {
-            return this.current.sequence[this.getRelativeDepth()];
-        };
-
-        that.setNode = function (node) {
-            this.current.sequence[this.getRelativeDepth()] = node;
-            return;
-        };
-
-        that.rewind = function () {
-            this.current = this;
-            this.history.length = 0;
-            this.depth = 0;
-            this.index = 0;
-            return this;
-        };
-
-        that.next = function () {
-            var current = this.current;
-
-            if (current.depth >= current.sequence.length) {
-                while (current) {
-                    if (current.index < current.children.length) {
-                        current = this.create(current.children[current.index++], current);
-                        this.history.push(this.current);
-                        this.current = current;
-                        break;
-                    }
-                    current = current.parent;
-                }
-            }
-
-            return current && current.sequence[current.depth++];
-        };
-
-        that.hasNext = function () {
-            var current = this.current;
-
-            if (current.depth < current.sequence.length) {
-                return true;
-            }
-
-            while (current) {
-                if (current.index < current.children.length) {
-                    return true;
-                }
-                current = current.parent;
-            }
-
-            return false;
-        };
-
-        that.peek = function () {
-            var current = this.current;
-
-            if (current.depth < current.sequence.length) {
-                return current.sequence[current.depth];
-            }
-
-            while (current) {
-                if (current.index < current.children.length) {
-                    return current.children[current.index][0][0];
-                }
-                current = current.parent;
-            }
-
-            return null;
-        };
-
-        that.previous = function () {
-            var current = this.current;
-
-            if (current.depth > 1) {
-                current.depth -= 1;
-            }
-            else if (this.history.length) {
-                current.parent.index -= 1;
-                current = this.history.pop();
-                this.current = current;
-            }
-            else {
-                return null;
-            }
-
-            return current.sequence[current.depth-1];
-        };
-
-        that.hasPrevious = function () {
-            return this.current.depth > 1 || !!this.history.length;
-        };
-
-        that.lookBack = function () {
-            var current = this.current;
-
-            if (current.depth > 1) {
-                return current.sequence[current.depth-2];
-            }
-
-            if (this.history.length) {
-                current = this.history[this.history.length-1];
-                return current.sequence[current.depth-1];
-            }
-
-            return null;
-        };
-
-        that.getIndex = function () {
-            var current = this.current;
-
-            if (current.depth > 1) {
-                return 0;
-            }
-            else if (current.parent) {
-                return current.parent.index - 1;
-            }
-
-            return null;
-        };
-
-        that.getChildIndexOf = function (node) {
-            var children = this.getChildren();
-
-            for (var i = 0; i < children.length; i++) {
-                if (children[i] === node) {
-                    return i;
-                }
-            }
-
-            return -1;
-        };
-
-        that.appendChild = function (tree) {
-            return this.insertChildAt(this.getChildCount(), tree);
-        };
-
-        that.insertChildAt = function (index, tree) {
-            var current = this.current;
-            var sequence = current.sequence;
-            var children = current.children;
-            var depth = this.getRelativeDepth() + 1; 
-
-            if (!isInteger(index)) {
-                index = this.getChildIndexOf(index);
-            }
-
-            if (index < 0 || index > this.getChildCount()) {
-                throw new Error("Index out of bounds: "+index);
-            }
-
-            if (tree && typeof tree === "object" && isArray(tree.tree)) {
-                tree = tree.tree;
-            }
-            else if (!isArray(tree)) {
-                tree = [[tree], []];
-            }
-
-            if (depth < sequence.length) {
-                children.push([
-                    sequence.splice(depth),
-                    children.splice(0)
-                ]);
-            }
-            else if (!children.length) {
-                sequence.push.apply(sequence, tree[0]);
-                children.push.apply(children, tree[1]);
-                return;
-            }
-
-            children.splice(index, 0, tree);
-
-            return;
-        };
-
-        that.removeChildAt = function (index) {
-            var current = this.current;
-            var sequence = current.sequence;
-            var children = current.children;
-            var depth = this.getRelativeDepth() + 1;
-            var tree, child;
-
-            if (!isInteger(index)) {
-                index = this.getChildIndexOf(index);
-            }
-
-            if (index < 0 || index >= this.getChildCount()) {
-                throw new Error("Index out of bounds: "+index);
-            }
-
-            if (depth < sequence.length) {
-                tree = [sequence.splice(depth), children.splice(0)];
-            }
-            else {
-                tree = children.splice(index, 1)[0];
-            }
-
-            if (children.length === 1) {
-                child = children.shift();
-                sequence.push.apply(sequence, child[0]);
-                children.push.apply(children, child[1]);
-            }
- 
-            return this.create(tree);
-        };
-
-        that.replaceChildAt = function (index, tree) {
-            index = isInteger(index) ? index : this.getChildIndexOf(index);
-            var gameTree = this.removeChildAt(index);
-            this.insertChildAt(index, tree);
-            return gameTree;
-        };
-
-        that.isLeaf = function () {
-            return this.current.children.length === 0 &&
-                   this.getRelativeDepth()+1 >= this.current.sequence.length;
-        };
-
-        that.isRoot = function () {
-            return !this.current.parent && this.current.depth <= 1;
-        };
-
-        that.getChildren = function () {
-            var current = this.current;
-            var children = current.children;
-            var depth = this.getRelativeDepth() + 1;
-            var nodes = [];
-
-            if (depth < current.sequence.length) {
-                nodes[0] = current.sequence[depth];
-            }
-            else {
-                for (var i = 0; i < children.length; i++) {
-                    nodes[i] = children[i][0][0];
-                }
-            }
-
-            return nodes;
-        };
-
-        that.getChildCount = function () {
-            var current = this.current;
-
-            if (this.getRelativeDepth()+1 < current.sequence.length) {
-                return 1;
-            }
-
-            return current.children.length;
-        };
-
-        that.getSiblings = function () {
-            var current = this.current;
-            var siblings = current.parent && current.parent.children;
-            var nodes = [];
-
-            if (current.depth > 1) {
-                nodes[0] = current.sequence[current.depth-1];
-            }
-            else if (siblings) {
-                for (var i = 0; i < siblings.length; i++) {
-                    nodes[i] = siblings[i][0][0];
-                }
-            }
-            else {
-                return null;
-            }
-
-            return nodes;
-        };
-
-        that.getParent = function () {
-            var current = this.current;
-
-            if (current.depth > 1) {
-                return current.sequence[current.depth-2];
-            }
-
-            if (current.parent) {
-                current = current.parent;
-                return current.sequence[current.depth-1];
-            }
-
-            return null;
-        };
-
-        that.getAncestors = function () {
-            var current = this.current;
-            var nodes = current.sequence.slice(0, this.getRelativeDepth()+1);
-
-            while (current = current.parent) { // jshint ignore:line
-                nodes.unshift.apply(nodes, current.sequence);
-            }
-
-            return nodes;
-        };
-
-        that.init.apply(that, arguments);
-
-        return that;
-    };
-    */
 
 }());
 
