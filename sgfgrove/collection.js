@@ -73,16 +73,16 @@
         };
 
         that.splice = function () {
-            return this.create(splice.apply(this, arguments));
+            return this.create.apply(this, splice.apply(this, arguments));
         };
 
         that.concat = function () {
-            return this.create(concat.apply(this, arguments));
+            return this.create.apply(this, concat.apply(this, arguments));
         };
 
         if (typeof filter === "function") {
             that.filter = function () {
-                return this.create(filter.apply(this, arguments));
+                return this.create.apply(this, filter.apply(this, arguments));
             };
         }
 
@@ -91,8 +91,96 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree = function () {
-        var that = SGFGrove.collection.gameTree.node.apply(null, arguments);
+    SGFGrove.collection.gameTree = function (tree) {
+        return SGFGrove.collection.gameTree.node(tree);
+    };
+
+    SGFGrove.collection.gameTree.iterable = function (that) {
+        that = that || {};
+
+        that.toIterator = function () {
+            throw new Error("call to abstract method 'toIterator'");
+        };
+
+        that.forEach = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (iterator.hasNext()) {
+                callback.call(context, iterator.next());
+            }
+
+            return this;
+        };
+
+        that.find = function (callback, context) {
+            var iterator = this.toIterator();
+            var found;
+
+            while (iterator.hasNext()) {
+                var value = iterator.next();
+                if (callback.call(context, value)) {
+                    found = value;
+                    break;
+                }
+            }
+
+            return found;
+        };
+
+        /*
+        that.toArray = function () {
+            var iterator = this.toIterator();
+            var array = [];
+
+            while (iterator.hasNext()) {
+                array.push(iterator.next());
+            }
+
+            return array;
+        };
+        */
+
+        if (typeof Symbol === "function" &&
+            typeof Symbol.iterator === "symbol") {
+            that[Symbol.iterator] = function () {
+                var iterator = this.toIterator();
+                var next = iterator.next;
+
+                iterator.next = function () {
+                    if (this.hasNext()) {
+                        return { value: next.call(this) };
+                    }
+                    else {
+                        return { done: true };
+                    }
+                };
+
+                return iterator;
+            };
+        }
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.iterable.iterator = function () {
+        var that = SGFGrove.collection.gameTree.iterable({});
+
+        that.init = function (iteratee) {
+            this.iteratee = iteratee;
+            this.iterator = this.toIterator();
+        };
+
+        that.next = function() {
+            return this.iterator.next();
+        };
+
+        that.hasNext = function() {
+            return this.iterator.hasNext();
+        };
+
+        that.toIterator = function () {
+            throw new Error("call to abstract method 'toIterator'");
+        };
 
         return that;
     };
@@ -438,10 +526,22 @@
     };
 
     SGFGrove.collection.gameTree.node.iterable = function (that) {
-        that = that || {};
+        that = SGFGrove.collection.gameTree.iterable(that);
+
+        that.toIterator = function () {
+            return this.preorder();
+        };
+
+        that.preorder = function () {
+            return SGFGrove.collection.gameTree.node.iterable.preorder(this);
+        };
+
+        that.mainLine = function () {
+            return SGFGrove.collection.gameTree.node.iterable.mainLine(this);
+        };
 
         /*
-         *  Returns the node that follows this node in a depth-first traversal
+         *  Returns the node that follows this node in a preorder traversal
          *  of this node's tree. Returns undefined if this node is the last
          *  node of the traversal.
          */
@@ -463,7 +563,7 @@
         };
 
         /*
-         *  Returns the node that precedes this node in a depth-first traversal
+         *  Returns the node that precedes this node in a preorder traversal
          *  of this node's tree. Returns null if this node is the first node of
          *  the traversal, the root of the tree.
          */
@@ -523,63 +623,70 @@
             return previous;
         };
 
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node.iterable.preorder = function () {
+        var that = SGFGrove.collection.gameTree.iterable.iterator();
+        
         that.toIterator = function () {
-            return SGFGrove.collection.gameTree.node.iterable.iterator(this);
-        };
-
-        that.forEach = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (iterator.hasNext()) {
-                callback.call(context, iterator.next());
-            }
-
-            return this;
-        };
-
-        if (typeof Symbol === "function" &&
-            typeof Symbol.iterator === "symbol") {
-            that[Symbol.iterator] = function () {
-                var iterator = this.toIterator();
-                var next = iterator.next;
-
-                iterator.next = function () {
-                    if (this.hasNext()) {
-                        return { value: next.call(this) };
-                    }
-                    else {
-                        return { done: true };
-                    }
-                };
-
-                return iterator;
+            var iterator = {
+                stack: [this.iteratee]
             };
-        }
+
+            iterator.next = function () {
+                var node;
+
+                if (this.stack.length) {
+                    node = this.stack.shift();
+                    this.stack = node.getChildren().concat(this.stack);
+                }
+
+                return node;
+            };
+
+            iterator.hasNext = function () {
+                return this.stack.length;
+            };
+
+            iterator.peek = function () {
+                return this.stack[0];
+            };
+
+            return iterator;
+        };
+
+        that.init.apply(that, arguments);
 
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.iterable.iterator = function (node) {
-        var that = [node];
+    SGFGrove.collection.gameTree.node.iterable.mainLine = function () {
+        var that = SGFGrove.collection.gameTree.iterable.iterator();
 
-        that.next = function () {
-            var next;
+        that.toIterator = function () {
+            var iterator = {
+                current: this.iteratee
+            };
 
-            if (this.length) {
-                next = this.shift();
-                this.unshift.apply(this, next.getChildren());
-            }
+            iterator.next = function () {
+                var node = this.current.firstChild();
+                this.current = node || this.current;
+                return node;
+            };
 
-            return next;
+            iterator.hasNext = function () {
+                return this.current.getChildCount();
+            };
+
+            iterator.peek = function () {
+                return this.current.firstChild();
+            };
+
+            return iterator;
         };
 
-        that.hasNext = function () {
-            return this.length;
-        };
-
-        that.peek = function () {
-            return this[0];
-        };
+        that.init.apply(that, arguments);
 
         return that;
     };
@@ -602,6 +709,7 @@
             return sum || 1;
         };
 
+        /*
         that.mainLine = function () {
             var node = this.root();
             var mainLine = [node];
@@ -613,6 +721,7 @@
 
             return mainLine;
         };
+        */
 
         /*
          *  Returns an array of nodes giving the path from the root
