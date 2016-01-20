@@ -438,6 +438,23 @@
     SGFGrove.collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
+        var Iterator = function (node) {
+            this.stack = [node];
+        };
+
+        Iterator.prototype.next = function () {
+            if (this.stack.length) {
+                var node = this.stack.shift();
+                this.stack = node.getChildren().concat(this.stack);
+                return { value: node };
+            }
+            return { done: true };
+        };
+
+        that.toIterator = function () {
+            return new Iterator(this);
+        };
+
         if (typeof Symbol === "function" &&
             typeof Symbol.iterator === "symbol") {
             that[Symbol.iterator] = function () {
@@ -445,23 +462,6 @@
             };
         }
 
-        that.toIterator = function () {
-            var iterator = {
-                stack: [this]
-            };
-
-            iterator.next = function () {
-                if (this.stack.length) {
-                    var node = this.stack.shift();
-                    this.stack = node.getChildren().concat(this.stack);
-                    return { value: node };
-                }
-                return { done: true };
-            };
-
-            return iterator;
-        };
- 
         that.forEach = function (callback, context) {
             var iterator = this.toIterator();
 
