@@ -95,104 +95,6 @@
         return SGFGrove.collection.gameTree.node(tree);
     };
 
-    SGFGrove.collection.gameTree.iterable = function (that) {
-        that = that || {};
-
-        that.toIterator = function () {
-            throw new Error("call to abstract method 'toIterator'");
-        };
-
-        that.forEach = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (true) {
-                var result = iterator.next();
-                if (!result.done) {
-                    callback.call(context, result.value);
-                }
-                else {
-                    break;
-                }
-            }
-
-            return this;
-        };
-
-        that.find = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (true) {
-                var result = iterator.next();
-                if (!result.done) {
-                    if (callback.call(context, result.value)) {
-                        return result.value;
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            return;
-        };
-
-        that.filter = function (callback, context) {
-            var iterator = this.toIterator();
-            var found = [];
-
-            while (true) {
-                var result = iterator.next();
-                if (!result.done) {
-                    if (callback.call(context, result.value)) {
-                        found.push(result.value);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            return found;
-        };
-
-        /*
-        that.toArray = function () {
-            var iterator = this.toIterator();
-            var array = [];
-
-            while (iterator.hasNext()) {
-                array.push(iterator.next());
-            }
-
-            return array;
-        };
-        */
-
-        if (typeof Symbol === "function" &&
-            typeof Symbol.iterator === "symbol") {
-            that[Symbol.iterator] = function () {
-                return this.toIterator();
-            };
-        }
-
-        return that;
-    };
-
-    SGFGrove.collection.gameTree.iterable.iterator = function () {
-        var that = SGFGrove.collection.gameTree.iterable({});
-
-        that.init = function (iteratee) {
-            this.iteratee = iteratee;
-            this.iterator = this.toIterator();
-        };
-
-        that.next = function() {
-            return this.iterator.next();
-        };
-
-        return that;
-    };
-
     SGFGrove.collection.gameTree.node = function () {
         var that = {};
 
@@ -373,7 +275,7 @@
         SGFGrove.collection.gameTree.node.mutable(that);
         SGFGrove.collection.gameTree.node.cloneable(that);
         SGFGrove.collection.gameTree.node.iterable(that);
-        SGFGrove.collection.gameTree.node.visitor(that);
+        SGFGrove.collection.gameTree.node.path(that);
 
         that.init.apply(that, arguments);
 
@@ -534,18 +436,83 @@
     };
 
     SGFGrove.collection.gameTree.node.iterable = function (that) {
-        that = SGFGrove.collection.gameTree.iterable(that);
+        that = that || {};
+
+        if (typeof Symbol === "function" &&
+            typeof Symbol.iterator === "symbol") {
+            that[Symbol.iterator] = function () {
+                return this.toIterator();
+            };
+        }
 
         that.toIterator = function () {
-            return this.preorder();
+            var iterator = {
+                stack: [this]
+            };
+
+            iterator.next = function () {
+                if (this.stack.length) {
+                    var node = this.stack.shift();
+                    this.stack = node.getChildren().concat(this.stack);
+                    return { value: node };
+                }
+                return { done: true };
+            };
+
+            return iterator;
+        };
+ 
+        that.forEach = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (true) {
+                var result = iterator.next();
+                if (!result.done) {
+                    callback.call(context, result.value);
+                }
+                else {
+                    break;
+                }
+            }
+
+            return this;
         };
 
-        that.preorder = function () {
-            return SGFGrove.collection.gameTree.node.iterable.preorder(this);
+        that.find = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (true) {
+                var result = iterator.next();
+                if (!result.done) {
+                    if (callback.call(context, result.value)) {
+                        return result.value;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            return;
         };
 
-        that.mainLine = function () {
-            return SGFGrove.collection.gameTree.node.iterable.mainLine(this);
+        that.filter = function (callback, context) {
+            var iterator = this.toIterator();
+            var found = [];
+
+            while (true) {
+                var result = iterator.next();
+                if (!result.done) {
+                    if (callback.call(context, result.value)) {
+                        found.push(result.value);
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            return found;
         };
 
         /*
@@ -634,55 +601,6 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.iterable.preorder = function () {
-        var that = SGFGrove.collection.gameTree.iterable.iterator();
-
-        that.toIterator = function () {
-            var iterator = {
-                stack: [this.iteratee]
-            };
-
-            iterator.next = function () {
-                if (this.stack.length) {
-                    var node = this.stack.shift();
-                    this.stack = node.getChildren().concat(this.stack);
-                    return { value: node };
-                }
-                return { done: true };
-            };
-
-            return iterator;
-        };
-
-        that.init.apply(that, arguments);
-
-        return that;
-    };
-
-    SGFGrove.collection.gameTree.node.iterable.mainLine = function () {
-        var that = SGFGrove.collection.gameTree.iterable.iterator();
-
-        that.toIterator = function () {
-            var iterator = {
-                current: this.iteratee
-            };
-
-            iterator.next = function () {
-                if (!this.current.isLeaf()) {
-                    this.current = this.current.firstChild();
-                    return { value: this.current };
-                }
-                return { done: true };
-            };
-
-            return iterator;
-        };
-
-        that.init.apply(that, arguments);
-
-        return that;
-    };
-
     SGFGrove.collection.gameTree.node.visitor = function (that) {
         that = that || {};
 
@@ -714,6 +632,12 @@
             return mainLine;
         };
         */
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node.path = function (that) {
+        that = that || {};
 
         /*
          *  Returns an array of nodes giving the path from the root
