@@ -105,8 +105,14 @@
         that.forEach = function (callback, context) {
             var iterator = this.toIterator();
 
-            while (iterator.hasNext()) {
-                callback.call(context, iterator.next());
+            while (true) {
+                var result = iterator.next();
+                if (!result.done) {
+                    callback.call(context, result.value);
+                }
+                else {
+                    break;
+                }
             }
 
             return this;
@@ -114,12 +120,34 @@
 
         that.find = function (callback, context) {
             var iterator = this.toIterator();
-            var found;
 
-            while (iterator.hasNext()) {
-                var value = iterator.next();
-                if (callback.call(context, value)) {
-                    found = value;
+            while (true) {
+                var result = iterator.next();
+                if (!result.done) {
+                    if (callback.call(context, result.value)) {
+                        return result.value;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            return;
+        };
+
+        that.filter = function (callback, context) {
+            var iterator = this.toIterator();
+            var found = [];
+
+            while (true) {
+                var result = iterator.next();
+                if (!result.done) {
+                    if (callback.call(context, result.value)) {
+                        found.push(result.value);
+                    }
+                }
+                else {
                     break;
                 }
             }
@@ -143,19 +171,7 @@
         if (typeof Symbol === "function" &&
             typeof Symbol.iterator === "symbol") {
             that[Symbol.iterator] = function () {
-                var iterator = this.toIterator();
-                var next = iterator.next;
-
-                iterator.next = function () {
-                    if (this.hasNext()) {
-                        return { value: next.call(this) };
-                    }
-                    else {
-                        return { done: true };
-                    }
-                };
-
-                return iterator;
+                return this.toIterator();
             };
         }
 
@@ -172,14 +188,6 @@
 
         that.next = function() {
             return this.iterator.next();
-        };
-
-        that.hasNext = function() {
-            return this.iterator.hasNext();
-        };
-
-        that.toIterator = function () {
-            throw new Error("call to abstract method 'toIterator'");
         };
 
         return that;
@@ -628,29 +636,19 @@
 
     SGFGrove.collection.gameTree.node.iterable.preorder = function () {
         var that = SGFGrove.collection.gameTree.iterable.iterator();
-        
+
         that.toIterator = function () {
             var iterator = {
                 stack: [this.iteratee]
             };
 
             iterator.next = function () {
-                var node;
-
                 if (this.stack.length) {
-                    node = this.stack.shift();
+                    var node = this.stack.shift();
                     this.stack = node.getChildren().concat(this.stack);
+                    return { value: node };
                 }
-
-                return node;
-            };
-
-            iterator.hasNext = function () {
-                return this.stack.length;
-            };
-
-            iterator.peek = function () {
-                return this.stack[0];
+                return { done: true };
             };
 
             return iterator;
@@ -670,17 +668,11 @@
             };
 
             iterator.next = function () {
-                var node = this.current.firstChild();
-                this.current = node || this.current;
-                return node;
-            };
-
-            iterator.hasNext = function () {
-                return this.current.getChildCount();
-            };
-
-            iterator.peek = function () {
-                return this.current.firstChild();
+                if (!this.current.isLeaf()) {
+                    this.current = this.current.firstChild();
+                    return { value: this.current };
+                }
+                return { done: true };
             };
 
             return iterator;
