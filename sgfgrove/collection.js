@@ -41,7 +41,7 @@
             }
             else {
                 for (var j = 0; j < arguments.length; j++) {
-                    this[i] = arguments[j];
+                    this[j] = arguments[j];
                 }
             }
         };
@@ -107,9 +107,9 @@
         that.init = function (tree) {
             tree = tree || [[{}], []];
 
-            this.node     = this.createNode(tree[0][0]);
-            this.parent   = null;
-            this.children = [];
+            this.properties = this.createProperties(tree[0][0]);
+            this.parent     = null;
+            this.children   = [];
 
             var node = this;
             for (var i = 1; i < tree[0].length; i++) {
@@ -125,17 +125,17 @@
             return;
         };
 
-        that.createNode = function (node) {
-            return node;
+        that.createProperties = function (properties) {
+            return properties;
         };
 
-        that.getNode = function () {
-            return this.node;
+        that.getProperties = function () {
+            return this.properties;
         };
 
-        that.setNode = function (node) {
-            this.node = node;
-            return node;
+        that.setProperties = function (properties) {
+            this.properties = properties;
+            return properties;
         };
 
         /*
@@ -271,6 +271,15 @@
             return index;
         };
 
+        that.contains = function (other) {
+            for (var node = other; node; node = node.getParent()) {
+                if (node === this) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         SGFGrove.collection.gameTree.node.serializable(that);
         SGFGrove.collection.gameTree.node.mutable(that);
         SGFGrove.collection.gameTree.node.cloneable(that);
@@ -332,7 +341,9 @@
         };
 
         /*
-         *  Adds the child to the end of this node's child array.
+         *  Removes the given node from its parent (if it has a parent) and
+         *  makes it a child of this node by adding it to the end of this
+         *  nodes's array.
          */
         that.appendChild = function (child) {
             return this.insertChild(this.getChildCount(), child);
@@ -341,6 +352,7 @@
         /*
          *  Adds the child to this node's child array at the specified index
          *  and sets the child's parent to this node.
+         *  The given child must not be an ancestor of this node.
          */
         that.insertChild = function (index, child) {
             index = isInteger(index) ? index : index.index();
@@ -349,8 +361,12 @@
                 throw new Error("Index out of bounds: "+index);
             }
 
+            if (child.contains(this)) {
+                throw new Error("Ancestor node given");
+            }
+
             if (!child.isRoot()) {
-                throw new Error("Not a root node");
+                child.getParent().removeChild(child);
             }
 
             this.children.splice(index, 0, child);
@@ -380,7 +396,7 @@
          *  Replaces the specified child node with another node
          *  on this node.
          */
-        that.replace = function (index, other) {
+        that.replaceChild = function (index, other) {
             index = isInteger(index) ? index : index.index();
             var child = this.removeChild(index);
             this.insertChild(index, other);
@@ -394,7 +410,7 @@
         that = that || {};
 
         that.clone = function () {
-            var clone = this.create([[this.cloneNode()], []]);
+            var clone = this.create([[this.cloneProperties()], []]);
 
             var children = this.getChildren();
             for (var i = 0; i < children.length; i++) {
