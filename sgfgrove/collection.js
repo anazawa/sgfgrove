@@ -107,7 +107,7 @@
         that.init = function (tree) {
             tree = tree || [[{}], []];
 
-            this.properties = this.createProperties(tree[0][0]);
+            this.properties = tree[0][0];
             this.parent     = null;
             this.children   = [];
 
@@ -123,19 +123,6 @@
             }
 
             return;
-        };
-
-        that.createProperties = function (properties) {
-            return properties;
-        };
-
-        that.getProperties = function () {
-            return this.properties;
-        };
-
-        that.setProperties = function (properties) {
-            this.properties = properties;
-            return properties;
         };
 
         /*
@@ -256,19 +243,15 @@
          *  Returns -1 if the tree is the root.
          */
         that.index = function () {
-            var index = -1;
-
             if (!this.isRoot()) {
                 var siblings = this.getParent().getChildren();
                 for (var i = 0; i < siblings.length; i++) {
                     if (siblings[i] === this) {
-                        index = i;
-                        break;
+                        return i;
                     }
                 }
             }
-
-            return index;
+            return -1;
         };
 
         that.contains = function (other) {
@@ -280,6 +263,7 @@
             return false;
         };
 
+        SGFGrove.collection.gameTree.node.properties(that);
         SGFGrove.collection.gameTree.node.serializable(that);
         SGFGrove.collection.gameTree.node.mutable(that);
         SGFGrove.collection.gameTree.node.cloneable(that);
@@ -287,6 +271,77 @@
         SGFGrove.collection.gameTree.node.path(that);
 
         that.init.apply(that, arguments);
+
+        return that;
+    };
+
+    SGFGrove.collection.gameTree.node.properties = function (that) {
+        that = that || {};
+
+        var aliases = {
+            GN : "gameName",
+            SZ : "boardSize",
+            DT : "date",
+            PC : "place",
+            RO : "round",
+            EV : "event",
+            B  : "blackMove",
+            W  : "whiteMove",
+            SO : "source",
+            US : "user",
+            CA : "charset",
+            PC : "place",
+            RE : "result",
+            C  : "comment"
+        };
+
+        var makeAccessor = function (key) {
+            return function (value) {
+                if (arguments.length) {
+                    return this.set(key, value);
+                }
+                return this.get(key);
+            };
+        };
+
+        that.get = function (key) {
+            return this.properties[key];
+        };
+
+        that.set = function (key, value) {
+            this.properties[key] = value;
+            return this;
+        };
+
+        that.has = function (key) {
+            return this.properties.hasOwnProperty(key);
+        };
+
+        that.remove = function (key) {
+            var value = this.properties[key];
+            delete this.properties[key];
+            return value;
+        };
+
+        that.clear = function () {
+            this.properties = {};
+            return this;
+        };
+
+        that.forEach = function (callback, context) {
+            for (var key in this.properties) {
+                if (this.properties.hasOwnProperty(key)) {
+                    callback.call(context, key, this.properties[key]);
+                }
+            }
+            return this;
+        };
+
+        for (var key in aliases) {
+            if (aliases.hasOwnProperty(key)) {
+                that[aliases[key]] = makeAccessor(key);
+            }
+        }
 
         return that;
     };
@@ -300,11 +355,11 @@
 
         that.toSGF = function () {
             var node = this;
-            var sequence = [node.getNode()];
+            var sequence = [node.properties];
 
             while (node.getChildCount() === 1) {
                 node = node.firstChild();
-                sequence.push(node.getNode());
+                sequence.push(node.properties);
             }
 
             return [sequence, node.getChildren()];
@@ -420,27 +475,27 @@
             return clone;
         };
 
-        that.cloneNode = function () {
-            var node = !arguments.length ? this.getNode() : arguments[0];
+        that.cloneProperties = function () {
+            var value = !arguments.length ? this.properties : arguments[0];
 
             var clone;
-            if (!node || typeof node !== "object") {
-                clone = node;
+            if (!value || typeof value !== "object") {
+                clone = value;
             }
-            else if (typeof node.clone === "function") {
-                clone = node.clone();
+            else if (typeof value.clone === "function") {
+                clone = value.clone();
             }
-            else if (SGFGrove.Util.isArray(node)) {
+            else if (SGFGrove.Util.isArray(value)) {
                 clone = [];
-                for (var i = 0; i < node.length; i++) {
-                    clone[i] = this.cloneNode(node[i]);
+                for (var i = 0; i < value.length; i++) {
+                    clone[i] = this.cloneProperties(value[i]);
                 }
             }
             else {
                 clone = {};
-                for (var key in node) {
-                    if (node.hasOwnProperty(key)) {
-                        clone[key] = this.cloneNode(node[key]);
+                for (var key in value) {
+                    if (value.hasOwnProperty(key)) {
+                        clone[key] = this.cloneProperties(value[key]);
                     }
                 }
             }
@@ -454,81 +509,16 @@
     SGFGrove.collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
-        var Iterator = function (node) {
-            this.stack = [node];
-        };
+        that.forEachNode = function (callback, context) {
+            var stack = [this];
 
-        Iterator.prototype.next = function () {
-            if (this.stack.length) {
-                var node = this.stack.shift();
-                this.stack = node.getChildren().concat(this.stack);
-                return { value: node };
-            }
-            return { done: true };
-        };
-
-        that.toIterator = function () {
-            return new Iterator(this);
-        };
-
-        if (typeof Symbol === "function" &&
-            typeof Symbol.iterator === "symbol") {
-            that[Symbol.iterator] = function () {
-                return this.toIterator();
-            };
-        }
-
-        that.forEach = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (true) {
-                var result = iterator.next();
-                if (!result.done) {
-                    callback.call(context, result.value);
-                }
-                else {
-                    break;
-                }
+            while (stack.length) {
+                var node = stack.shift();
+                stack = node.getChildren().concat(stack);
+                callback.call(context, node);
             }
 
             return this;
-        };
-
-        that.find = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (true) {
-                var result = iterator.next();
-                if (!result.done) {
-                    if (callback.call(context, result.value)) {
-                        return result.value;
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            return;
-        };
-
-        that.filter = function (callback, context) {
-            var iterator = this.toIterator();
-            var found = [];
-
-            while (true) {
-                var result = iterator.next();
-                if (!result.done) {
-                    if (callback.call(context, result.value)) {
-                        found.push(result.value);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            return found;
         };
 
         /*
