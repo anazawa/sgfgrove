@@ -33,17 +33,25 @@
         };
 
         that.init = function () {
+            var trees;
+
             if (typeof arguments[0] === "string") {
-                var trees = this.parse(arguments[0], arguments[1]);
+                trees = this.parse(arguments[0], arguments[1]);
+            }
+            else if (SGFGrove.Util.isArray(arguments[0])) {
+                trees = arguments[0];
+            }
+
+            if (trees) {
                 for (var i = 0; i < trees.length; i++) {
                     this[i] = this.createGameTree(trees[i]);
                 }
             }
             else {
-                for (var j = 0; j < arguments.length; j++) {
-                    this[j] = arguments[j];
-                }
+                this.push.apply(this, arguments);
             }
+
+            return;
         };
 
         that.createGameTree = function (tree) {
@@ -69,7 +77,7 @@
         };
 
         that.slice = function () {
-            return this.create(slice.apply(this, arguments));
+            return this.create.apply(this, slice.apply(this, arguments));
         };
 
         that.splice = function () {
@@ -123,6 +131,10 @@
             }
 
             return;
+        };
+
+        that.getProperties = function () {
+            return this.properties;
         };
 
         /*
@@ -279,20 +291,101 @@
         that = that || {};
 
         var aliases = {
-            GN : "gameName",
-            SZ : "boardSize",
-            DT : "date",
-            PC : "place",
-            RO : "round",
-            EV : "event",
+            // Move properties
             B  : "blackMove",
+            KO : "ko",
+            MN : "moveNumber",
             W  : "whiteMove",
-            SO : "source",
-            US : "user",
+            // Setup properties
+            AB : "",
+            AE : "",
+            AW : "",
+            PL : "",
+            // Node annotation properties
+            C  : "comment",
+            DM : "",
+            GB : "goodForBlack",
+            GW : "goodForWhite",
+            HO : "",
+            N  : "",
+            UC : "",
+            V  : "",
+            // Move annotation properties
+            BM : "badMove",
+            DO : "doubtfulMove",
+            IT : "interestingMove",
+            TE : "tesuji",
+            // Markup properties
+            AR : "",
+            CR : "",
+            DD : "",
+            LB : "",
+            LN : "",
+            MA : "",
+            SL : "",
+            SQ : "",
+            TR : "",
+            // Root properties 
+            AP : "application",
             CA : "charset",
+            FF : "fileFormat",
+            GM : "",
+            ST : "",
+            SZ : "boardSize",
+            // Game info properties
+            AN : "annotator",
+            BR : "",
+            BT : "",
+            CP : "copyright",
+            DT : "date",
+            EV : "event",
+            GN : "gameName",
+            GC : "gameComment",
+            ON : "",
+            OT : "",
+            PB : "",
             PC : "place",
+            PW : "",
             RE : "result",
-            C  : "comment"
+            RO : "round",
+            RU : "",
+            SO : "source",
+            TM : "",
+            US : "user",
+            WR : "",
+            WT : "",
+            // Timing properties
+            BL : "",
+            OB : "",
+            OW : "",
+            WL : "",
+            // Miscellaneous properties
+            FG : "",
+            PM : "",
+            VW : "",
+            // Go-specific properties
+            KM : "komi",
+            HA : "handicap",
+            TB : "blackTerritory",
+            TW : "whiteTerritory",
+            // Obsolete properties
+            BS : "",
+            CH : "",
+            EL : "",
+            EX : "",
+            ID : "",
+            L  : "",
+            LT : "",
+            M  : "",
+            OM : "",
+            OP : "",
+            OV : "",
+            RG : "",
+            SC : "",
+            SE : "", // XXX
+            SI : "",
+            TC : "",
+            WS : ""
         };
 
         var makeAccessor = function (key) {
@@ -303,6 +396,12 @@
                 return this.get(key);
             };
         };
+
+        for (var key in aliases) {
+            if (aliases.hasOwnProperty(key)) {
+                that[aliases[key]] = makeAccessor(key);
+            }
+        }
 
         that.get = function (key) {
             return this.properties[key];
@@ -329,19 +428,16 @@
         };
 
         that.forEach = function (callback, context) {
-            for (var key in this.properties) {
-                if (this.properties.hasOwnProperty(key)) {
-                    callback.call(context, key, this.properties[key]);
+            var properties = this.properties;
+
+            for (var key in properties) {
+                if (properties.hasOwnProperty(key)) {
+                    callback.call(context, key, properties[key]);
                 }
             }
+
             return this;
         };
-
-        for (var key in aliases) {
-            if (aliases.hasOwnProperty(key)) {
-                that[aliases[key]] = makeAccessor(key);
-            }
-        }
 
         return that;
     };
@@ -354,12 +450,12 @@
         };
 
         that.toSGF = function () {
-            var node = this;
-            var sequence = [node.properties];
+            var sequence = [node.getProperties()];
 
+            var node = this;
             while (node.getChildCount() === 1) {
                 node = node.firstChild();
-                sequence.push(node.properties);
+                sequence.push(node.getProperties());
             }
 
             return [sequence, node.getChildren()];
