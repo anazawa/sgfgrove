@@ -20,12 +20,12 @@
                 }
             }
 
-            that.init.apply(that, arguments);
+            that.initialize.apply(that, arguments);
 
             return that;
         };
 
-        that.init = function () {
+        that.initialize = function () {
             var trees;
 
             if (typeof arguments[0] === "string") {
@@ -87,7 +87,7 @@
             };
         }
 
-        that.init.apply(that, arguments);
+        that.initialize.apply(that, arguments);
 
         return that;
     };
@@ -100,27 +100,40 @@
         var that = {};
 
         that.create = function () {
-            var that = SGFGrove.Util.create(this.root());
-            that.init.apply(that, arguments);
+            var that = SGFGrove.Util.create(this);
+            that.initialize.apply(that, arguments);
             return that;
         };
 
-        that.init = function (tree) {
-            tree = tree || [[{}], []];
+        that.initialize = function (tree, parent) {
+            tree = SGFGrove.Util.isArray(tree) ? tree : [[tree || {}], []];
 
-            this.properties = tree[0][0];
             this.parent     = null;
             this.children   = [];
+            this.properties = {};
 
-            var node = this;
+            var properties = tree[0][0];
+            for (var key in properties) {
+                if (properties.hasOwnProperty(key)) {
+                    this.set(key, properties[key]);
+                }
+            } 
+
+            if (parent) {
+                parent.appendChild(this);
+            }
+
+            var node = this,
+                root = this.root();
+
             for (var i = 1; i < tree[0].length; i++) {
-                var child = this.create([[tree[0][i]], []]);
+                var child = root.create(tree[0][i], node);
                 node.appendChild(child);
                 node = child;
             }
 
             for (var j = 0; j < tree[1].length; j++) {
-                node.appendChild(this.create(tree[1][j]));
+                node.appendChild(root.create(tree[1][j], node));
             }
 
             return;
@@ -275,7 +288,7 @@
         collection.gameTree.node.iterable(that);
         collection.gameTree.node.path(that);
 
-        that.init.apply(that, arguments);
+        that.initialize.apply(that, arguments);
 
         return that;
     };
@@ -554,7 +567,7 @@
         that = that || {};
 
         that.clone = function () {
-            var clone = this.create([[this.cloneProperties()], []]);
+            var clone = this.create(this.cloneProperties());
 
             var children = this.getChildren();
             for (var i = 0; i < children.length; i++) {
