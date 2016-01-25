@@ -3,14 +3,7 @@
 
     var SGFGrove;
 
-    if (typeof exports !== "undefined") {
-        SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
-    }
-    else {
-        SGFGrove = window.SGFGrove;
-    }
-
-    SGFGrove.collection = function () {
+    var collection = function () {
         var that = [];
         
         var concat = that.concat,
@@ -55,7 +48,7 @@
         };
 
         that.createGameTree = function (tree) {
-            return SGFGrove.collection.gameTree(tree);
+            return collection.gameTree(tree);
         };
 
         that.parse = function (text, reviver) {
@@ -99,11 +92,11 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree = function (tree) {
-        return SGFGrove.collection.gameTree.node(tree);
+    collection.gameTree = function (tree) {
+        return collection.gameTree.node(tree);
     };
 
-    SGFGrove.collection.gameTree.node = function () {
+    collection.gameTree.node = function () {
         var that = {};
 
         that.create = function () {
@@ -275,19 +268,19 @@
             return false;
         };
 
-        SGFGrove.collection.gameTree.node.properties(that);
-        SGFGrove.collection.gameTree.node.serializable(that);
-        SGFGrove.collection.gameTree.node.mutable(that);
-        SGFGrove.collection.gameTree.node.cloneable(that);
-        SGFGrove.collection.gameTree.node.iterable(that);
-        SGFGrove.collection.gameTree.node.path(that);
+        collection.gameTree.node.properties(that);
+        collection.gameTree.node.serializable(that);
+        collection.gameTree.node.mutable(that);
+        collection.gameTree.node.cloneable(that);
+        collection.gameTree.node.iterable(that);
+        collection.gameTree.node.path(that);
 
         that.init.apply(that, arguments);
 
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.properties = function (that) {
+    collection.gameTree.node.properties = function (that) {
         that = that || {};
 
         var aliases = {
@@ -442,15 +435,15 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.serializable = function (that) {
+    collection.gameTree.node.serializable = function (that) {
         that = that || {};
 
         that.createCollection = function () {
-            return SGFGrove.collection.apply(null, arguments);
+            return collection.apply(null, arguments);
         };
 
         that.toSGF = function () {
-            var sequence = [node.getProperties()];
+            var sequence = [this.getProperties()];
 
             var node = this;
             while (node.getChildCount() === 1) {
@@ -477,7 +470,7 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.mutable = function (that) {
+    collection.gameTree.node.mutable = function (that) {
         that = that || {};
 
         var isInteger = SGFGrove.Util.isInteger;
@@ -557,7 +550,7 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.cloneable = function (that) {
+    collection.gameTree.node.cloneable = function (that) {
         that = that || {};
 
         that.clone = function () {
@@ -602,7 +595,7 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.iterable = function (that) {
+    collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
         that.forEachNode = function (callback, context) {
@@ -703,7 +696,7 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.visitor = function (that) {
+    collection.gameTree.node.visitor = function (that) {
         that = that || {};
 
         /*
@@ -738,7 +731,7 @@
         return that;
     };
 
-    SGFGrove.collection.gameTree.node.path = function (that) {
+    collection.gameTree.node.path = function (that) {
         that = that || {};
 
         /*
@@ -764,6 +757,15 @@
 
         return that;
     };
+
+    if (typeof exports !== "undefined") {
+        SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
+        module.exports = collection;
+    }
+    else {
+        SGFGrove = window.SGFGrove;
+        SGFGrove.collection = collection;
+    }
 
 }());
 
