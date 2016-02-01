@@ -143,9 +143,6 @@
             return;
         };
 
-        /*
-         *  Returns this node's parent or null if this node has no parent.
-         */
         that.getParent = function () {
             return this.parent;
         };
@@ -154,55 +151,30 @@
             return this.children.slice(0);
         };
 
-        /*
-         *  Returns the number of children of this node.
-         */
         that.getChildCount = function () {
             return this.children.length;
         };
 
-        /*
-         *  Returns the child at the specified index in this node's child
-         *  array.
-         */
         that.getChild = function (index) {
             return this.children[index];
         };
 
-        /*
-         *  Returns this node's first child. If this node has no children,
-         *  returns undefined.
-         */
         that.firstChild = function () {
             return this.getChild(0);
         };
 
-        /*
-         *  Returns this node's last child. If this node has no children,
-         *  returns undefined.
-         */
         that.lastChild = function () {
             return this.getChild(Math.max(0, this.getChildCount()-1));
         };
 
-        /*
-         *  Returns true if this node is the root of the tree.
-         */
         that.isRoot = function () {
             return this.getParent() === null;
         };
 
-        /*
-         *  Returns true if this node has no children.
-         */
         that.isLeaf = function () {
             return this.getChildCount() === 0;
         };
 
-        /*
-         *  Returns the root of the tree that contains this node.
-         *  The root is the ancestor with a null parent.
-         */
         that.root = function () {
             var root = this;
 
@@ -213,19 +185,10 @@
             return root;
         };
 
-        /*
-         *  Return an array of siblings for this node.
-         *  A node is its own sibling.
-         */
         that.siblings = function () {
             return !this.isRoot() ? this.getParent().getChildren() : null;
         };
 
-        /*
-         *  Returns the depth of this node in its tree. The depth of a node
-         *  is defined as the length of the node's path to its root.
-         *  The depth of a root node is zero.
-         */
         that.depth = function () {
             var depth = 0;
 
@@ -238,14 +201,7 @@
             return depth;
         };
 
-        /*
-         *  Returns the height of the (sub)tree from this node.
-         *  The height of a node is defined as the length of the longest
-         *  downward path to a leaf from the node.
-         *  The height from a root node is the height of the entire tree.
-         *  The height of a leaf node is zero.
-         */
-        that.height = function () {
+       that.height = function () {
             var heights = [0];
 
             var children = this.getChildren();
@@ -256,10 +212,6 @@
             return Math.max.apply(null, heights);
         };
 
-        /*
-         *  Returns the index of the specified child in this node's child array.
-         *  If the specified node is not a child of this node, returns -1.
-         */
         that.childIndexOf = function (child) {
             var children = this.getChildren();
             for (var i = 0; i < children.length; i++) {
@@ -325,20 +277,10 @@
             return parent;
         };
 
-        /*
-         *  Removes the given node from its parent (if it has a parent) and
-         *  makes it a child of this node by adding it to the end of this
-         *  nodes's array.
-         */
         that.appendChild = function (child) {
             return this.insertChild(child, this.getChildCount());
         };
 
-        /*
-         *  Adds the child to this node's child array at the specified index
-         *  and sets the child's parent to this node.
-         *  The given child must not be an ancestor of this node.
-         */
         that.insertChild = function (child, index) {
             child.removeFromParent();
 
@@ -358,10 +300,6 @@
             return;
         };
 
-        /*
-         *  Removes the child at the specified index from this node's children
-         *  and sets that node's parent to null.
-         */
         that.removeChild = function (index) {
             if (!SGFGrove.Util.isInteger(index)) {
                 throw new Error("Not an integer");
@@ -446,11 +384,6 @@
             return this;
         };
 
-        /*
-         *  Returns the node that follows this node in a preorder traversal
-         *  of this node's tree. Returns undefined if this node is the last
-         *  node of the traversal.
-         */
         that.next = function () {
             if (!this.isLeaf()) {
                 return this.firstChild();
@@ -466,11 +399,6 @@
             return;
         };
 
-        /*
-         *  Returns the node that precedes this node in a preorder traversal
-         *  of this node's tree. Returns null if this node is the first node of
-         *  the traversal, the root of the tree.
-         */
         that.previous = function () {
             var node = this.previousSibling();
 
@@ -485,22 +413,12 @@
             return node;
         };
 
-        /*
-         *  Returns the next sibling of this node in the parent's children
-         *  array. Returns null if this node has no parent. Returns undefined
-         *  if this node is the parent's last child.
-         */
         that.nextSibling = function () {
             var parent = this.getParent();
             var index = parent && parent.childIndexOf(this);
             return parent ? parent.getChild(index+1) : null;
         };
 
-        /*
-         *  Returns the previous sibling of this node in the parent's children
-         *  array. Returns null if this node has no parent. Returns undefined
-         *  if this node is the parent's first child.
-         */
         that.previousSibling = function () {
             var parent = this.getParent();
             var index = parent && parent.childIndexOf(this);
