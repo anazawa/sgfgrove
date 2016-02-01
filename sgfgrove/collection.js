@@ -6,10 +6,27 @@
     var collection = function () {
         var that = [];
         
-        var concat = that.concat,
-            slice  = that.slice,
-            splice = that.splice,
-            filter = that.filter;
+        var factoryMethods = [
+            "concat",
+            "slice",
+            "splice",
+            "filter"
+        ];
+
+        var override = function (method) {
+            var body = that[method];
+            if (typeof body === "function") {
+                that[method] = function () {
+                    var that = this.create();
+                    that.push.apply(that, body.apply(this, arguments));
+                    return that;
+                };
+            }
+        };
+
+        for (var i = 0; i < factoryMethods.length; i++) {
+            override(factoryMethods[i]);
+        }
 
         that.create = function () {
             var that = [];
@@ -25,23 +42,11 @@
             return that;
         };
 
-        that.initialize = function () {
-            var trees;
+        that.initialize = function (text, reviver) {
+            var trees = this.parse(text || "", reviver);
 
-            if (typeof arguments[0] === "string") {
-                trees = this.parse(arguments[0], arguments[1]);
-            }
-            else if (SGFGrove.Util.isArray(arguments[0])) {
-                trees = arguments[0];
-            }
-
-            if (trees) {
-                for (var i = 0; i < trees.length; i++) {
-                    this[i] = this.createGameTree(trees[i]);
-                }
-            }
-            else {
-                this.push.apply(this, arguments);
+            for (var i = 0; i < trees.length; i++) {
+                this[i] = this.createGameTree(trees[i]);
             }
 
             return;
@@ -69,78 +74,73 @@
             return clone;
         };
 
-        that.slice = function () {
-            return this.create.apply(this, slice.apply(this, arguments));
-        };
-
-        that.splice = function () {
-            return this.create.apply(this, splice.apply(this, arguments));
-        };
-
-        that.concat = function () {
-            return this.create.apply(this, concat.apply(this, arguments));
-        };
-
-        if (typeof filter === "function") {
-            that.filter = function () {
-                return this.create.apply(this, filter.apply(this, arguments));
-            };
-        }
-
         that.initialize.apply(that, arguments);
 
         return that;
     };
 
-    collection.gameTree = function (tree) {
-        return collection.gameTree.node(tree);
+    collection.gameTree = function (tree, parent) {
+        tree = tree || [[{}], []];
+
+        var that, root;
+
+        if (!parent) {
+            that = collection.gameTree.node(tree[0][0]);
+            root = that;
+        }
+        else {
+            root = parent.root();
+            that = root.create(tree[0][0], parent);
+        }
+
+        var node = that;
+        for (var i = 1; i < tree[0].length; i++) {
+            node = root.create(tree[0][i], node);
+        }
+
+        for (var j = 0; j < tree[1].length; j++) {
+            collection.gameTree(tree[1][j], node);
+        }
+
+        return that;
     };
 
     collection.gameTree.node = function () {
         var that = {};
 
+        collection.gameTree.node.serializable(that);
+        collection.gameTree.node.mutable(that);
+        collection.gameTree.node.cloneable(that);
+        collection.gameTree.node.iterable(that);
+
         that.create = function () {
-            var that = SGFGrove.Util.create(this);
-            that.initialize.apply(that, arguments);
-            return that;
+            var other = SGFGrove.Util.create(this);
+            other.initialize.apply(other, arguments);
+            return other;
         };
 
-        that.initialize = function (tree, parent) {
-            tree = SGFGrove.Util.isArray(tree) ? tree : [[tree || {}], []];
+        that.initialize = function (properties, parent) {
+            properties = properties || {};
 
-            this.parent     = null;
-            this.children   = [];
-            this.properties = {};
-
-            var properties = tree[0][0];
-            for (var key in properties) {
-                if (properties.hasOwnProperty(key)) {
-                    this.set(key, properties[key]);
-                }
-            } 
+            this.parent   = null;
+            this.children = [];
 
             if (parent) {
                 parent.appendChild(this);
             }
 
-            var node = this,
-                root = this.root();
-
-            for (var i = 1; i < tree[0].length; i++) {
-                var child = root.create(tree[0][i], node);
-                node.appendChild(child);
-                node = child;
-            }
-
-            for (var j = 0; j < tree[1].length; j++) {
-                node.appendChild(root.create(tree[1][j], node));
-            }
+            this.setProperties(properties);
 
             return;
         };
 
         that.getProperties = function () {
             return this.properties;
+        };
+
+        that.setProperties = function (properties) {
+            this.properties = properties;
+            return;
         };
 
         /*
@@ -215,7 +215,7 @@
 
         /*
          *  Return an array of siblings for this node.
-         *  This node is included.
+         *  A node is its own sibling.
          */
         that.siblings = function () {
             return !this.isRoot() ? this.getParent().getChildren() : null;
@@ -227,9 +227,9 @@
          *  The depth of a root node is zero.
          */
         that.depth = function () {
-            var node = this;
             var depth = 0;
 
+            var node = this;
             while (!node.isRoot()) {
                 node = node.getParent();
                 depth += 1;
@@ -246,9 +246,9 @@
          *  The height of a leaf node is zero.
          */
         that.height = function () {
-            var children = this.getChildren();
             var heights = [0];
 
+            var children = this.getChildren();
             for (var i = 0; i < children.length; i++) {
                 heights[i+1] = children[i].height()+1;
             }
@@ -257,16 +257,14 @@
         };
 
         /*
-         *  Returns the index of this tree within its sibling list.
-         *  Returns -1 if the tree is the root.
+         *  Returns the index of the specified child in this node's child array.
+         *  If the specified node is not a child of this node, returns -1.
          */
-        that.index = function () {
-            if (!this.isRoot()) {
-                var siblings = this.getParent().getChildren();
-                for (var i = 0; i < siblings.length; i++) {
-                    if (siblings[i] === this) {
-                        return i;
-                    }
+        that.childIndexOf = function (child) {
+            var children = this.getChildren();
+            for (var i = 0; i < children.length; i++) {
+                if (children[i] === child) {
+                    return i;
                 }
             }
             return -1;
@@ -281,169 +279,7 @@
             return false;
         };
 
-        collection.gameTree.node.properties(that);
-        collection.gameTree.node.serializable(that);
-        collection.gameTree.node.mutable(that);
-        collection.gameTree.node.cloneable(that);
-        collection.gameTree.node.iterable(that);
-        collection.gameTree.node.path(that);
-
         that.initialize.apply(that, arguments);
-
-        return that;
-    };
-
-    collection.gameTree.node.properties = function (that) {
-        that = that || {};
-
-        var aliases = {
-            // Move properties
-            B  : "blackMove",
-            KO : "ko",
-            MN : "moveNumber",
-            W  : "whiteMove",
-            // Setup properties
-            AB : "",
-            AE : "",
-            AW : "",
-            PL : "",
-            // Node annotation properties
-            C  : "comment",
-            DM : "",
-            GB : "goodForBlack",
-            GW : "goodForWhite",
-            HO : "",
-            N  : "",
-            UC : "",
-            V  : "",
-            // Move annotation properties
-            BM : "badMove",
-            DO : "doubtfulMove",
-            IT : "interestingMove",
-            TE : "tesuji",
-            // Markup properties
-            AR : "",
-            CR : "",
-            DD : "",
-            LB : "",
-            LN : "",
-            MA : "",
-            SL : "",
-            SQ : "",
-            TR : "",
-            // Root properties 
-            AP : "application",
-            CA : "charset",
-            FF : "fileFormat",
-            GM : "",
-            ST : "",
-            SZ : "boardSize",
-            // Game info properties
-            AN : "annotator",
-            BR : "",
-            BT : "",
-            CP : "copyright",
-            DT : "date",
-            EV : "event",
-            GN : "gameName",
-            GC : "gameComment",
-            ON : "",
-            OT : "",
-            PB : "",
-            PC : "place",
-            PW : "",
-            RE : "result",
-            RO : "round",
-            RU : "",
-            SO : "source",
-            TM : "",
-            US : "user",
-            WR : "",
-            WT : "",
-            // Timing properties
-            BL : "",
-            OB : "",
-            OW : "",
-            WL : "",
-            // Miscellaneous properties
-            FG : "",
-            PM : "",
-            VW : "",
-            // Go-specific properties
-            KM : "komi",
-            HA : "handicap",
-            TB : "blackTerritory",
-            TW : "whiteTerritory",
-            // Obsolete properties
-            BS : "",
-            CH : "",
-            EL : "",
-            EX : "",
-            ID : "",
-            L  : "",
-            LT : "",
-            M  : "",
-            OM : "",
-            OP : "",
-            OV : "",
-            RG : "",
-            SC : "",
-            SE : "", // XXX
-            SI : "",
-            TC : "",
-            WS : ""
-        };
-
-        var makeAccessor = function (key) {
-            return function (value) {
-                if (arguments.length) {
-                    return this.set(key, value);
-                }
-                return this.get(key);
-            };
-        };
-
-        for (var key in aliases) {
-            if (aliases.hasOwnProperty(key)) {
-                that[aliases[key]] = makeAccessor(key);
-            }
-        }
-
-        that.get = function (key) {
-            return this.properties[key];
-        };
-
-        that.set = function (key, value) {
-            this.properties[key] = value;
-            return this;
-        };
-
-        that.has = function (key) {
-            return this.properties.hasOwnProperty(key);
-        };
-
-        that.remove = function (key) {
-            var value = this.properties[key];
-            delete this.properties[key];
-            return value;
-        };
-
-        that.clear = function () {
-            this.properties = {};
-            return this;
-        };
-
-        that.forEach = function (callback, context) {
-            var properties = this.properties;
-
-            for (var key in properties) {
-                if (properties.hasOwnProperty(key)) {
-                    callback.call(context, key, properties[key]);
-                }
-            }
-
-            return this;
-        };
 
         return that;
     };
@@ -451,11 +287,18 @@
     collection.gameTree.node.serializable = function (that) {
         that = that || {};
 
-        that.createCollection = function () {
-            return collection.apply(null, arguments);
+        that.toSGF = function () {
+            return [[this.getProperties()], this.getChildren()];
         };
 
-        that.toSGF = function () {
+        that.toString = function (replacer, space) {
+            if (this.isRoot()) {
+                return SGFGrove.stringify([this], replacer, space);
+            }
+            throw new Error("Not a root node");
+        };
+
+        that.toJSON = function () {
             var sequence = [this.getProperties()];
 
             var node = this;
@@ -467,26 +310,11 @@
             return [sequence, node.getChildren()];
         };
 
-        that.toJSON = that.toSGF;
-
-        that.toCollection = function () {
-            if (this.isRoot()) {
-                return this.createCollection(this);
-            }
-            throw new Error("Not a root node");
-        };
-
-        that.toString = function (replacer, space) {
-            return this.toCollection().toString(replacer, space);
-        };
-
         return that;
     };
 
     collection.gameTree.node.mutable = function (that) {
         that = that || {};
-
-        var isInteger = SGFGrove.Util.isInteger;
 
         /*
          *  Private method to set the parent node for this node.
@@ -503,7 +331,7 @@
          *  nodes's array.
          */
         that.appendChild = function (child) {
-            return this.insertChild(this.getChildCount(), child);
+            return this.insertChild(child, this.getChildCount());
         };
 
         /*
@@ -511,19 +339,17 @@
          *  and sets the child's parent to this node.
          *  The given child must not be an ancestor of this node.
          */
-        that.insertChild = function (index, child) {
-            index = isInteger(index) ? index : index.index();
+        that.insertChild = function (child, index) {
+            child.removeFromParent();
 
-            if (index < 0 || index > this.getChildCount()) {
+            if (!SGFGrove.Util.isInteger(index)) {
+                throw new Error("Not an integer");
+            }
+            else if (index < 0 || index > this.getChildCount()) {
                 throw new Error("Index out of bounds: "+index);
             }
-
-            if (child.contains(this)) {
+            else if (child.contains(this)) {
                 throw new Error("Ancestor node given");
-            }
-
-            if (!child.isRoot()) {
-                child.getParent().removeChild(child);
             }
 
             this.children.splice(index, 0, child);
@@ -537,9 +363,10 @@
          *  and sets that node's parent to null.
          */
         that.removeChild = function (index) {
-            index = isInteger(index) ? index : index.index();
-
-            if (index < 0 || index >= this.getChildCount()) {
+            if (!SGFGrove.Util.isInteger(index)) {
+                throw new Error("Not an integer");
+            }
+            else if (index < 0 || index >= this.getChildCount()) {
                 throw new Error("Index out of bounds: "+index);
             }
 
@@ -549,15 +376,11 @@
             return child;
         };
 
-        /*
-         *  Replaces the specified child node with another node
-         *  on this node.
-         */
-        that.replaceChild = function (index, other) {
-            index = isInteger(index) ? index : index.index();
-            var child = this.removeChild(index);
-            this.insertChild(index, other);
-            return child;
+        that.removeFromParent = function () {
+            if (!this.isRoot()) {
+                var parent = this.getParent();
+                parent.removeChild(parent.childIndexOf(this));
+            }
         };
 
         return that;
@@ -566,43 +389,43 @@
     collection.gameTree.node.cloneable = function (that) {
         that = that || {};
 
-        that.clone = function () {
-            var clone = this.create(this.cloneProperties());
+        that.clone = function (prototype) {
+            var other = (prototype || this).create(this.cloneProperties());
 
             var children = this.getChildren();
             for (var i = 0; i < children.length; i++) {
-                clone.appendChild(children[i].clone());
+                other.appendChild(children[i].clone(prototype || other));
             }
 
-            return clone;
+            return other;
         };
 
-        that.cloneProperties = function () {
-            var value = !arguments.length ? this.properties : arguments[0];
+        that.cloneProperties = function (value) {
+            value = !arguments.length ? this.getProperties() : value;
 
-            var clone;
+            var copy;
             if (!value || typeof value !== "object") {
-                clone = value;
+                copy = value;
             }
             else if (typeof value.clone === "function") {
-                clone = value.clone();
+                copy = value.clone();
             }
             else if (SGFGrove.Util.isArray(value)) {
-                clone = [];
+                copy = [];
                 for (var i = 0; i < value.length; i++) {
-                    clone[i] = this.cloneProperties(value[i]);
+                    copy[i] = this.cloneProperties(value[i]);
                 }
             }
             else {
-                clone = {};
+                copy = {};
                 for (var key in value) {
                     if (value.hasOwnProperty(key)) {
-                        clone[key] = this.cloneProperties(value[key]);
+                        copy[key] = this.cloneProperties(value[key]);
                     }
                 }
             }
 
-            return clone;
+            return copy;
         };
 
         return that;
@@ -611,7 +434,7 @@
     collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
-        that.forEachNode = function (callback, context) {
+        that.forEach = function (callback, context) {
             var stack = [this];
 
             while (stack.length) {
@@ -629,20 +452,18 @@
          *  node of the traversal.
          */
         that.next = function () {
-            var next;
-
             if (!this.isLeaf()) {
-                next = this.firstChild();
+                return this.firstChild();
             }
-            else {
-                var node = this;
-                while (!next && node) {
-                    next = node.nextSibling();
-                    node = node.getParent();
+
+            for (var node = this; node; node = node.getParent()) {
+                var sibling = node.nextSibling();
+                if (sibling) {
+                    return sibling;
                 }
             }
 
-            return next;
+            return;
         };
 
         /*
@@ -651,18 +472,17 @@
          *  the traversal, the root of the tree.
          */
         that.previous = function () {
-            var previous = this.previousSibling();
+            var node = this.previousSibling();
 
-            if (!previous) {
-                previous = this.getParent();
-            }
-            else {
-                while (!previous.isLeaf()) {
-                    previous = previous.lastChild();
-                }
+            if (!node) {
+                return this.getParent();
             }
 
-            return previous;
+            while (!node.isLeaf()) {
+                node = node.lastChild();
+            }
+
+            return node;
         };
 
         /*
@@ -671,20 +491,9 @@
          *  if this node is the parent's last child.
          */
         that.nextSibling = function () {
-            var index = this.index();
-            var next;
-
-            if (index < 0) {
-                next = null;
-            }
-            else {
-                var parent = this.getParent();
-                if (index+1 < parent.getChildCount()) {
-                    next = parent.getChild(index+1);
-                }
-            }
-
-            return next;
+            var parent = this.getParent();
+            var index = parent && parent.childIndexOf(this);
+            return parent ? parent.getChild(index+1) : null;
         };
 
         /*
@@ -693,79 +502,9 @@
          *  if this node is the parent's first child.
          */
         that.previousSibling = function () {
-            var index = this.index();
-            var previous;
-
-            if (index < 0) {
-                previous = null;
-            }
-            else if (index-1 >= 0) {
-                previous = this.getParent().getChild(index-1);
-            }
-
-            return previous;
-        };
-
-        return that;
-    };
-
-    collection.gameTree.node.visitor = function (that) {
-        that = that || {};
-
-        /*
-         *  Returns the total number of leaves that are descendants of this 
-         *  node. If this node is a leaf, returns 1.
-         */
-        that.leafCount = function () {
-            var children = this.getChildren();
-            var sum = 0;
-
-            for (var i = 0; i < children.length; i++) {
-                sum += children[i].leafCount();
-            }
-
-            return sum || 1;
-        };
-
-        /*
-        that.mainLine = function () {
-            var node = this.root();
-            var mainLine = [node];
-
-            while (!node.isLeaf()) {
-                node = node.firstChild();
-                mainLine.push(node);
-            }
-
-            return mainLine;
-        };
-        */
-
-        return that;
-    };
-
-    collection.gameTree.node.path = function (that) {
-        that = that || {};
-
-        /*
-         *  Returns an array of nodes giving the path from the root
-         *  to this node, where the first item in the array is the root
-         *  and the last item is this node.
-         */
-        that.path = function () {
-            return this.pathToRoot().reverse();
-        };
-
-        that.pathToRoot = function () {
-            var node = this;
-            var path = [node];
-
-            while (!node.isRoot()) {
-                node = node.getParent();
-                path.push(node);
-            }
-
-            return path;
+            var parent = this.getParent();
+            var index = parent && parent.childIndexOf(this);
+            return parent ? parent.getChild(index-1) : null;
         };
 
         return that;
@@ -773,7 +512,7 @@
 
     if (typeof exports !== "undefined") {
         SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
-        module.exports = collection;
+        module.exports = collection; // jshint ignore:line
     }
     else {
         SGFGrove = window.SGFGrove;
