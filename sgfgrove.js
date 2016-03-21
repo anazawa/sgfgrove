@@ -47,14 +47,11 @@
 
     FF.Types = (function () {
         var Types = {};
-        var isArray = SGFGrove.Util.isArray;
 
         Types.scalar = function (args) {
             args = args || {};
 
-            var that = {
-                name: args.name || ""
-            };
+            var that = {};
 
             var like = args.like || { test: function () { return true; } };
             var parse = args.parse || function (v) { return v; };
@@ -63,13 +60,15 @@
             var stringify = args.stringify || String;
 
             that.parse = function (values) {
-                if ( values.length === 1 && like.test(values[0]) ) {
-                    return parse( values[0] );
+                if (values.length === 1 && like.test(values[0])) {
+                    return parse(values[0]);
                 }
             };
 
             that.stringify = function (value) {
-                return isa(value) ? [ stringify(value) ] : undefined;
+                if (isa(value)) {
+                    return [stringify(value)];
+                }
             };
 
             return that;
@@ -77,40 +76,36 @@
 
         // Number = ["+"|"-"] Digit {Digit}
         Types.Number = Types.scalar({
-            name: "Number",
             like: /^[+-]?\d+$/,
             isa: SGFGrove.Util.isInteger,
             parse: function (v) { return parseInt(v, 10); }
         });
 
         Types.Unknown = {
-            name: "Unknown",
             parse: function (values) {
                 var result = [];
 
-                for ( var i = 0; i < values.length; i++ ) {
+                for (var i = 0; i < values.length; i++) {
                     result[i] = values[i].replace(/\\\]/g, "]");
                 }
 
                 return result;
             },
             stringify: function (values) {
-                var result = [];
+                if (SGFGrove.Util.isArray(values)) {
+                    var result = [];
 
-                if ( !isArray(values) ) {
-                    return;
-                }
-
-                for ( var i = 0; i < values.length; i++ ) {
-                    if ( typeof values[i] === "string" ) {
-                        result[i] = values[i].replace(/\]/g, "\\]");
+                    for (var i = 0; i < values.length; i++) {
+                        if (typeof values[i] === "string") {
+                            result[i] = values[i].replace(/\]/g, "\\]");
+                        }
+                        else {
+                            return;
+                        }
                     }
-                    else {
-                        return;
-                    }
-                }
 
-                return result;
+                    return result;
+                }
             }
         };
 
@@ -229,8 +224,9 @@
                             node[ident] = values;
                         }
                         else {
-                            str = "["+node[ident].join("][")+"]";
-                            throw new SyntaxError(type.name+" expected, got "+str);
+                            str = ident+"["+node[ident].join("][")+"]";
+                            //throw new SyntaxError(type.name+" expected, got "+str);
+                            throw new SyntaxError("Invalid Property: "+str);
                         }
                     }
                 }
@@ -469,25 +465,25 @@
     // http://www.red-bean.com/sgf/sgf4.html
     // http://www.red-bean.com/sgf/properties.html
     SGFGrove.define(4, null, function (FF) {
-        var Types = SGFGrove.Util.create( FF.Types );
+        var Types = SGFGrove.Util.create(FF.Types);
         var isArray = SGFGrove.Util.isArray;
-        var isNumber = SGFGrove.Util.isNumber;
 
         Types.compose = function (left, right) {
             return left && right && {
-                name: "composed "+left.name+' ":" '+right.name,
                 parse: function (values) {
-                    if ( values.length === 1 ) {
+                    if (values.length === 1) {
                         var v = /^((?:\\:|[^:])*):([\s\S]*)$/.exec(values[0]) || undefined;
-                        var l = v && left.parse( [v[1]] );
-                        var r = v && right.parse( [v[2]] );
-                        return (l !== undefined && r !== undefined) ? [l, r] : undefined;
+                        var l = v && left.parse([v[1]]);
+                        var r = v && right.parse([v[2]]);
+                        if (l !== undefined && r !== undefined) {
+                            return [l, r];
+                        }
                     }
                 },
                 stringify: function (value) {
-                    if ( isArray(value) && value.length === 2 ) {
-                        var l = left.stringify( value[0] );
-                        var r = right.stringify( value[1] );
+                    if (isArray(value) && value.length === 2) {
+                        var l = left.stringify(value[0]);
+                        var r = right.stringify(value[1]);
                         return l && r && [ l[0]+":"+r[0] ];
                     }
                 }
@@ -498,18 +494,17 @@
             args = args || {};
 
             return scalar && {
-                name: "list/elist of "+scalar.name,
                 canBeEmpty: args.canBeEmpty,
                 parse: function (values) {
                     var result = [];
 
-                    if ( values.length === 1 && values[0] === "" ) {
+                    if (values.length === 1 && values[0] === "") {
                         return this.canBeEmpty ? result : undefined;
                     }
 
-                    for ( var i = 0; i < values.length; i++ ) {
+                    for (var i = 0; i < values.length; i++) {
                         result[i] = scalar.parse([values[i]]);
-                        if ( result[i] === undefined ) {
+                        if (result[i] === undefined) {
                             return;
                         }
                     }
@@ -517,15 +512,15 @@
                     return result;
                 },
                 stringify: function (values) {
-                    var result = [""];
-
-                    if ( !isArray(values) ) {
+                    if (!isArray(values)) {
                         return;
                     }
 
-                    if ( !values.length ) {
-                        return this.canBeEmpty ? result : undefined;
+                    if (!values.length) {
+                        return this.canBeEmpty ? [""] : undefined;
                     }
+
+                    var result = [];
 
                     for ( var i = 0; i < values.length; i++ ) {
                         result[i] = scalar.stringify(values[i])[0];
@@ -535,6 +530,11 @@
                     }
 
                     return result;
+                },
+                toElist: function () {
+                    var other = SGFGrove.Util.create(this);
+                    other.canBeEmpty = true;
+                    return other;
                 }
             };
         };
@@ -547,21 +547,18 @@
 
         Types.or = function (a, b) {
             return a && b && {
-                name: "("+a.name+" | "+b.name+")",
                 parse: function (values) {
                     var result = a.parse(values);
                     return result !== undefined ? result : b.parse(values);
                 },
                 stringify: function (value) {
-                    var result = a.stringify(value);
-                    return result !== undefined ? result : b.stringify(value);
+                    return a.stringify(value) || b.stringify(value);
                 }
             };
         };
 
         // None = ""
         Types.None = Types.scalar({
-            name: "None",
             like: { test: function (v) { return v === ""; } },
             isa: function (v) { return v === null; },
             parse: function () { return null; },
@@ -570,15 +567,13 @@
 
         // Real = Number ["." Digit { Digit }]
         Types.Real = Types.scalar({
-            name: "Real",
             like: /^[+-]?\d+(?:\.\d+)?$/,
-            isa: isNumber,
+            isa: SGFGrove.Util.isNumber,
             parse: parseFloat
         });
 
         // Double = ("1" | "2")
         Types.Double = Types.scalar({
-            name: "Double",
             like: { test: function (v) { return v === "1" || v === "2"; } },
             isa: function (v) { return v === 1 || v === 2; },
             parse: parseInt
@@ -586,13 +581,11 @@
 
         // Color = ("B" | "W")
         Types.Color = Types.scalar({
-            name: "Color",
             like: { test: function (v) { return v === "B" || v === "W"; } }
         });
 
         // Text = { any character }
         Types.Text = Types.scalar({
-            name: "Text",
             parse: function (value) {
                 return value.
                     // remove soft linebreaks
@@ -609,7 +602,6 @@
 
         // SimpleText = { any character }
         Types.SimpleText = Types.scalar({
-            name: "SimpleText",
             parse: function (value) {
                 return value.
                     // remove soft linebreaks
@@ -715,7 +707,7 @@
     // http://www.red-bean.com/sgf/go.html
     SGFGrove.define(4, 1, function (FF) {
         var create = SGFGrove.Util.create;
-        var Types = create( FF[4].Types );
+        var Types = create(FF[4].Types);
 
         var expandPointList = (function () {
             var coord2char = "abcdefghijklmnopqrstuvwxyz";
@@ -735,15 +727,15 @@
                 var x2 = char2coord[ p2.charAt(0) ];
                 var y2 = char2coord[ p2.charAt(1) ];
 
-                if ( x1 > x2 ) {
+                if (x1 > x2) {
                     h = x1; x1 = x2; x2 = h;
                 }
 
-                if ( y1 > y2 ) {
+                if (y1 > y2) {
                     h = y1; y1 = y2; y2 = h;
                 }
 
-                for ( y = y1; y <= y2; y++ ) {
+                for (y = y1; y <= y2; y++) {
                     for ( x = x1; x <= x2; x++ ) {
                         points.push( coord2char[x]+coord2char[y] );
                     }
@@ -754,18 +746,16 @@
         }());
 
         Types.Point = Types.scalar({
-            name: "Point",
             like: /^[a-zA-Z]{2}$/
         });
   
         Types.Stone = Types.Point;
-        Types.Move  = Types.or( Types.None, Types.Point );
+        Types.Move  = Types.or(Types.None, Types.Point);
 
         Types.listOfPoint = (function (t) {
             var listOfPoint = t.listOf(t.or(
                 t.Point,
                 t.scalar({
-                    name: 'composed Point ":" Point',
                     like: /^[a-zA-Z]{2}:[a-zA-Z]{2}$/,
                     parse: function (value) {
                         var rect = value.split(":");
@@ -785,9 +775,7 @@
             return listOfPoint;
         }(Types));
 
-        Types.elistOfPoint = create( Types.listOfPoint );
-        Types.elistOfPoint.canBeEmpty = true;
-
+        Types.elistOfPoint = Types.listOfPoint.toElist();
         Types.listOfStone  = Types.listOfPoint;
         Types.elistOfStone = Types.elistOfPoint;
     

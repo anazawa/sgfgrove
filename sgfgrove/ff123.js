@@ -3,7 +3,7 @@
 
     var SGFGrove;
 
-    if ( typeof exports !== "undefined" ) {
+    if (typeof exports !== "undefined") {
         SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
     }
     else {
@@ -13,20 +13,17 @@
     // Original File Format
     // http://www.red-bean.com/sgf/ff1_3/ff1.html
     SGFGrove.define(1, null, function (FF) {
-        var create = SGFGrove.Util.create;
-        var Types = create( FF.Types );
+        var Types = SGFGrove.Util.create(FF.Types);
 
-        Types.Color   = FF[4].Types.Color;
-        Types.None    = FF[4].Types.None;
         Types.listOf  = FF[4].Types.listOf;
         Types.elistOf = FF[4].Types.elistOf;
 
-        Types.Triple = create( FF[4].Types.Double );
-        Types.Triple.name = "Triple";
+        Types.Color  = FF[4].Types.Color;
+        Types.None   = FF[4].Types.None;
+        Types.Triple = FF[4].Types.Double;
 
         // Real = Number ["." {Digit}]
         Types.Real = Types.scalar({
-            name: "Real",
             like: /^[+-]?\d+(?:\.\d*)?$/,
             isa: SGFGrove.Util.isNumber,
             parse: parseFloat
@@ -34,7 +31,6 @@
 
         // Text = { any charcter; "\]" = "]", "\\" = "\"}
         Types.Text = Types.scalar({
-            name: "Text",
             parse: function (v) { return v.replace(/\\([\]\\])/g, "$1"); },
             stringify: function (v) { return v.replace(/([\]\\])/g, "\\$1"); }
         });
@@ -105,15 +101,13 @@
     // Go (;GM[1]) specific properties
     // http://www.red-bean.com/sgf/ff1_3/ff1.html
     SGFGrove.define(1, 1, function (FF) {
-        var Types = SGFGrove.Util.create( FF[1].Types );
+        var Types = SGFGrove.Util.create(FF[1].Types);
 
         Types.Point = Types.scalar({
-            name: "Point",
             like: /^[a-s]{2}$/
         });
 
         Types.Move = Types.scalar({
-            name: "Move",
             like: /^(?:[a-s]{2}|tt)$/
         });
 
@@ -152,14 +146,14 @@
     // http://www.red-bean.com/sgf/ff1_3/ff3.html
     // http://www.red-bean.com/sgf/ff1_3/sgfhistory.html
     SGFGrove.define(3, null, function (FF) {
-        var Types = SGFGrove.Util.create( FF[1].Types );
+        var Types = SGFGrove.Util.create(FF[1].Types);
 
         Types.compose = FF[4].Types.compose;
 
         this.Types = Types;
 
-        this.properties = function (args) {
-            var t = args || Types;
+        this.properties = function (t) {
+            t = t || Types;
 
             return FF.properties(t, {
                 identifiers: /^[A-Z][A-Z0-9]?$/,
@@ -241,7 +235,7 @@
 
     // Go (;FF[3]GM[1]) specific properties
     SGFGrove.define(3, 1, function (FF) {
-        var Types = SGFGrove.Util.create( FF[3].Types );
+        var Types = SGFGrove.Util.create(FF[3].Types);
 
         Types.Point = FF[1][1].Types.Point;
         Types.Move  = FF[1][1].Types.Move;
