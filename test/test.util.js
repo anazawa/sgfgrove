@@ -39,7 +39,7 @@
         var Child = function () {};
             Child.prototype = create(Parent.prototype);
 
-        t.ok(new Child instanceof Parent, "object should inherit prototype");
+        t.ok(new Child() instanceof Parent, "object should inherit prototype");
 
         t.end();
     });
