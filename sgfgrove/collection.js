@@ -60,6 +60,20 @@
             return SGFGrove.parse(text, reviver);
         };
 
+        /*
+        that.parse = function (text, reviver) {
+            var trees = SGFGrove.parse(text || "", reviver);
+            var other = this.create();
+            var gameTree = this.createGameTree();
+
+            for (var i = 0; i < trees.length; i++) {
+                other[i] = gameTree.parse(trees[i]);
+            }
+
+            return other;
+        };
+        */
+
         that.toString = function (replacer, space) {
             return SGFGrove.stringify(this, replacer, space);
         };
@@ -79,34 +93,100 @@
         return that;
     };
 
-    collection.gameTree = function (tree, parent) {
-        tree = tree || [[{}], []];
+    var collection = function () {
+        var that = {};
 
-        var that, root;
+        that.create = function () {
+            var other = SGFGrove.Util.create(this);
+            other.initialize.apply(that, arguments);
+            return other;
+        };
 
-        if (!parent) {
-            that = collection.gameTree.node(tree[0][0]);
-            root = that;
-        }
-        else {
-            root = parent.root();
-            that = root.create(tree[0][0], parent);
-        }
+        that.initialize = function () {
+            this.length = 0;
+            this.push.apply(this, arguments);
+        };
 
-        var node = that;
-        for (var i = 1; i < tree[0].length; i++) {
-            node = root.create(tree[0][i], node);
-        }
+        that.createGameTree = function (tree) {
+            return collection.gameTree(tree);
+        };
 
-        for (var j = 0; j < tree[1].length; j++) {
-            collection.gameTree(tree[1][j], node);
-        }
+        that.parse = function (trees) {
+            trees = trees || [];
+
+            var other = this.create();
+            for (var i = 0; i < trees.length; i++) {
+                other.push(this.createGameTree(trees[i]));
+            }
+
+            return other;
+        };
+
+        that.parseString = function (text, reviver) {
+            return this.parse(SGFGrove.parse(text || "", reviver));
+        };
+
+        that.push    = Array.prototype.push;
+        that.toArray = Array.prototype.slice;
+
+        that.toString = function (replacer, space) {
+            return SGFGrove.stringify(this, replacer, space);
+        };
+
+        that.toSGF = function () {
+            return this.toArray();
+        };
+
+        that.toJSON = that.toSGF;
+
+        that.clone = function () {
+            var other = this.create();
+
+            for (var i = 0; i < this.length; i++) {
+                other.push(this[i].clone());
+            }
+
+            return other;
+        };
+
+        that.initialize.apply(that, arguments);
 
         return that;
     };
 
+    collection.gameTree = function (tree) {
+        var that = collection.gameTree.node();
+
+        that.parse = function (tree, parent) {
+            tree = tree || [[{}], []];
+
+            var other = this.create(this.parseProperties(tree[0][0]), parent);
+
+            var node = other;
+            for (var i = 1; i < tree[0].length; i++) {
+                node = this.create(this.parseProperties(tree[0][i]), node);
+            }
+
+            for (var j = 0; j < tree[1].length; j++) {
+                this.parse(tree[1][j], node);
+            }
+
+            return other;
+        };
+
+        that.parseProperties = function (properties) {
+            return properties;
+        };
+
+        return that.parse(tree);
+    };
+
     collection.gameTree.node = function () {
         var that = {};
+
+        collection.util.accessor(that, "parent");
+        collection.util.accessor(that, "children");
+        collection.util.accessor(that, "properties");
 
         collection.gameTree.node.serializable(that);
         collection.gameTree.node.mutable(that);
@@ -120,73 +200,42 @@
         };
 
         that.initialize = function (properties, parent) {
-            properties = properties || {};
-
-            this.parent   = null;
-            this.children = [];
-
-            if (parent) {
-                parent.appendChild(this);
+            if (properties !== undefined) {
+                this.properties(properties);
             }
-
-            this.setProperties(properties);
-
-            return;
+            if (parent) {
+                parent.append(this);
+            }
         };
 
-        that.getProperties = function () {
-            return this.properties;
+        that.buildParent = function () {
+            return null;
         };
 
-        that.setProperties = function (properties) {
-            this.properties = properties;
-            return;
-        };
-
-        that.getParent = function () {
-            return this.parent;
-        };
-
-        that.getChildren = function () {
-            return this.children.slice(0);
-        };
-
-        that.getChildCount = function () {
-            return this.children.length;
-        };
-
-        that.getChild = function (index) {
-            return this.children[index];
-        };
-
-        that.firstChild = function () {
-            return this.getChild(0);
-        };
-
-        that.lastChild = function () {
-            return this.getChild(Math.max(0, this.getChildCount()-1));
-        };
-
-        that.isRoot = function () {
-            return this.getParent() === null;
-        };
-
-        that.isLeaf = function () {
-            return this.getChildCount() === 0;
+        that.buildChildren = function () {
+            return [];
         };
 
         that.root = function () {
             var root = this;
 
             while (!root.isRoot()) {
-                root = root.getParent();
+                root = root.parent();
             }
 
             return root;
         };
 
         that.siblings = function () {
-            return !this.isRoot() ? this.getParent().getChildren() : null;
+            return !this.isRoot() ? this.parent().children() : null;
+        };
+
+        that.isRoot = function () {
+            return this.parent() === null;
+        };
+
+        that.isLeaf = function () {
+            return this.children().length === 0;
         };
 
         that.depth = function () {
@@ -194,17 +243,17 @@
 
             var node = this;
             while (!node.isRoot()) {
-                node = node.getParent();
+                node = node.parent();
                 depth += 1;
             }
 
             return depth;
         };
 
-       that.height = function () {
+        that.height = function () {
             var heights = [0];
 
-            var children = this.getChildren();
+            var children = this.children();
             for (var i = 0; i < children.length; i++) {
                 heights[i+1] = children[i].height()+1;
             }
@@ -212,8 +261,8 @@
             return Math.max.apply(null, heights);
         };
 
-        that.childIndexOf = function (child) {
-            var children = this.getChildren();
+        that.indexOf = function (child) {
+            var children = this.children();
             for (var i = 0; i < children.length; i++) {
                 if (children[i] === child) {
                     return i;
@@ -223,7 +272,7 @@
         };
 
         that.contains = function (other) {
-            for (var node = other; node; node = node.getParent()) {
+            for (var node = other; node; node = node.parent()) {
                 if (node === this) {
                     return true;
                 }
@@ -240,7 +289,7 @@
         that = that || {};
 
         that.toSGF = function () {
-            return [[this.getProperties()], this.getChildren()];
+            return [[this.properties()], this.children()];
         };
 
         that.toString = function (replacer, space) {
@@ -251,15 +300,15 @@
         };
 
         that.toJSON = function () {
-            var sequence = [this.getProperties()];
+            var sequence = [this.properties()];
 
             var node = this;
-            while (node.getChildCount() === 1) {
-                node = node.firstChild();
-                sequence.push(node.getProperties());
+            while (node.children().length === 1) {
+                node = node.children()[0];
+                sequence.push(node.properties());
             }
 
-            return [sequence, node.getChildren()];
+            return [sequence, node.children()];
         };
 
         return that;
@@ -268,57 +317,102 @@
     collection.gameTree.node.mutable = function (that) {
         that = that || {};
 
-        /*
-         *  Private method to set the parent node for this node.
-         *  This method cannot be invoked by client code.
-         */
-        var setParent = function (parent) {
-            this.parent = parent;
-            return parent;
+        that.prepend = function (node) {
+            this.insertAt(0, node);
         };
 
-        that.appendChild = function (child) {
-            return this.insertChild(child, this.getChildCount());
+        that.append = function (node) {
+            this.insertAt(this.children().length, node);
         };
 
-        that.insertChild = function (child, index) {
-            child.removeFromParent();
+        that.insertAt = function (index, node) {
+            var children = this.children();
+
+            if (node.contains(this)) {
+                throw new Error("Ancestor node given");
+            }
+
+            node.detach();
+            node.parent(this);
 
             if (!SGFGrove.Util.isInteger(index)) {
                 throw new Error("Not an integer");
             }
-            else if (index < 0 || index > this.getChildCount()) {
+            else if (index < 0 || index > children.length) {
                 throw new Error("Index out of bounds: "+index);
             }
-            else if (child.contains(this)) {
-                throw new Error("Ancestor node given");
-            }
 
-            this.children.splice(index, 0, child);
-            setParent.call(child, this);
+            children.splice(index, 0, node);
 
             return;
         };
 
-        that.removeChild = function (index) {
+        that.removeAt = function (index) {
+            var children = this.children();
+
             if (!SGFGrove.Util.isInteger(index)) {
                 throw new Error("Not an integer");
             }
-            else if (index < 0 || index >= this.getChildCount()) {
+            else if (index < 0 || index >= children.length) {
                 throw new Error("Index out of bounds: "+index);
             }
 
-            var child = this.children.splice(index, 1)[0];
-                setParent.call(child, null);
+            var node = children.splice(index, 1)[0];
+                node.parent(null);
 
-            return child;
+            return node;
         };
 
-        that.removeFromParent = function () {
-            if (!this.isRoot()) {
-                var parent = this.getParent();
-                parent.removeChild(parent.childIndexOf(this));
+        that.detach = function () {
+            var parent = this.parent();
+
+            if (parent) {
+                parent.removeAt(parent.indexOf(this));
             }
+
+            return parent;
+        };
+
+        that.empty = function () {
+            var children = this.children().slice(0);
+
+            for (var i = 0; i < children.length; i++) {
+                children[i].detach();
+            }
+
+            return children;
+        };
+
+        that.before = function (node) {
+            var parent = this.parent();
+
+            if (!parent) {
+                throw new Error("Has no siblings");
+            }
+
+            parent.insertAt(parent.indexOf(this), node);
+
+            return this;
+        };
+
+        that.after = function (node) {
+            this.replaceWith(node);
+            node.before(this);
+            return this;
+        };
+
+        that.replaceWith = function (node) {
+            var parent = this.parent();
+            var index = parent && parent.indexOf(this);
+
+            if (!parent) {
+                throw new Error("Has no parent");
+            }
+
+            this.detach();
+            parent.insertAt(index, node);
+
+            return this;
         };
 
         return that;
@@ -327,19 +421,19 @@
     collection.gameTree.node.cloneable = function (that) {
         that = that || {};
 
-        that.clone = function (prototype) {
-            var other = (prototype || this).create(this.cloneProperties());
+        that.clone = function () {
+            var other = this.create(this.cloneProperties());
 
-            var children = this.getChildren();
+            var children = this.children();
             for (var i = 0; i < children.length; i++) {
-                other.appendChild(children[i].clone(prototype || other));
+                other.append(children[i].clone());
             }
 
             return other;
         };
 
         that.cloneProperties = function (value) {
-            value = !arguments.length ? this.getProperties() : value;
+            value = !arguments.length ? this.properties() : value;
 
             var copy;
             if (!value || typeof value !== "object") {
@@ -372,24 +466,53 @@
     collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
-        that.forEach = function (callback, context) {
-            var stack = [this];
+        that.toIterator = function () {
+            return collection.gameTree.node.iterator(this);
+        };
 
-            while (stack.length) {
-                var node = stack.shift();
-                stack = node.getChildren().concat(stack);
-                callback.call(context, node);
+        that.forEach = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (iterator.hasNext()) {
+                callback.call(context, iterator.next());
             }
 
             return this;
         };
 
-        that.next = function () {
-            if (!this.isLeaf()) {
-                return this.firstChild();
+        that.find = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (iterator.hasNext()) {
+                var node = iterator.next();
+                if (callback.call(context, node)) {
+                    return node;
+                }
             }
 
-            for (var node = this; node; node = node.getParent()) {
+            return;
+        };
+
+        that.filter = function (callback, context) {
+            var iterator = this.toIterator();
+            var nodes = [];
+
+            while (iterator.hasNext()) {
+                var node = iterator.next();
+                if (callback.call(context, node)) {
+                    nodes.push(node);
+                }
+            }
+
+            return nodes;
+        };
+
+        that.next = function () {
+            if (!this.isLeaf()) {
+                return this.children()[0];
+            }
+
+            for (var node = this; node; node = node.parent()) {
                 var sibling = node.nextSibling();
                 if (sibling) {
                     return sibling;
@@ -403,26 +526,142 @@
             var node = this.previousSibling();
 
             if (!node) {
-                return this.getParent();
+                return this.parent();
             }
 
             while (!node.isLeaf()) {
-                node = node.lastChild();
+                var children = node.children();
+                node = children[children.length-1];
             }
 
             return node;
         };
 
         that.nextSibling = function () {
-            var parent = this.getParent();
-            var index = parent && parent.childIndexOf(this);
-            return parent ? parent.getChild(index+1) : null;
+            var parent = this.parent();
+            var index = parent && parent.indexOf(this);
+            return parent && parent.children()[index+1];
         };
 
         that.previousSibling = function () {
-            var parent = this.getParent();
-            var index = parent && parent.childIndexOf(this);
-            return parent ? parent.getChild(index-1) : null;
+            var parent = this.parent();
+            var index = parent && parent.indexOf(this);
+            return parent && parent.children()[index-1];
+        };
+
+        return that;
+    };
+
+    collection.gameTree.node.iterable.preorder = function () {
+        return collection.util.iterable.iterator(function () {
+        });
+    };
+ 
+    collection.gameTree.node.iterator = function () {
+        var that = collection.util.iterable({});
+
+        that.initialize = function (node) {
+            this.args = arguments;
+            this.length = 0;
+            this.push(node);
+        };
+
+        that.push = Array.prototype.push;
+        that.pop  = Array.prototype.pop;
+
+        that.next = function () {
+            if (this.length) {
+                var node = this.pop();
+                var children = node.children().slice(0);
+                this.push.apply(this, children.reverse());
+                return node;
+            }
+        };
+
+        that.hasNext = function () {
+            return this.length;
+        };
+
+        that.peek = function () {
+            return this[this.length-1];
+        };
+
+        that.toIterator = function () {
+            var other = SGFGrove.Util.create(this);
+            other.initialize.apply(other, this.args);
+            return other;
+        };
+
+        that.initialize.apply(that, arguments);
+
+        return that;
+    };
+
+    collection.util = {};
+
+    collection.util.accessor = function (that, key) {
+        that = that || {};
+
+        var builder = "build"+key.charAt(0).toUpperCase()+key.slice(1),
+            _key    = "_"+key;
+
+        that[key] = function (value) {
+            if (arguments.length) {
+                this[_key] = value;
+                return this;
+            }
+            if (!this.hasOwnProperty(_key) &&
+                typeof this[builder] === "function") {
+                this[_key] = this[builder]();
+            }
+            return this[_key];
+        };
+
+        return that;
+    };
+
+    collection.util.iterable = function (that) {
+        that = that || {};
+
+        that.toIterator = function () {
+            throw new Error("call to abstract method 'toIterator'");
+        };
+
+        that.forEach = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (iterator.hasNext()) {
+                callback.call(context, iterator.next());
+            }
+
+            return this;
+        };
+
+        that.find = function (callback, context) {
+            var iterator = this.toIterator();
+
+            while (iterator.hasNext()) {
+                var value = iterator.next();
+                if (callback.call(context, value)) {
+                    return value;
+                }
+            }
+
+            return;
+        };
+
+        that.filter = function (callback, context) {
+            var iterator = this.toIterator();
+            var values = [];
+
+            while (iterator.hasNext()) {
+                var value = iterator.next();
+                if (callback.call(context, value)) {
+                    values.push(value);
+                }
+            }
+
+            return values;
         };
 
         return that;

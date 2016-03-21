@@ -162,8 +162,6 @@ node.setProperties({ FF: 4 });
 node.getParent(); // => parentNode
 node.getChildren(); // => [child1, child2, ...]
 node.getChild(0); // => childNode
-node.firstChild(); // => firstChildNode
-node.lastChild(); // => lastChildNode
 
 node.isRoot(); // => true or false
 node.isLeaf(); // => true or false
@@ -196,22 +194,22 @@ node.removeFromParent();
 #### node = SGFGrove.collection.gameTree.node([properties[, parent]])
 
 Creates a new `SGFGrove.collection.gameTree.node` object.
-`properties` represents SGF properties this `node` contains
+`properties` represents SGF properties of this `node`
 and defaults to an empty object (`{}`).
 If `parent` node is provided, adds this `node` to the end of `parent`'s
 child array.
 
 ### Attributes
 
-#### object = node.getProperties()
+#### properties = node.getProperties()
 
-#### node.setProperties(object)
+#### node.setProperties(properties)
 
-Gets or sets an object that containts SGF properties.
+Gets or sets an object that represents SGF properties of this node.
 
 #### arrayOfNodes = node.getChildren()
 
-Returns an array of children of the current node.
+Returns an array of children of this node.
 If the node has no children, returns an empty array.
 
 #### parentNode = node.getParent()
@@ -220,7 +218,7 @@ Returns this node's parent or `null` if this node has no parent.
 
 ### Accessor Methods
 
-#### newNode = node.create(object)
+#### newNode = node.create(properties)
 
 Given an object that contains SGF properties, creates a new
 `SGFGrove.collection.gameTree.node` object that inherits all methods from
@@ -234,23 +232,13 @@ Returns the number of children of this node.
 
 Returns the child at the specified `index` in this node's child array.
 
-#### childNode = node.firstChild()
-
-Returns this node's first child. If this node has no children,
-returns `undefined`.
-
-#### childNode = node.lastChild()
-
-Returns this node's last child. If this node has no children,
-returns `undefined`.
-
-#### arrayOfNodes = node.siblings()
+#### arrayOfNodes = node.getSiblings()
 
 Return an array of siblings for this node.
 A node is its own sibling.
 If it has no parent, returns `null`.
 
-#### rootNode = node.root()
+#### rootNode = node.getRoot()
 
 Returns the root of the tree that contains this node.
 The root is the ancestor with a `null` parent.
@@ -298,6 +286,9 @@ A node is considered a descendant of itself.
 
 #### self = node.forEach(callback[, context])
 
+Executes the provided `callback` once for each node (including this node)
+of the (sub)tree rooted at this node in pre-order.
+
 ```js
 var leafCount = 0;
 node.forEach(function (n) {
@@ -309,13 +300,13 @@ node.forEach(function (n) {
 
 #### nextNode = node.next()
 
-Returns the node that follows this node in a preorder traversal
+Returns the node that follows this node in a pre-order traversal
 of this node's tree. Returns `undefined` if this node is the last
 node of the traversal.
 
 #### previousNode = node.previous()
 
-Returns the node that precedes this node in a preorder traversal
+Returns the node that precedes this node in a pre-order traversal
 of this node's tree. Returns `null` if this node is the first node of
 the traversal, the root of the tree.
 
