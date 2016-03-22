@@ -43,7 +43,7 @@
 
             return FF.properties(t, {
                 identifiers: /^[A-Z][A-Z0-9]?$/,
-                types: {
+                typeOf: {
                     B  : t.Move,
                     W  : t.Move,
                     C  : t.Text,
@@ -119,7 +119,7 @@
 
             var that = FF[1].properties(t);
 
-            that.mergeTypes({
+            that.merge({
                 BR : t.Text,
                 WR : t.Text,
                 HA : t.Number,
@@ -158,7 +158,7 @@
 
             return FF.properties(t, {
                 identifiers: /^[A-Z][A-Z0-9]?$/,
-                types: {
+                typeOf: {
                     // Moves
                     B  : t.Move,
                     W  : t.Move,
@@ -248,7 +248,7 @@
 
             var that = FF[3].properties(t);
             
-            that.mergeTypes({
+            that.merge({
                 KO : t.None,
                 RU : t.Text,
                 BR : t.Text,

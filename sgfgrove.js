@@ -77,7 +77,7 @@
 
         /* jshint boss:true */
         var parseGameTree = function (properties) {
-            var sequence = [], node, ident, values, v, type, str;
+            var sequence = [], node, ident, values, v, str;
             var children = [], child;
 
             if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
@@ -113,8 +113,9 @@
 
                 for ( ident in node ) {
                     if ( node.hasOwnProperty(ident) ) {
-                        type = properties.getType(ident);
-                        values = type.parse(node[ident]);
+                        //type = properties.getType(ident);
+                        //values = type.parse(node[ident]);
+                        values = properties.parse(ident, node[ident]);
                         if ( values !== undefined ) {
                             node[ident] = values;
                         }
@@ -276,8 +277,10 @@
                     properties = properties || createProperties(node);
 
                     for (ident in node) {
-                        if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
-                            values = properties.getType(ident).stringify(node[ident]);
+                        //if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
+                        if (node.hasOwnProperty(ident)) {
+                            //values = properties.getType(ident).stringify(node[ident]);
+                            values = properties.stringify(ident, node[ident]);
                             if (values) {
                                 partial.push(ident+"["+values.join("][")+"]");
                             }
@@ -449,29 +452,47 @@
             args = args || {};
 
             var that = {
-                types       : args.types       || {},
+                typeOf      : args.typeOf      || {},
                 defaultType : args.defaultType || t.Unknown,
                 identifiers : args.identifiers || { test: function () { return false; } }
             };
 
+            /*
             that.getType = function (ident) {
                 return this.types[ident] || this.defaultType;
             };
+            */
 
-            that.mergeTypes = function (other) {
-                var types = this.types;
+            that.merge = function (other) {
+                var typeOf = this.typeOf;
 
-                for ( var ident in other ) {
-                    if ( other.hasOwnProperty(ident) && other[ident] ) {
-                        types[ident] = other[ident];
+                for (var ident in other) {
+                    if (other.hasOwnProperty(ident) && other[ident]) {
+                        typeOf[ident] = other[ident];
                     }
                 }
 
-                return types;
+                return;
             };
 
+            /*
             that.isIdentifier = function (ident) {
                 return this.identifiers.test(ident);
+            };
+            */
+
+            that.parse = function (ident, values) {
+                if (this.identifiers.test(ident)) {
+                    var type = this.typeOf[ident] || this.defaultType;
+                    return type.parse(values);
+                }
+            };
+           
+            that.stringify = function (ident, values) {
+                if (this.identifiers.test(ident)) {
+                    var type = this.typeOf[ident] || this.defaultType;
+                    return type.stringify(values);
+                }
             };
 
             return that;
@@ -649,7 +670,7 @@
 
             return FF.properties(t, {
                 identifiers: /^[A-Z]+$/,
-                types: {
+                typeOf: {
                     // Move properties
                     B  : t.Move,
                     KO : t.None,
@@ -801,6 +822,7 @@
         }(Types));
 
         Types.elistOfPoint = Types.listOfPoint.toElist();
+
         Types.listOfStone  = Types.listOfPoint;
         Types.elistOfStone = Types.elistOfPoint;
     
@@ -811,7 +833,7 @@
 
             var that = FF[4].properties(t);
 
-            that.mergeTypes({
+            that.merge({
                 HA : t.Number,
                 KM : t.Real,
                 TB : t.elistOfPoint,
