@@ -8,8 +8,6 @@
 (function () {
     "use strict";
 
-    var FF = {};
-
     var SGFGrove = {
         VERSION: "1.0.2"
     };
@@ -45,119 +43,20 @@
         return Util;
     }());
 
-    FF.Types = (function () {
-        var Types = {};
-
-        Types.scalar = function (args) {
-            args = args || {};
-
-            var that = {};
-
-            var like = args.like || { test: function () { return true; } };
-            var parse = args.parse || function (v) { return v; };
-
-            var isa = args.isa || function (v) { return typeof v === "string" && like.test(v); };
-            var stringify = args.stringify || String;
-
-            that.parse = function (values) {
-                if (values.length === 1 && like.test(values[0])) {
-                    return parse(values[0]);
-                }
-            };
-
-            that.stringify = function (value) {
-                if (isa(value)) {
-                    return [stringify(value)];
-                }
-            };
-
-            return that;
-        };
-
-        // Number = ["+"|"-"] Digit {Digit}
-        Types.Number = Types.scalar({
-            like: /^[+-]?\d+$/,
-            isa: SGFGrove.Util.isInteger,
-            parse: function (v) { return parseInt(v, 10); }
-        });
-
-        Types.Unknown = {
-            parse: function (values) {
-                var result = [];
-
-                for (var i = 0; i < values.length; i++) {
-                    result[i] = values[i].replace(/\\\]/g, "]");
-                }
-
-                return result;
-            },
-            stringify: function (values) {
-                if (SGFGrove.Util.isArray(values)) {
-                    var result = [];
-
-                    for (var i = 0; i < values.length; i++) {
-                        if (typeof values[i] === "string") {
-                            result[i] = values[i].replace(/\]/g, "\\]");
-                        }
-                        else {
-                            return;
-                        }
-                    }
-
-                    return result;
-                }
-            }
-        };
-
-        return Types;
-    }());
-
-    FF.properties = function (t, args) {
-        t = t || FF.Types;
-        args = args || {};
-
-        var that = {
-            types       : args.types       || {},
-            defaultType : args.defaultType || t.Unknown,
-            identifiers : args.identifiers || { test: function () { return false; } }
-        };
-
-        that.getType = function (ident) {
-            return this.types[ident] || this.defaultType;
-        };
-
-        that.mergeTypes = function (other) {
-            var types = this.types;
-
-            for ( var ident in other ) {
-                if ( other.hasOwnProperty(ident) && other[ident] ) {
-                    types[ident] = other[ident];
-                }
-            }
-
-            return types;
-        };
-
-        that.isIdentifier = function (ident) {
-            return this.identifiers.test(ident);
-        };
-
-        return that;
-    };
-
-    FF.createProperties = function (ff, gm) {
-        if ( SGFGrove.Util.isInteger(ff) && FF.hasOwnProperty(ff) ) {
-            if ( SGFGrove.Util.isInteger(gm) && FF[ff].hasOwnProperty(gm) ) {
-                return FF[ff][gm].properties();
-            }
-            return FF[ff].properties();
-        }
-        return FF.properties();
-    };
-
     SGFGrove.parse = (function () {
-        var SGFNumber = FF.Types.Number;
         var text, lastIndex, reviver;
+
+        var createProperties = function (root) {
+            var FF4 = SGFGrove.getFileFormat({ FF: 4 });
+            var SGFNumber = FF4.Types.Number;
+
+            var fileFormat = SGFGrove.getFileFormat({
+                FF: root.hasOwnProperty("FF") ? SGFNumber.parse(root.FF) : 1,
+                GM: root.hasOwnProperty("GM") ? SGFNumber.parse(root.GM) : 1
+            });
+
+            return fileFormat.properties();
+        };
 
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
@@ -211,10 +110,7 @@
                     node[ident] = values;
                 }
 
-                properties = properties || FF.createProperties(
-                    node.hasOwnProperty("FF") ? SGFNumber.parse(node.FF) : 1,
-                    node.hasOwnProperty("GM") ? SGFNumber.parse(node.GM) : 1
-                );
+                properties = properties || createProperties(node);
 
                 for ( ident in node ) {
                     if ( node.hasOwnProperty(ident) ) {
@@ -302,6 +198,14 @@
         var isArray = SGFGrove.Util.isArray;
         var replacer, selected, indent, gap;
 
+        var createProperties = function (root) {
+            var fileFormat = SGFGrove.getFileFormat({
+                FF: root.hasOwnProperty("FF") ? root.FF : 1,
+                GM: root.hasOwnProperty("GM") ? root.GM : 1
+            });
+            return fileFormat.properties();
+        };
+
         var finalize = function (key, holder) {
             var value = holder[key];
             var i, k, v;
@@ -371,10 +275,7 @@
                     node = sequence[i] && typeof sequence[i] === "object" ? sequence[i] : {};
                     partial = [];
                         
-                    properties = properties || FF.createProperties(
-                        node.hasOwnProperty("FF") ? node.FF : 1,
-                        node.hasOwnProperty("GM") ? node.GM : 1
-                    );
+                    properties = properties || createProperties(node);
 
                     for (ident in node) {
                         if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
@@ -444,14 +345,40 @@
         };
     }());
 
-    SGFGrove.define = function (ff, gm, cb) {
-        var def = {};
+    var FF;
 
-        if ( ff && gm ) {
-            FF[ff] = FF[ff] || {};
-            FF[ff][gm] = cb.call(def, FF) || def;
+    SGFGrove.getFileFormat = function (args) {
+        args = args || {};
+
+        var ff = args.FF,
+            gm = args.GM;
+
+        if (SGFGrove.Util.isInteger(ff) && FF.hasOwnProperty(ff)) {
+            if (SGFGrove.Util.isInteger(gm) && FF[ff].GM.hasOwnProperty(gm)) {
+                return FF[ff].GM[gm];
+            }
+            return FF[ff];
         }
-        else if ( ff ) {
+
+        return FF;
+    };
+
+    //SGFGrove.createProperties = function (args) {
+    //    return SGFGrove.getFileFormat(args).properties();
+    //};
+
+    SGFGrove.setFileFormat = function (args, cb) {
+        args = args || {};
+
+        var def = {},
+            ff = args.FF,
+            gm = args.GM;
+
+        if (ff && gm) {
+            FF[ff].GM[gm] = cb.call(def, FF) || def;
+        }
+        else if (ff) {
+            def.GM = {};
             FF[ff] = cb.call(def, FF) || def;
         }
         else {
@@ -461,10 +388,110 @@
         return;
     };
 
+    // obsolete
+    SGFGrove.define = function (ff, gm, cb) {
+        SGFGrove.setFileFormat({ FF: ff, GM: gm }, cb);
+    };
+
+    SGFGrove.setFileFormat({}, function () {
+        var Types = {};
+
+        Types.scalar = function (args) {
+            args = args || {};
+
+            var that = {};
+
+            var like = args.like || { test: function () { return true; } };
+            var parse = args.parse || function (v) { return v; };
+
+            var isa = args.isa || function (v) { return typeof v === "string" && like.test(v); };
+            var stringify = args.stringify || String;
+
+            that.parse = function (values) {
+                if (values.length === 1 && like.test(values[0])) {
+                    return parse(values[0]);
+                }
+            };
+
+            that.stringify = function (value) {
+                if (isa(value)) {
+                    return [stringify(value)];
+                }
+            };
+
+            return that;
+        };
+
+        Types.Unknown = {
+            parse: function (values) {
+                var result = [];
+
+                for (var i = 0; i < values.length; i++) {
+                    result[i] = values[i].replace(/\\\]/g, "]");
+                }
+
+                return result;
+            },
+            stringify: function (values) {
+                if (SGFGrove.Util.isArray(values)) {
+                    var result = [];
+
+                    for (var i = 0; i < values.length; i++) {
+                        if (typeof values[i] === "string") {
+                            result[i] = values[i].replace(/\]/g, "\\]");
+                        }
+                        else {
+                            return;
+                        }
+                    }
+
+                    return result;
+                }
+            }
+        };
+
+        this.Types = Types;
+
+        this.properties = function (t, args) {
+            t = t || Types;
+            args = args || {};
+
+            var that = {
+                types       : args.types       || {},
+                defaultType : args.defaultType || t.Unknown,
+                identifiers : args.identifiers || { test: function () { return false; } }
+            };
+
+            that.getType = function (ident) {
+                return this.types[ident] || this.defaultType;
+            };
+
+            that.mergeTypes = function (other) {
+                var types = this.types;
+
+                for ( var ident in other ) {
+                    if ( other.hasOwnProperty(ident) && other[ident] ) {
+                        types[ident] = other[ident];
+                    }
+                }
+
+                return types;
+            };
+
+            that.isIdentifier = function (ident) {
+                return this.identifiers.test(ident);
+            };
+
+            return that;
+        };
+
+        return;
+    });
+
     // File Format (;FF[4])
     // http://www.red-bean.com/sgf/sgf4.html
     // http://www.red-bean.com/sgf/properties.html
-    SGFGrove.define(4, null, function (FF) {
+    SGFGrove.setFileFormat({ FF: 4 }, function (FF) {
         var Types = SGFGrove.Util.create(FF.Types);
         var isArray = SGFGrove.Util.isArray;
 
@@ -556,6 +583,13 @@
                 }
             };
         };
+
+        // Number = ["+"|"-"] Digit {Digit}
+        Types.Number = Types.scalar({
+            like: /^[+-]?\d+$/,
+            isa: SGFGrove.Util.isInteger,
+            parse: function (v) { return parseInt(v, 10); }
+        });
 
         // None = ""
         Types.None = Types.scalar({
@@ -705,7 +739,7 @@
 
     // Go (;FF[4]GM[1]) specific properties
     // http://www.red-bean.com/sgf/go.html
-    SGFGrove.define(4, 1, function (FF) {
+    SGFGrove.setFileFormat({ FF: 4, GM: 1 }, function (FF) {
         var create = SGFGrove.Util.create;
         var Types = create(FF[4].Types);
 

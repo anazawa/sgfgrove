@@ -12,7 +12,7 @@
 
     // Original File Format
     // http://www.red-bean.com/sgf/ff1_3/ff1.html
-    SGFGrove.define(1, null, function (FF) {
+    SGFGrove.setFileFormat({ FF: 1 }, function (FF) {
         var Types = SGFGrove.Util.create(FF.Types);
 
         Types.listOf  = FF[4].Types.listOf;
@@ -20,6 +20,7 @@
 
         Types.Color  = FF[4].Types.Color;
         Types.None   = FF[4].Types.None;
+        Types.Number = FF[4].Types.Number;
         Types.Triple = FF[4].Types.Double;
 
         // Real = Number ["." {Digit}]
@@ -100,7 +101,7 @@
 
     // Go (;GM[1]) specific properties
     // http://www.red-bean.com/sgf/ff1_3/ff1.html
-    SGFGrove.define(1, 1, function (FF) {
+    SGFGrove.setFileFormat({ FF: 1, GM: 1 }, function (FF) {
         var Types = SGFGrove.Util.create(FF[1].Types);
 
         Types.Point = Types.scalar({
@@ -138,14 +139,14 @@
     // "FF[2] was never made public. It's more or less identical to FF[1] -
     // the only changes known (to me) are that the BS/WS values had been
     // redefined." (http://www.red-bean.com/sgf/proplist_ff.html)
-    SGFGrove.define(2, null, function (FF) {
+    SGFGrove.setFileFormat({ FF: 2 }, function (FF) {
         return FF[1];
     });
 
     // File Format (;FF[3])
     // http://www.red-bean.com/sgf/ff1_3/ff3.html
     // http://www.red-bean.com/sgf/ff1_3/sgfhistory.html
-    SGFGrove.define(3, null, function (FF) {
+    SGFGrove.setFileFormat({ FF: 3 }, function (FF) {
         var Types = SGFGrove.Util.create(FF[1].Types);
 
         Types.compose = FF[4].Types.compose;
@@ -234,11 +235,11 @@
     });
 
     // Go (;FF[3]GM[1]) specific properties
-    SGFGrove.define(3, 1, function (FF) {
+    SGFGrove.setFileFormat({ FF: 3, GM: 1 }, function (FF) {
         var Types = SGFGrove.Util.create(FF[3].Types);
 
-        Types.Point = FF[1][1].Types.Point;
-        Types.Move  = FF[1][1].Types.Move;
+        Types.Point = FF[1].GM[1].Types.Point;
+        Types.Move  = FF[1].GM[1].Types.Move;
 
         this.Types = Types;
         

@@ -4,15 +4,9 @@
 
     var test = require("tape");
     var SGFGrove = require("../sgfgrove.js");
+    var FF = SGFGrove.getFileFormat();
 
-    // FIXME
-    var FF;
-    SGFGrove.define(null, null, function (ff) {
-        FF = ff;
-        return ff;
-    });
-
-    test("FF[*] Number", function (t) {
+    test("FF[4] Number", function (t) {
         var SGFNumber = FF[4].Types.Number;
 
         t.equal( SGFNumber.parse(["123"]), 123 );
@@ -122,7 +116,7 @@
     });
 
     test("FF[4]GM[1] Point", function (t) {
-        var Point = FF[4][1].Types.Point;
+        var Point = FF[4].GM[1].Types.Point;
 
         t.equal( Point.parse(["aa"]), "aa" );
         t.equal( Point.parse(["AA"]), "AA" );
@@ -136,7 +130,7 @@
     });
 
     test("FF[4]GM[1] Move", function (t) {
-        var Move = FF[4][1].Types.Move;
+        var Move = FF[4].GM[1].Types.Move;
 
         t.equal( Move.parse(["aa"]), "aa" );
         t.equal( Move.parse(["AA"]), "AA" );
@@ -150,7 +144,7 @@
     });
 
     test("FF[4]GM[1] list of Point", function (t) {
-        var listOfPoint = FF[4][1].Types.listOfPoint;
+        var listOfPoint = FF[4].GM[1].Types.listOfPoint;
 
         t.deepEqual( listOfPoint.parse(["aa", "bb"]), ["aa", "bb"] );
 
