@@ -4,7 +4,7 @@
 
     var test = require("tape");
     var SGFGrove = require("../sgfgrove.js");
-    var FF = SGFGrove.getFileFormat();
+    var FF = SGFGrove.fileFormat();
 
     test("FF[4] Number", function (t) {
         var SGFNumber = FF[4].Types.Number;

@@ -12,7 +12,7 @@
         VERSION: "1.0.2"
     };
 
-    if ( typeof exports !== "undefined" ) {
+    if (typeof exports !== "undefined") {
         module.exports = SGFGrove; // jshint ignore:line
     }
     else {
@@ -47,10 +47,9 @@
         var text, lastIndex, reviver;
 
         var createProperties = function (root) {
-            var FF4 = SGFGrove.getFileFormat({ FF: 4 });
-            var SGFNumber = FF4.Types.Number;
+            var SGFNumber = SGFGrove.fileFormat({ FF: 4 }).Types.Number;
 
-            var fileFormat = SGFGrove.getFileFormat({
+            var fileFormat = SGFGrove.fileFormat({
                 FF: root.hasOwnProperty("FF") ? SGFNumber.parse(root.FF) : 1,
                 GM: root.hasOwnProperty("GM") ? SGFNumber.parse(root.GM) : 1
             });
@@ -121,7 +120,6 @@
                         }
                         else {
                             str = ident+"["+node[ident].join("][")+"]";
-                            //throw new SyntaxError(type.name+" expected, got "+str);
                             throw new SyntaxError("Invalid Property: "+str);
                         }
                     }
@@ -199,7 +197,7 @@
         var replacer, selected, indent, gap;
 
         var createProperties = function (root) {
-            var fileFormat = SGFGrove.getFileFormat({
+            var fileFormat = SGFGrove.fileFormat({
                 FF: root.hasOwnProperty("FF") ? root.FF : 1,
                 GM: root.hasOwnProperty("GM") ? root.GM : 1
             });
@@ -345,55 +343,49 @@
         };
     }());
 
-    var FF;
+    SGFGrove.fileFormat = (function () {
+        var isInteger = SGFGrove.Util.isInteger;
+        var FF;
 
-    SGFGrove.getFileFormat = function (args) {
-        args = args || {};
+        return function (args, cb) {
+            args = args || {};
 
-        var ff = args.FF,
-            gm = args.GM;
+            var ff = args.FF,
+                gm = args.GM;
 
-        if (SGFGrove.Util.isInteger(ff) && FF.hasOwnProperty(ff)) {
-            if (SGFGrove.Util.isInteger(gm) && FF[ff].GM.hasOwnProperty(gm)) {
-                return FF[ff].GM[gm];
+            if (typeof cb !== "function") {
+                if (isInteger(ff) && FF.hasOwnProperty(ff)) {
+                    if (isInteger(gm) && FF[ff].GM.hasOwnProperty(gm)) {
+                        return FF[ff].GM[gm];
+                    }
+                    return FF[ff];
+                }
+                return FF;
             }
-            return FF[ff];
-        }
 
-        return FF;
-    };
+            var def = {};
 
-    //SGFGrove.createProperties = function (args) {
-    //    return SGFGrove.getFileFormat(args).properties();
-    //};
-
-    SGFGrove.setFileFormat = function (args, cb) {
-        args = args || {};
-
-        var def = {},
-            ff = args.FF,
-            gm = args.GM;
-
-        if (ff && gm) {
-            FF[ff].GM[gm] = cb.call(def, FF) || def;
-        }
-        else if (ff) {
-            def.GM = {};
-            FF[ff] = cb.call(def, FF) || def;
-        }
-        else {
-            FF = cb.call(def, FF) || def;
-        }
-
-        return;
-    };
+            if (ff && gm) {
+                FF[ff].GM[gm] = cb.call(def, FF) || def;
+            }
+            else if (ff) {
+                def.GM = {};
+                FF[ff] = cb.call(def, FF) || def;
+            }
+            else {
+                FF = cb.call(def, FF) || def;
+            }
+ 
+            return;
+        };
+    }());
 
     // obsolete
     SGFGrove.define = function (ff, gm, cb) {
-        SGFGrove.setFileFormat({ FF: ff, GM: gm }, cb);
+        SGFGrove.fileFormat({ FF: ff, GM: gm }, cb);
     };
 
-    SGFGrove.setFileFormat({}, function () {
+    SGFGrove.fileFormat({}, function () {
         var Types = {};
 
         Types.scalar = function (args) {
@@ -491,7 +483,7 @@
     // File Format (;FF[4])
     // http://www.red-bean.com/sgf/sgf4.html
     // http://www.red-bean.com/sgf/properties.html
-    SGFGrove.setFileFormat({ FF: 4 }, function (FF) {
+    SGFGrove.fileFormat({ FF: 4 }, function (FF) {
         var Types = SGFGrove.Util.create(FF.Types);
         var isArray = SGFGrove.Util.isArray;
 
@@ -739,9 +731,8 @@
 
     // Go (;FF[4]GM[1]) specific properties
     // http://www.red-bean.com/sgf/go.html
-    SGFGrove.setFileFormat({ FF: 4, GM: 1 }, function (FF) {
-        var create = SGFGrove.Util.create;
-        var Types = create(FF[4].Types);
+    SGFGrove.fileFormat({ FF: 4, GM: 1 }, function (FF) {
+        var Types = SGFGrove.Util.create(FF[4].Types);
 
         var expandPointList = (function () {
             var coord2char = "abcdefghijklmnopqrstuvwxyz";
