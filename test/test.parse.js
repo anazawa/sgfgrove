@@ -113,6 +113,14 @@
             "unescaped closing bracket"
         );
 
+        t.throws(
+            function () {
+                SGF.parse("(;FF[4]CoPyright[copyright])");
+            },
+            SyntaxError,
+            "FF[4] does not allow lower-case letters in PropIdent"
+        );
+
         t.end();
     });
 

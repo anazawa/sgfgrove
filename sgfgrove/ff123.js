@@ -158,6 +158,7 @@
 
             return FF.properties(t, {
                 identifiers: /^[A-Z][A-Z0-9]?$/,
+                replacer: function (id) { return id.replace(/[a-z]/g, ""); },
                 typeOf: {
                     // Moves
                     B  : t.Move,

@@ -61,6 +61,12 @@
         // the \G assertion (/\G.../gc). See also:
         // http://perldoc.perl.org/perlop.html#Regexp-Quote-Like-Operators
 
+        var openParen  = /^\s*\(\s*/g,
+            closeParen = /^\)\s*/g,
+            semicolon  = /^;\s*/g,
+            propIdent  = /^([a-zA-Z0-9]+)\s*/g,
+            propValue  = /^\[((?:\\]|[^\]])*)\]\s*/g;
+
         var test = function () {
             var bool = this.test( text.slice(lastIndex) );
             lastIndex += this.lastIndex;
@@ -75,34 +81,39 @@
             return array;
         };
 
-        /* jshint boss:true */
         var parseGameTree = function (properties) {
-            var sequence = [], node, ident, values, v, str;
-            var children = [], child;
+            var sequence = [];
 
-            if ( !test.call(/^\s*\(\s*/g) ) { // start of GameTree
+            if (!test.call(openParen)) {
                 return;
             }
 
-            while ( test.call(/^;\s*/g) ) { // start of Node
-                node = {};
+            while (test.call(semicolon)) {
+                var node = {};
 
-                while ( ident = exec.call(/^([a-zA-Z0-9]+)\s*/g) ) { // PropIdent(-like)
-                    ident = ident[1].replace(/[a-z]/g, ""); // for FF[3]
-                    values = [];
+                while (true) {
+                    var ident = exec.call(propIdent);
 
-                    if ( !ident ) {
-                        throw new SyntaxError("PropIdent is missing");
+                    if (ident) {
+                        ident = ident[1];
                     }
-                    else if ( node.hasOwnProperty(ident) ) {
+                    else {
+                        break;
+                    }
+
+                    if (node.hasOwnProperty(ident)) {
                         throw new SyntaxError("Property "+ident+" already exists");
                     }
 
-                    while ( v = exec.call(/^\[((?:\\]|[^\]])*)\]\s*/g) ) { // PropValue
-                        values.push( v[1] );
+                    var values = [];
+
+                    while (true) {
+                        var v = exec.call(propValue);
+                        if (v) { values.push(v[1]); }
+                          else { break; }
                     }
 
-                    if ( !values.length ) {
+                    if (!values.length) {
                         throw new SyntaxError("PropValue of "+ident+" is missing");
                     }
 
@@ -110,47 +121,61 @@
                 }
 
                 properties = properties || createProperties(node);
+                node = parseProperties(node, properties);
 
-                for ( ident in node ) {
-                    if ( node.hasOwnProperty(ident) ) {
-                        //type = properties.getType(ident);
-                        //values = type.parse(node[ident]);
-                        values = properties.parse(ident, node[ident]);
-                        if ( values !== undefined ) {
-                            node[ident] = values;
-                        }
-                        else {
-                            str = ident+"["+node[ident].join("][")+"]";
-                            throw new SyntaxError("Invalid Property: "+str);
-                        }
-                    }
-                }
- 
-                sequence.push( node );
+                sequence.push(node);
             }
 
-            if ( !sequence.length ) {
+            if (!sequence.length) {
                 throw new SyntaxError("GameTree does not contain any Nodes");
             }
 
-            while ( child = parseGameTree(properties) ) {
-                children.push( child );
+            var children = [];
+
+            while (true) {
+                var child = parseGameTree(properties);
+                if (child) { children.push(child); }
+                      else { break; }
             }
 
-            if ( !test.call(/^\)\s*/g) ) { // end of GameTree
+            if (!test.call(closeParen)) { // end of GameTree
                 throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
             }
 
             // (;a(;b)) => (;a;b)
-            if ( children.length === 1 ) {
-                sequence = sequence.concat( children[0][0] );
+            if (children.length === 1) {
+                sequence = sequence.concat(children[0][0]);
                 children = children[0][1];
             }
 
             return [sequence, children];
         };
-        /* jshint boss:false */
 
+        var parseProperties = function (node, properties) {
+            var n = {};
+
+            for (var ident in node) {
+                if (node.hasOwnProperty(ident)) {
+                    var prop = properties.parse(ident, node[ident]) || [];
+
+                    if (!prop[0]) {
+                        throw new SyntaxError("PropIdent is missing");
+                    }
+                    else if (n.hasOwnProperty(prop[0])) {
+                        throw new SyntaxError("Property "+prop[0]+" already exists");
+                    }
+                    else if (prop[1] === undefined) {
+                        var str = "["+node[ident].join("][")+"]";
+                        throw new SyntaxError("Invalid PropValue of "+ident+": "+str);
+                    }
+
+                    n[prop[0]] = prop[1];
+                }
+            }
+
+            return n;
+        };
+ 
         // Copied and rearranged from json2.js so that we can pass the same
         // callback to both of SGF.parse and JSON.parse
         // https://github.com/douglascrockford/JSON-js/blob/master/json2.js
@@ -454,7 +479,8 @@
             var that = {
                 typeOf      : args.typeOf      || {},
                 defaultType : args.defaultType || t.Unknown,
-                identifiers : args.identifiers || { test: function () { return false; } }
+                identifiers : args.identifiers || { test: function () { return false; } },
+                replacer    : args.replacer    || function (id) { return id; },
             };
 
             /*
@@ -482,12 +508,13 @@
             */
 
             that.parse = function (ident, values) {
+                ident = this.replacer(ident);
                 if (this.identifiers.test(ident)) {
                     var type = this.typeOf[ident] || this.defaultType;
-                    return type.parse(values);
+                    return [ident, type.parse(values)];
                 }
             };
-           
+
             that.stringify = function (ident, values) {
                 if (this.identifiers.test(ident)) {
                     var type = this.typeOf[ident] || this.defaultType;
