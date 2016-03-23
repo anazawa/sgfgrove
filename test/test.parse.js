@@ -138,12 +138,20 @@
     */
 
     test("SGFGrove.parse: FF[3] PropIdent", function (t) {
-        var collection = SGF.parse("(;FF[3]CoPyright[copyright])");
+        var collection = SGF.parse("(;FF[3]CoPyright[foo])");
 
         t.deepEqual(
             collection,
-            [[[{ FF: 3, CP: "copyright" }], []]],
+            [[[{ FF: 3, CP: "foo" }], []]],
             "lower-case letters should be ignored"
+        );
+
+        t.throws(
+            function () {
+                SGF.parse("(;FF[3]CP[foo]CoPyright[bar])");
+            },
+            SyntaxError,
+            "duplicate property"
         );
 
         t.end();

@@ -46,26 +46,16 @@
     SGFGrove.parse = (function () {
         var text, lastIndex, reviver;
 
-        var createProperties = function (root) {
-            var SGFNumber = SGFGrove.fileFormat({ FF: 4 }).Types.Number;
-
-            var fileFormat = SGFGrove.fileFormat({
-                FF: root.hasOwnProperty("FF") ? SGFNumber.parse(root.FF) : 1,
-                GM: root.hasOwnProperty("GM") ? SGFNumber.parse(root.GM) : 1
-            });
-
-            return fileFormat.properties();
-        };
-
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
         // http://perldoc.perl.org/perlop.html#Regexp-Quote-Like-Operators
 
-        var openParen  = /^\s*\(\s*/g,
-            closeParen = /^\)\s*/g,
-            semicolon  = /^;\s*/g,
-            propIdent  = /^([a-zA-Z0-9]+)\s*/g,
-            propValue  = /^\[((?:\\]|[^\]])*)\]\s*/g;
+        var Whitespaces = /^\s*/g,
+            OpenParen   = /^\(\s*/g,
+            CloseParen  = /^\)\s*/g,
+            Semicolon   = /^;\s*/g,
+            PropIdent   = /^([a-zA-Z0-9]+)\s*/g,
+            PropValue   = /^\[((?:\\]|[^\]])*)\]\s*/g;
 
         var test = function () {
             var bool = this.test( text.slice(lastIndex) );
@@ -84,15 +74,15 @@
         var parseGameTree = function (properties) {
             var sequence = [];
 
-            if (!test.call(openParen)) {
+            if (!test.call(OpenParen)) {
                 return;
             }
 
-            while (test.call(semicolon)) {
+            while (test.call(Semicolon)) {
                 var node = {};
 
                 while (true) {
-                    var ident = exec.call(propIdent);
+                    var ident = exec.call(PropIdent);
 
                     if (ident) {
                         ident = ident[1];
@@ -108,7 +98,7 @@
                     var values = [];
 
                     while (true) {
-                        var v = exec.call(propValue);
+                        var v = exec.call(PropValue);
                         if (v) { values.push(v[1]); }
                           else { break; }
                     }
@@ -138,7 +128,7 @@
                       else { break; }
             }
 
-            if (!test.call(closeParen)) { // end of GameTree
+            if (!test.call(CloseParen)) { // end of GameTree
                 throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
             }
 
@@ -151,22 +141,33 @@
             return [sequence, children];
         };
 
+        var createProperties = function (root) {
+            var SGFNumber = SGFGrove.fileFormat({ FF: 4 }).Types.Number;
+
+            var fileFormat = SGFGrove.fileFormat({
+                FF : SGFNumber.parse(root.FF || []) || 1,
+                GM : SGFNumber.parse(root.GM || []) || 1
+            });
+
+            return fileFormat.properties();
+        };
+
         var parseProperties = function (node, properties) {
             var n = {};
 
             for (var ident in node) {
                 if (node.hasOwnProperty(ident)) {
-                    var prop = properties.parse(ident, node[ident]) || [];
+                    var prop = properties.parse(ident, node[ident]);
 
-                    if (!prop[0]) {
-                        throw new SyntaxError("PropIdent is missing");
+                    if (!prop) {
+                        throw new SyntaxError("Invalid PropIdent "+ident);
                     }
                     else if (n.hasOwnProperty(prop[0])) {
                         throw new SyntaxError("Property "+prop[0]+" already exists");
                     }
                     else if (prop[1] === undefined) {
-                        var str = "["+node[ident].join("][")+"]";
-                        throw new SyntaxError("Invalid PropValue of "+ident+": "+str);
+                        var str = ident+"["+node[ident].join("][")+"]";
+                        throw new SyntaxError("Invalid PropValue "+str);
                     }
 
                     n[prop[0]] = prop[1];
@@ -182,11 +183,11 @@
         var walk = function (holder, key) {
             var value = holder[key];
 
-            if ( value && typeof value === "object" ) {
-                for ( var k in value ) {
-                    if ( value.hasOwnProperty(k) ) {
+            if (value && typeof value === "object") {
+                for (var k in value) {
+                    if (value.hasOwnProperty(k)) {
                         var v = walk(value, k);
-                        if ( v !== undefined ) {
+                        if (v !== undefined) {
                             value[k] = v;
                         }
                         else {
@@ -200,17 +201,21 @@
         };
 
         return function (source, rev) {
-            var collection = [], gameTree;
+            var collection = [];
 
             text = String(source);
             lastIndex = 0;
             reviver = typeof rev === "function" && rev;
 
-            while ( gameTree = parseGameTree() ) { // jshint ignore:line
-                collection.push( gameTree );
+            test.call(Whitespaces);
+
+            while (true) {
+                var gameTree = parseGameTree();
+                if (gameTree) { collection.push(gameTree); }
+                         else { break; }
             }
 
-            if ( lastIndex !== text.length ) {
+            if (lastIndex !== text.length) {
                 throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
             }
 
@@ -480,35 +485,22 @@
                 typeOf      : args.typeOf      || {},
                 defaultType : args.defaultType || t.Unknown,
                 identifiers : args.identifiers || { test: function () { return false; } },
-                replacer    : args.replacer    || function (id) { return id; },
+                replacer    : args.replacer
             };
-
-            /*
-            that.getType = function (ident) {
-                return this.types[ident] || this.defaultType;
-            };
-            */
 
             that.merge = function (other) {
-                var typeOf = this.typeOf;
-
                 for (var ident in other) {
                     if (other.hasOwnProperty(ident) && other[ident]) {
-                        typeOf[ident] = other[ident];
+                        this.typeOf[ident] = other[ident];
                     }
                 }
-
-                return;
+                return this;
             };
-
-            /*
-            that.isIdentifier = function (ident) {
-                return this.identifiers.test(ident);
-            };
-            */
 
             that.parse = function (ident, values) {
-                ident = this.replacer(ident);
+                if (this.replacer) {
+                    ident = this.replacer.call(null, ident);
+                }
                 if (this.identifiers.test(ident)) {
                     var type = this.typeOf[ident] || this.defaultType;
                     return [ident, type.parse(values)];
@@ -648,14 +640,14 @@
 
         // Double = ("1" | "2")
         Types.Double = Types.scalar({
-            like: { test: function (v) { return v === "1" || v === "2"; } },
+            like: /^[12]$/,
             isa: function (v) { return v === 1 || v === 2; },
             parse: parseInt
         });
 
         // Color = ("B" | "W")
         Types.Color = Types.scalar({
-            like: { test: function (v) { return v === "B" || v === "W"; } }
+            like: /^[BW]$/
         });
 
         // Text = { any character }

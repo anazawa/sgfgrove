@@ -10,6 +10,7 @@ Type-aware SGF parser/composer intended for the browser
     - [The Game Data Structure](#the-game-data-structure)
     - [SGF Property Types](#sgf-property-types)
     - [SGF Properties](#sgf-properties)
+    - [SGF File Format Detection](#sgf-file-format-detection)
 - [Diagnostics](#diagnostics)
 - [Exapmles](#examples)
 - [Extensions](#extensions)
@@ -109,15 +110,22 @@ For example, "FOO" and "FOOBAR" are valid FF[4] property names.
 "foo", "fooBar" and "foo_bar" are ignored. If a property value has
 `toSGF` method, the value is replaced with the return value of the method.
 
-#### SGFGrove.define( ff, gm, function (FF) {...} )
+#### fileFormat = SGFGrove.fileFormat({ FF: ff[, GM: gm] })
 
-Can be used to define game-specific types and properties.
+#### SGFGrove.fileFormat({ FF: ff[, GM: gm] }, function (FF) {...})
+
+Can be used to get or set game-specific types and properties.
 It's intended for those who writes extensions for this module.
 See the source code for details.
 
 This module only comes with the FF[4] definition and the default game type
 GM[1] \(Go). Other file formats or game types are provided by the SGFGrove
 extensions, such as `sgfgrove/ff123.js` that defines FF[1]-FF[3] properties.
+
+#### SGFGrove.define( ff, gm, function (FF) {...} )
+
+This method is obsolete and will be removed in `1.0.4`.
+Use #fileFormat instead.
 
 ### The Game Data Structure
 
@@ -349,17 +357,38 @@ and properties to this module by using the #define method.
 All the properties of the unknown file format are treated as an unknown
 property.
 
+### SGF File Format Detection
+
+SGF file formats and game types are detected properly in most cases,
+but corner cases exist because of the FF[3] PropIdent definition
+that allows us to use lower-case letters in a PropIdent, such as `CoPyright`.
+
+Note that this module handles FF[3] PropIdents properly except for
+`FF` and `GM` properties by removing lower-case letters, e.g., `CoPyright`
+is converted into `CP`.
+
+    SGF                 FF  GM  Notes
+    ------------------------------------------------------------------
+    (;)                  1   1
+    (;FF[invalid])       1   1  FF prop. is unknown to FF[1]
+    (;FF[1])             1   1
+    (;FF[2])             2   1
+    (;FF[3])             3   1
+    (;FF[4])             4   1
+    (;FileFormat[3])     -   -  Unsupported (cause SyntaxError)
+    (;FF[3]GaMetype[2])  3   1  Unsupported (GM should be 2)
+
 ## Diagnostics
 
-### SyntaxError: Unexpected token '%s'
+### SyntaxError: Unexpected token %s
 
-You tried to #parse a malformed SGF string.
+You tried to #parse a malformed SGF text.
 
 ```js
 SGFGrove.parse("(broken)"); // => SyntaxError
 ```
 
-### SyntaxError: Property '%s' already exists
+### SyntaxError: Property %s already exists
 
 You tried to #parse a SGF node that has a duplicate property.
 It's prohibited by the SGF specification.
@@ -385,12 +414,20 @@ It's prohibited by the SGF specification.
 SGFGrove.parse("()"); // => SyntaxError
 ```
 
-### SyntaxError: %s expected, got %s
+### SyntaxError: Invalid PropIdent %s
 
-You tried to #parse a malformed property value.
+You tried to #parse a property whose identifier is invalid.
 
 ```js
-SGFGrove.parse("(;FF[four])"); // => TypeError
+SGFGrove.parse("(;FF[4]1NVALID[])"); // => SyntaxError
+```
+
+### SyntaxError: Invalid PropValue %s
+
+You tried to #parse a property whose value is invalid.
+
+```js
+SGFGrove.parse("(;FF[4];B[invalid])"); // => SyntaxError
 ```
 
 ## Examples
@@ -569,18 +606,16 @@ var nodeId = 0;
 // and so the following code may be wrong. This example is based on
 // the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
 
-SGFGrove.define(4, 2, function (FF) {
+SGFGrove.fileFormat({ FF: 4, GM: 2}, function (FF) {
     var Types = Object.create( FF[4].Types ); // inherit from FF[4] types
 
     // define Othello-specific type
     Types.Point = Types.scalar({
-        name: "Point",
         like: /^[a-h][1-8]$/ // "a1"-"h8"
     });
 
     // Point becomes Move
-    Types.Move = Object.create( Types.Point );
-    Types.Move.name = "Move";
+    Types.Move = Types.Point;
 
     this.Types = Types;
 
@@ -591,7 +626,7 @@ SGFGrove.define(4, 2, function (FF) {
         var that = FF[4].properties(t);
 
         // add Othello-specific properties
-        that.mergeTypes({
+        that.merge({
             PE: t.Number,
             OS: t.Number,
             OE: t.Number
