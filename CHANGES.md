@@ -1,5 +1,12 @@
 Revision history for SGFGrove.js.
 
+- add "SGF File Format Detection" to README
+- add #fileFormat
+- #define is obsolete and will be removed in 1.0.4. Use #fileFormat intead
+- allow lower-case letters in PropIdents only in FF[3] files
+- add tests for FF[4] Number
+- add tests for SGFGrove.Util
+
 ## 1.0.2 Sep 14th, 2015
 
 - add a table of contents to README.md

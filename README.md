@@ -363,10 +363,6 @@ SGF file formats and game types are detected properly in most cases,
 but corner cases exist because of the FF[3] PropIdent definition
 that allows us to use lower-case letters in a PropIdent, such as `CoPyright`.
 
-Note that this module handles FF[3] PropIdents properly except for
-`FF` and `GM` properties by removing lower-case letters, e.g., `CoPyright`
-is converted into `CP`.
-
     SGF                 FF  GM  Notes
     ------------------------------------------------------------------
     (;)                  1   1
@@ -478,7 +474,7 @@ SGFGrove.stringify(sgf, function (key, value) {
 // => "(;FF[4];B[ab];W[ba])"
 ```
 
-## Remove Comments
+### Remove Comments
 
 ```js
 SGFGrove.parse("(;FF[4]C[foo: hi\nbar: gg])", function (key, value) {
@@ -546,57 +542,27 @@ SGFGrove.stringify(sgf, ["FF", "B", "W"]);
 ### GameTree Traversal
 
 ```js
-var trees = SGFGrove.parse("(;FF[4])"); // => [Collection]
-var nodeId = 0;
+var collection = SGFGrove.parse("(;FF[4])"); // => [Collection]
+var gameTree = collection[0]; // => [GameTree]
 
-(function walk (subtrees) {
-    subtrees;
-    // => [
-    //     [GameTree],
-    //     [GameTree],
-    //     ...
-    //     [GameTree]
-    // ]
-   
-    for ( var i = 0; i < subtrees.length; i++ ) {
-        var subtree = subtrees[i];
-        // => [
-        //     [{Node}, {Node}, ..., {Node}],
-        //     [[GameTree], [GameTree], ..., [GameTree]]
-        // ]
+// Perform depth-first traversal on gameTree in pre-order
+(function traverse(tree) {
+    var sequence = tree[0]; // => [{Node}, {Node}, ..., {Node}]
 
-        var sequence = subtree[0];
-        // => [{Node}, {Node}, ..., {Node}]
-   
-        if ( subtrees === trees ) {
-            // 'subtree' is the direct descendant of Collection,
-            // not trees within other trees
-   
-            // one of root nodes
-            sequence[0];
-            // => {
-            //     FF: 4
-            // }
-        }
-   
-        for ( var j = 0; j < sequence.length; j++ ) {
-            var node = sequence[j];
-   
-            node.id = nodeId; // assign node id
-  
-            node; 
-            // => {
-            //     id: 0,
-            //     FF: 4
-            // }
-   
-            nodeId += 1;
-        }
-   
-        // subtree[1] refers to sub subtrees
-        walk( subtree[1] );
+    // iterate through sequence
+    for (var i = 0; i < sequence.length; i++) {
+        var node = sequence[i]; // => {Node}
+        // do something with node
     }
-}(trees));
+
+    var children = tree[1]; // => [[GameTree], [GameTree], ..., [GameTree]]
+
+    // iterate through children
+    for (var j = 0; j < children.length; j++) {
+        var child = children[j]; // => [GameTree]
+        traverse(child); // step into child GameTree
+    }
+}(gameTree));
 ```
 
 ### Define Othello (FF[4]GM[2]) handlers
@@ -606,8 +572,9 @@ var nodeId = 0;
 // and so the following code may be wrong. This example is based on
 // the FF[1] description (http://www.red-bean.com/sgf/ff1_3/ff1.html)
 
-SGFGrove.fileFormat({ FF: 4, GM: 2}, function (FF) {
-    var Types = Object.create( FF[4].Types ); // inherit from FF[4] types
+SGFGrove.fileFormat({ FF: 4, GM: 2 }, function (FF) {
+    // inherit from FF[4] types
+    var Types = Object.create(FF[4].Types);
 
     // define Othello-specific type
     Types.Point = Types.scalar({
@@ -627,9 +594,9 @@ SGFGrove.fileFormat({ FF: 4, GM: 2}, function (FF) {
 
         // add Othello-specific properties
         that.merge({
-            PE: t.Number,
-            OS: t.Number,
-            OE: t.Number
+            PE : t.Number,
+            OS : t.Number,
+            OE : t.Number
         });
 
         return that;
@@ -649,6 +616,9 @@ var othello = SGFGrove.parse("(;FF[4]GM[2];B[a1])");
 //     }],
 //     []
 // ]]
+
+// Rejects invalid game records properly
+SGFGrove.parse("(;FF[4]GM[2];B[i9])"); // => SyntaxError
 ```
 
 ## Extensions
@@ -702,7 +672,14 @@ validator.validate(collection, {
   the former specs.
 
 - Only FF[3] allows lowercased letters in a PropIdent.
-  This module always allows them.
+  This module can not handle them properly when used to specify FF and GM
+  properties.
+
+```js
+SGFGrove.parse("(;FF[3]CoPyright[foo])"); // supported
+SGFGrove.parse("(;FileFormat[3])");       // unsupported
+SGFGrove.parse("(;FF[3]GaMetype[2])");    // unsupported
+```
 
 ## Versioning
 

@@ -307,9 +307,7 @@
                     properties = properties || createProperties(node);
 
                     for (ident in node) {
-                        //if (node.hasOwnProperty(ident) && properties.isIdentifier(ident)) {
                         if (node.hasOwnProperty(ident)) {
-                            //values = properties.getType(ident).stringify(node[ident]);
                             values = properties.stringify(ident, node[ident]);
                             if (values) {
                                 partial.push(ident+"["+values.join("][")+"]");
