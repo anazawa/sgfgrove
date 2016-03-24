@@ -1,5 +1,7 @@
 Revision history for SGFGrove.js.
 
+## 1.0.3
+
 - add "SGF File Format Detection" to README
 - add #fileFormat
 - #define is obsolete and will be removed in 1.0.4. Use #fileFormat intead
@@ -8,7 +10,7 @@ Revision history for SGFGrove.js.
 - add tests for SGFGrove.Util
 - add tests for FF[4] properties
 
-## 1.0.2 Sep 14th, 2015
+## 1.0.2
 
 - add a table of contents to README.md
 - add "SGF Property Types" to README.md

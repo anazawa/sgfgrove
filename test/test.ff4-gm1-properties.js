@@ -10,6 +10,7 @@
         var AR = properties.typeOf.AR;
 
         t.deepEqual( AR.parse(["aa:bb"]), [["aa", "bb"]] );
+        t.deepEqual( AR.stringify([["aa", "bb"]]), ["aa:bb"] );
 
         t.end();
     });
@@ -18,9 +19,9 @@
         var LB = properties.typeOf.LB;
 
         t.deepEqual( LB.parse(["aa:label"]), [["aa", "label"]] );
+        t.deepEqual( LB.stringify([["aa", "label"]]), ["aa:label"] );
 
         t.end();
     });
-
 
 }());

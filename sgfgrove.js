@@ -364,19 +364,24 @@
         };
     }());
 
+    // obsolete
+    SGFGrove.define = function (ff, gm, cb) {
+        SGFGrove.fileFormat({ FF: ff, GM: gm }, cb);
+    };
+
     SGFGrove.fileFormat = (function () {
-        var isInteger = SGFGrove.Util.isInteger;
-        var FF = {};
+        var isInteger = SGFGrove.Util.isInteger,
+            FF = {};
 
-        return function (args, cb) {
-            args = args || {};
+        return function (version, callback) {
+            version = version || {};
 
-            var ff = args.FF,
-                gm = args.GM;
+            var ff = version.FF,
+                gm = version.GM;
 
-            if (typeof cb !== "function") {
-                if (isInteger(ff) && FF.hasOwnProperty(ff)) {
-                    if (isInteger(gm) && FF[ff].GM[gm]) {
+            if (typeof callback !== "function") {
+                if (isInteger(ff) && ff > 0 && FF[ff]) {
+                    if (isInteger(gm) && gm > 0 && FF[ff].GM[gm]) {
                         return FF[ff].GM[gm];
                     }
                     return FF[ff];
@@ -384,27 +389,23 @@
                 return FF;
             }
 
-            var def = {};
+            var fileFormat = {};
+                fileFormat = callback.call(fileFormat, FF) || fileFormat;
 
             if (ff && gm) {
-                FF[ff].GM[gm] = cb.call(def, FF) || def;
+                FF[ff].GM[gm] = fileFormat;
             }
             else if (ff) {
-                def.GM = {};
-                FF[ff] = cb.call(def, FF) || def;
+                fileFormat.GM = fileFormat.GM || {};
+                FF[ff] = fileFormat;
             }
             else {
-                FF = cb.call(def, FF) || def;
+                FF = fileFormat;
             }
  
             return;
         };
     }());
-
-    // obsolete
-    SGFGrove.define = function (ff, gm, cb) {
-        SGFGrove.fileFormat({ FF: ff, GM: gm }, cb);
-    };
 
     SGFGrove.fileFormat({}, function () {
         var Types = {};
