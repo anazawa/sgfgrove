@@ -1,9 +1,7 @@
 /**
- * @overview SGFGrove.js
- * @author Ryo Anazawa
- * @version 1.0.2
- * @license MIT
- * @see http://www.red-bean.com/sgf/
+ * @license SGFGrove.js 1.0.2
+ * (c) 2015-2016 Ryo Anazawa https://github.com/anazawa/sgfgrove
+ * Licence: MIT
  */
 (function () {
     "use strict";
@@ -11,13 +9,6 @@
     var SGFGrove = {
         VERSION: "1.0.2"
     };
-
-    if (typeof exports !== "undefined") {
-        module.exports = SGFGrove; // jshint ignore:line
-    }
-    else {
-        window.SGFGrove = SGFGrove;
-    }
 
     SGFGrove.Util = (function () {
         var Util = {};
@@ -58,14 +49,14 @@
             PropValue   = /^\[((?:\\]|[^\]])*)\]\s*/g;
 
         var test = function () {
-            var bool = this.test( text.slice(lastIndex) );
+            var bool = this.test(text.slice(lastIndex));
             lastIndex += this.lastIndex;
             this.lastIndex = 0;
             return bool;
         };
 
         var exec = function () {
-            var array = this.exec( text.slice(lastIndex) );
+            var array = this.exec(text.slice(lastIndex));
             lastIndex += this.lastIndex;
             this.lastIndex = 0;
             return array;
@@ -229,8 +220,8 @@
 
         var createProperties = function (root) {
             var fileFormat = SGFGrove.fileFormat({
-                FF: root.hasOwnProperty("FF") ? root.FF : 1,
-                GM: root.hasOwnProperty("GM") ? root.GM : 1
+                FF : root.hasOwnProperty("FF") ? root.FF : 1,
+                GM : root.hasOwnProperty("GM") ? root.GM : 1
             });
             return fileFormat.properties();
         };
@@ -280,13 +271,7 @@
             gameTree = isArray(gameTree) ? gameTree : [];
 
             var sequence = isArray(gameTree[0]) ? gameTree[0] : [],
-                children = isArray(gameTree[1]) ? gameTree[1] : [],
-                node, ident, values, i;
-
-            var text = "",
-                lf = indent ? "\n" : "",
-                mind = gap,
-                partial, semicolon, space;
+                children = isArray(gameTree[1]) ? gameTree[1] : [];
 
             // (;a(;b)) => (;a;b)
             if (children.length === 1) {
@@ -294,21 +279,26 @@
                 children = isArray(children[0][1]) ? children[0][1] : [];
             }
 
+            var text = "",
+                lf = indent ? "\n" : "",
+                mind = gap;
+
             if (sequence.length) {
                 text += gap+"("+lf; // open GameTree
                 gap += indent;
-                semicolon = gap+";";
-                space = gap+(indent ? " " : "");
 
-                for (i = 0; i < sequence.length; i++) {
-                    node = sequence[i] && typeof sequence[i] === "object" ? sequence[i] : {};
-                    partial = [];
+                var semicolon = gap+";",
+                    space = gap+(indent ? " " : "");
+
+                for (var i = 0; i < sequence.length; i++) {
+                    var node = sequence[i] && typeof sequence[i] === "object" ? sequence[i] : {};
+                    var partial = [];
                         
                     properties = properties || createProperties(node);
 
-                    for (ident in node) {
+                    for (var ident in node) {
                         if (node.hasOwnProperty(ident)) {
-                            values = properties.stringify(ident, node[ident]);
+                            var values = properties.stringify(ident, node[ident]);
                             if (values) {
                                 partial.push(ident+"["+values.join("][")+"]");
                             }
@@ -318,8 +308,8 @@
                     text += semicolon+partial.join(lf+space)+lf; // add Node
                 }
 
-                for (i = 0; i < children.length; i++) {
-                    text += stringifyGameTree(children[i], properties); // add GameTree
+                for (var j = 0; j < children.length; j++) {
+                    text += stringifyGameTree(children[j], properties); // add GameTree
                 }
 
                 text += mind+")"+lf; // close GameTree
@@ -376,7 +366,7 @@
 
     SGFGrove.fileFormat = (function () {
         var isInteger = SGFGrove.Util.isInteger;
-        var FF;
+        var FF = {};
 
         return function (args, cb) {
             args = args || {};
@@ -386,7 +376,7 @@
 
             if (typeof cb !== "function") {
                 if (isInteger(ff) && FF.hasOwnProperty(ff)) {
-                    if (isInteger(gm) && FF[ff].GM.hasOwnProperty(gm)) {
+                    if (isInteger(gm) && FF[ff].GM[gm]) {
                         return FF[ff].GM[gm];
                     }
                     return FF[ff];
@@ -862,6 +852,13 @@
 
         return;
     });
+
+    if (typeof exports !== "undefined") {
+        module.exports = SGFGrove; // jshint ignore:line
+    }
+    else {
+        window.SGFGrove = SGFGrove;
+    }
 
 }());
 
