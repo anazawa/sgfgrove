@@ -6,6 +6,7 @@ Revision history for SGFGrove.js.
 - allow lower-case letters in PropIdents only in FF[3] files
 - add tests for FF[4] Number
 - add tests for SGFGrove.Util
+- add tests for FF[4] properties
 
 ## 1.0.2 Sep 14th, 2015
 
