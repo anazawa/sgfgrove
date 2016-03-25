@@ -7,6 +7,15 @@
 
     require("../sgfgrove/ff123.js");
 
+    test("SGFGrove.parse", function (t) {
+        t.deepEqual(
+            SGF.parse("(;FF[4]C[foo\\]GC[bar])"),
+            [[[{ FF: 4, C: "foo\\", GC: "bar" }], []]],
+            "backslash at end of PropValue"
+        );
+        t.end();
+    });
+
     test("SGFGrove.parse: reviver: overwrite property values", function (t) {
         var collection = SGF.parse("(;FF[4]C[root])", function (key, value) {
             if ( key === "C" ) {
