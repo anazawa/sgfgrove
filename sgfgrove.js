@@ -46,7 +46,7 @@
             CloseParen  = /^\)\s*/g,
             Semicolon   = /^;\s*/g,
             PropIdent   = /^([a-zA-Z0-9]+)\s*/g,
-            PropValue   = /^\[((?:\\]|[^\]])*)\]\s*/g;
+            PropValue   = /^\[([^\]\\]*(?:\\.[^\]\\]*)*)\]\s*/g;
 
         var test = function () {
             var bool = this.test(text.slice(lastIndex));

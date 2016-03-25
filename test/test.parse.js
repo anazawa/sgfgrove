@@ -9,9 +9,9 @@
 
     test("SGFGrove.parse", function (t) {
         t.deepEqual(
-            SGF.parse("(;FF[4]C[foo\\]GC[bar])"),
+            SGF.parse("(;FF[4]C[foo\\\\]GC[bar])"),
             [[[{ FF: 4, C: "foo\\", GC: "bar" }], []]],
-            "backslash at end of PropValue"
+            "escaped backslash at end of PropValue"
         );
         t.end();
     });
