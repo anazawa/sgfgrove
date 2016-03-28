@@ -1,5 +1,11 @@
 Revision history for SGFGrove.js.
 
+## 1.0.4
+
+- fix PropIdent regular expression bug (thanks to @yewang)
+- fix compose type regular expression bug
+- add more tests for compose type
+
 ## 1.0.3
 
 - add "SGF File Format Detection" to README
