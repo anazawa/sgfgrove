@@ -364,11 +364,6 @@
         };
     }());
 
-    // obsolete
-    SGFGrove.define = function (ff, gm, cb) {
-        SGFGrove.fileFormat({ FF: ff, GM: gm }, cb);
-    };
-
     SGFGrove.fileFormat = (function () {
         var isInteger = SGFGrove.Util.isInteger,
             FF = {};
