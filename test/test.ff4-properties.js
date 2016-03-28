@@ -10,6 +10,12 @@
         var AP = properties.typeOf.AP;
 
         t.deepEqual( AP.parse(["myapp:1.2.3"]), ["myapp", "1.2.3"] );
+
+        t.deepEqual( AP.parse(["foo\\\\:bar"]), ["foo\\", "bar"] );
+        t.deepEqual( AP.parse(["foo\\:bar:baz"]), ["foo:bar", "baz"] );
+        t.deepEqual( AP.parse(["foo:bar\\:baz"]), ["foo", "bar:baz"] );
+        t.deepEqual( AP.parse(["foo:bar:baz"]), undefined );
+
         t.deepEqual( AP.stringify(["myapp", "1.2.3"]), ["myapp:1.2.3"] );
 
         t.end();

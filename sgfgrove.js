@@ -46,7 +46,7 @@
             CloseParen  = /^\)\s*/g,
             Semicolon   = /^;\s*/g,
             PropIdent   = /^([a-zA-Z0-9]+)\s*/g,
-            PropValue   = /^\[([^\]\\]*(?:\\.[^\]\\]*)*)\]\s*/g;
+            PropValue   = /^\[((?:\\.|[^\]\\]+)*)\]\s*/g;
 
         var test = function () {
             var bool = this.test(text.slice(lastIndex));
@@ -520,7 +520,7 @@
             return left && right && {
                 parse: function (values) {
                     if (values.length === 1) {
-                        var v = /^((?:\\:|[^:])*):([\s\S]*)$/.exec(values[0]) || undefined;
+                        var v = /^((?:\\.|[^:\\]+)*):((?:\\.|[^:\\]+)*)$/.exec(values[0]) || undefined;
                         var l = v && left.parse([v[1]]);
                         var r = v && right.parse([v[2]]);
                         if (l !== undefined && r !== undefined) {
