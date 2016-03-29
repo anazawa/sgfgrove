@@ -35,7 +35,7 @@
     }());
 
     SGFGrove.parse = (function () {
-        var text, lastIndex, reviver;
+        var source, lastIndex, reviver;
 
         // Override RegExp's test and exec methods to let ^ behave like
         // the \G assertion (/\G.../gc). See also:
@@ -49,14 +49,14 @@
             PropValue   = /^\[((?:\\.|[^\]\\]+)*)\]\s*/g;
 
         var test = function () {
-            var bool = this.test(text.slice(lastIndex));
+            var bool = this.test(source.slice(lastIndex));
             lastIndex += this.lastIndex;
             this.lastIndex = 0;
             return bool;
         };
 
         var exec = function () {
-            var array = this.exec(text.slice(lastIndex));
+            var array = this.exec(source.slice(lastIndex));
             lastIndex += this.lastIndex;
             this.lastIndex = 0;
             return array;
@@ -120,7 +120,7 @@
             }
 
             if (!test.call(CloseParen)) { // end of GameTree
-                throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
+                throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
             // (;a(;b)) => (;a;b)
@@ -191,10 +191,10 @@
             return reviver.call(holder, key, value);
         };
 
-        return function (source, rev) {
+        return function (text, rev) {
             var collection = [];
 
-            text = String(source);
+            source = String(text);
             lastIndex = 0;
             reviver = typeof rev === "function" && rev;
 
@@ -206,8 +206,8 @@
                          else { break; }
             }
 
-            if (lastIndex !== text.length) {
-                throw new SyntaxError("Unexpected token "+text.charAt(lastIndex));
+            if (lastIndex !== source.length) {
+                throw new SyntaxError("Unexpected token "+source.charAt(lastIndex));
             }
 
             return reviver ? walk({ "": collection }, "") : collection;
