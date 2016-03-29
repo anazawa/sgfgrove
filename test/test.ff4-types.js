@@ -95,7 +95,7 @@
         t.equal( SimpleText.parse(["\\\n|\\\n\r|\\\r|\\\r\n"]), "|||" );
         t.equal( SimpleText.parse(["item1", "item2"]), undefined );
 
-        t.deepEqual( SimpleText.stringify("]:\\"), ["\\]\\:\\\\"] );
+        t.deepEqual( SimpleText.stringify("]\\"), ["\\]\\\\"] );
         t.equal( SimpleText.stringify(123), undefined );
 
         t.end();
@@ -109,7 +109,7 @@
         t.equal( Text.parse(["\\\n|\\\n\r|\\\r|\\\r\n"]), "|||" );
         t.equal( Text.parse(["item1", "item2"]), undefined );
 
-        t.deepEqual( Text.stringify("]:\\"), ["\\]\\:\\\\"] );
+        t.deepEqual( Text.stringify("]\\"), ["\\]\\\\"] );
         t.equal( Text.stringify(123), undefined );
 
         t.end();

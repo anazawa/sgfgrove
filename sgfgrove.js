@@ -46,7 +46,7 @@
             CloseParen  = /^\)\s*/g,
             Semicolon   = /^;\s*/g,
             PropIdent   = /^([a-zA-Z0-9]+)\s*/g,
-            PropValue   = /^\[((?:\\.|[^\]\\]+)*)\]\s*/g;
+            PropValue   = /^\[((?:\\[\S\s]|[^\]\\]+)*)\]\s*/g;
 
         var test = function () {
             var bool = this.test(source.slice(lastIndex));
@@ -513,9 +513,10 @@
 
         Types.compose = function (left, right) {
             return left && right && {
+                escape: function (v) { return v.replace(/:/g, "\\:"); },
                 parse: function (values) {
                     if (values.length === 1) {
-                        var v = /^((?:\\.|[^:\\]+)*):((?:\\.|[^:\\]+)*)$/.exec(values[0]) || undefined;
+                        var v = /^((?:\\[\S\s]|[^:\\]+)*):((?:\\[\S\s]|[^:\\]+)*)$/.exec(values[0]) || undefined;
                         var l = v && left.parse([v[1]]);
                         var r = v && right.parse([v[2]]);
                         if (l !== undefined && r !== undefined) {
@@ -527,7 +528,7 @@
                     if (isArray(value) && value.length === 2) {
                         var l = left.stringify(value[0]);
                         var r = right.stringify(value[1]);
-                        return l && r && [ l[0]+":"+r[0] ];
+                        return l && r && [this.escape(l[0])+":"+this.escape(r[0])];
                     }
                 }
             };
@@ -639,14 +640,14 @@
             parse: function (value) {
                 return value.
                     // remove soft linebreaks
-                    replace( /\\(?:\n\r?|\r\n?)/g, "" ).
+                    replace(/\\(?:\n\r?|\r\n?)/g, "").
                     // convert white spaces other than linebreaks to space
-                    replace( /[^\S\n\r]/g, " " ).
+                    replace(/[^\S\n\r]/g, " ").
                     // insert escaped chars verbatim
-                    replace( /\\([\S\s])/g, "$1" );
+                    replace(/\\([\S\s])/g, "$1");
             },
             stringify: function (value) {
-                return value.replace(/([\]\\:])/g, "\\$1"); // escape "]", "\" and ":"
+                return value.replace(/([\]\\])/g, "\\$1"); // escape "]" and "\"
             }
         });
 
@@ -655,14 +656,14 @@
             parse: function (value) {
                 return value.
                     // remove soft linebreaks
-                    replace( /\\(?:\n\r?|\r\n?)/g, "" ).
+                    replace(/\\(?:\n\r?|\r\n?)/g, "").
                     // convert white spaces other than space to space even if it's escaped
-                    replace( /\\?[^\S ]/g, " " ).
+                    replace(/\\?[^\S ]/g, " ").
                     // insert escaped chars verbatim
-                    replace( /\\([\S\s])/g, "$1" );
+                    replace(/\\([\S\s])/g, "$1");
             },
             stringify: function (value) {
-                return value.replace(/([\]\\:])/g, "\\$1"); // escape "]", "\" and ":"
+                return value.replace(/([\]\\])/g, "\\$1"); // escape "]" and "\"
             }
         });
 
@@ -699,22 +700,22 @@
                     IT : t.None,
                     TE : t.Double,
                     // Markup properties
-                    AR : t.listOf( t.compose(t.Point, t.Point) ),
+                    AR : t.listOf(t.compose(t.Point, t.Point)),
                     CR : t.listOfPoint,
                     DD : t.elistOfPoint,
-                    LB : t.listOf( t.compose(t.Point, t.SimpleText) ),
-                    LN : t.listOf( t.compose(t.Point, t.Point) ),
+                    LB : t.listOf(t.compose(t.Point, t.SimpleText)),
+                    LN : t.listOf(t.compose(t.Point, t.Point)),
                     MA : t.listOfPoint,
                     SL : t.listOfPoint,
                     SQ : t.listOfPoint,
                     TR : t.listOfPoint,
                     // Root properties
-                    AP : t.compose( t.SimpleText, t.SimpleText ),
+                    AP : t.compose(t.SimpleText, t.SimpleText),
                     CA : t.SimpleText,
                     FF : t.Number,
                     GM : t.Number,
                     ST : t.Number,
-                    SZ : t.or( t.Number, t.compose(t.Number, t.Number) ),
+                    SZ : t.or(t.Number, t.compose(t.Number, t.Number)),
                     // Game info properties
                     AN : t.SimpleText,
                     BR : t.SimpleText,
@@ -743,7 +744,7 @@
                     OW : t.Number,
                     WL : t.Real,
                     // Miscellaneous properties
-                    FG : t.or( t.None, t.compose(t.Number, t.SimpleText) ),
+                    FG : t.or(t.None, t.compose(t.Number, t.SimpleText)),
                     PM : t.Number,
                     VM : t.elistOfPoint
                 }
@@ -760,33 +761,33 @@
 
         var expandPointList = (function () {
             var coord2char = "abcdefghijklmnopqrstuvwxyz";
-                coord2char = (coord2char + coord2char.toUpperCase()).split("");
+                coord2char = (coord2char+coord2char.toUpperCase()).split("");
 
             var char2coord = {};
-            for ( var i = 0; i < coord2char.length; i++ ) {
+            for (var i = 0; i < coord2char.length; i++) {
                 char2coord[coord2char[i]] = i;
             }
 
             return function (p1, p2) {
-                var points = [];
-                var x, y, h;
+                var x1 = char2coord[p1.charAt(0)],
+                    y1 = char2coord[p1.charAt(1)],
+                    x2 = char2coord[p2.charAt(0)],
+                    y2 = char2coord[p2.charAt(1)];
 
-                var x1 = char2coord[ p1.charAt(0) ];
-                var y1 = char2coord[ p1.charAt(1) ];
-                var x2 = char2coord[ p2.charAt(0) ];
-                var y2 = char2coord[ p2.charAt(1) ];
+                var h; 
 
                 if (x1 > x2) {
                     h = x1; x1 = x2; x2 = h;
                 }
-
                 if (y1 > y2) {
                     h = y1; y1 = y2; y2 = h;
                 }
 
-                for (y = y1; y <= y2; y++) {
-                    for ( x = x1; x <= x2; x++ ) {
-                        points.push( coord2char[x]+coord2char[y] );
+                var points = [];
+
+                for (var y = y1; y <= y2; y++) {
+                    for (var x = x1; x <= x2; x++) {
+                        points.push(coord2char[x]+coord2char[y]);
                     }
                 }
 
