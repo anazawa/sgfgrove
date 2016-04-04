@@ -11,7 +11,7 @@ my %filters = (
         s/("version"\s*:\s*)"[^"]*"/$1"$version"/; # "version": "1.2.3"
     },
     './sgfgrove.js' => sub {
-           s/(\@version\s+).*/$1$version/           # @version 1.2.3
+           s/(\@license [^\d]*).*/$1$version/ # @license SGFGrove.js 1.2.3
         || s/(VERSION\s*:\s*)"[^"]*"/$1"$version"/; # VERSION: "1.2.3"
     },
 );

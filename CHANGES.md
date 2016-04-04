@@ -1,6 +1,22 @@
 Revision history for SGFGrove.js.
 
-## 1.0.2 Sep 14th, 2015
+## 1.0.4
+
+- fix PropIdent regular expression bug (thanks to @yewang)
+- fix compose type regular expression bug
+- add more tests for compose type
+
+## 1.0.3
+
+- add "SGF File Format Detection" to README
+- add #fileFormat
+- #define is obsolete and will be removed in 1.0.4. Use #fileFormat intead
+- allow lower-case letters in PropIdents only in FF[3] files
+- add tests for FF[4] Number
+- add tests for SGFGrove.Util
+- add tests for FF[4] properties
+
+## 1.0.2
 
 - add a table of contents to README.md
 - add "SGF Property Types" to README.md

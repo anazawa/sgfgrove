@@ -7,48 +7,56 @@
 
     require("../sgfgrove/ff123.js");
 
-    test("SGFGrove.parse: reviver: overwrite property values", function (t) {
-        var collection = SGF.parse("(;FF[4]C[root])", function (key, value) {
-            if ( key === "C" ) {
-                return value.toUpperCase();
-            }
-            else {
-                return value;
-            }
-        });
+    test("SGFGrove.parse", function (t) {
+        t.deepEqual(
+            SGF.parse(" (\n ;\t FF\r\n [4]  \n\r)\v"),
+            [[[{ FF: 4 }], []]],
+            "white spaces should be ignored"
+        );
 
         t.deepEqual(
-            collection,
-            [[[{ FF: 4, C: "ROOT" }], []]],
-            "C should be upper-case"
+            SGF.parse("(;FF[4]C[root](;C[a](;C[b])))"),
+            [[[{ FF: 4, C: "root" }, { C: "a" }, { C: "b" }], []]],
+            "GameTree should be normalized, ignoring redundant parentheses"
+        );
+
+        t.deepEqual(
+            SGF.parse("(;FF[4]C[foo\\\\]GC[bar])"),
+            [[[{ FF: 4, C: "foo\\", GC: "bar" }], []]],
+            "escaped backslash at end of PropValue"
         );
 
         t.end();
     });
 
-    test("SGFGrove.parse: reviver: exclude properties", function (t) {
-        var collection = SGF.parse("(;FF[4]C[root])", function (key, value) {
-            if ( key !== "C" ) {
-                return value;
-            }
-        });
+    test("SGFGrove.parse: reviver", function (t) {
+        t.deepEqual(
+            SGF.parse("(;FF[4]C[root])", function (key, value) {
+                if ( key === "C" ) {
+                    return value.toUpperCase();
+                }
+                else {
+                    return value;
+                }
+            }),
+            [[[{ FF: 4, C: "ROOT" }], []]],
+            "overwrite property values"
+        );
 
         t.deepEqual(
-            collection,
+            SGF.parse("(;FF[4]C[root])", function (key, value) {
+                if ( key !== "C" ) {
+                    return value;
+                }
+            }),
             [[[{ FF: 4 }], []]],
-            "C should be excluded"
+            "exclude properties"
         );
 
         t.end();
     });
 
     test("SGF.parse: SyntaxError", function (t) {
-        t.deepEqual(
-            SGF.parse(" (\n ;\t FF\r\n [4]  \n\r)\v"),
-            [[[{ FF: 4 }], []]],
-            "white spaces are ignored"
-        );
-
         t.throws(
             function () {
                 SGF.parse("(;FF[4];B[aa]B[bb])");
@@ -113,11 +121,18 @@
             "unescaped closing bracket"
         );
 
+        t.throws(
+            function () {
+                SGF.parse("(;FF[4]CoPyright[copyright])");
+            },
+            SyntaxError,
+            "FF[4] does not allow lower-case letters in PropIdent"
+        );
+
         t.end();
     });
 
-    /*
-    test("SGF.parse: Syntax: FF[4]", function (t) {
+    test("SGF.parse: FF[4]", function (t) {
         t.throws(
             function () {
                 SGF.parse("(;FF[4]1NVALID[invalid])");
@@ -127,25 +142,22 @@
         );
         t.end();
     });
-    */
 
-    test("SGFGrove.parse: FF[3] PropIdent", function (t) {
-        var collection = SGF.parse("(;FF[3]CoPyright[copyright])");
-
+    test("SGFGrove.parse: FF[3]", function (t) {
         t.deepEqual(
-            collection,
-            [[[{ FF: 3, CP: "copyright" }], []]],
+            SGF.parse("(;FF[3]CoPyright[foo])"),
+            [[[{ FF: 3, CP: "foo" }], []]],
             "lower-case letters should be ignored"
         );
 
-        t.end();
-    });
-
-    test("SGFGrove.parse: redundant parentheses are ignored", function (t) {
-        t.deepEqual(
-            SGF.parse("(;FF[4]C[root](;C[a](;C[b])))"),
-            [[[{ FF: 4, C: "root" }, { C: "a" }, { C: "b" }], []]]
+        t.throws(
+            function () {
+                SGF.parse("(;FF[3]CP[foo]CoPyright[bar])");
+            },
+            SyntaxError,
+            "duplicate property"
         );
+
         t.end();
     });
 
