@@ -178,6 +178,8 @@
             return properties;
         };
 
+        //that.parse.apply(that, arguments);
+
         return that.parse(tree);
     };
 
@@ -466,45 +468,26 @@
     collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
+        collection.util.iterable(that);
+
+        collection.util.accessor(that, "preorder");
+        collection.util.accessor(that, "postorder");
+        collection.util.accessor(that, "breadthFirst");
+
+        that.buildPreorder = function () {
+            return collection.gameTree.node.iterable.preorder(this);
+        };
+
+        that.buildPostorder = function () {
+            return collection.gameTree.node.iterable.postorder(this);
+        };
+
+        that.buildBreadthFirst = function () {
+            return collection.gameTree.node.iterable.breadthFirst(this);
+        };
+
         that.toIterator = function () {
-            return collection.gameTree.node.iterator(this);
-        };
-
-        that.forEach = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (iterator.hasNext()) {
-                callback.call(context, iterator.next());
-            }
-
-            return this;
-        };
-
-        that.find = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (iterator.hasNext()) {
-                var node = iterator.next();
-                if (callback.call(context, node)) {
-                    return node;
-                }
-            }
-
-            return;
-        };
-
-        that.filter = function (callback, context) {
-            var iterator = this.toIterator();
-            var nodes = [];
-
-            while (iterator.hasNext()) {
-                var node = iterator.next();
-                if (callback.call(context, node)) {
-                    nodes.push(node);
-                }
-            }
-
-            return nodes;
+            return this.preorder().toIterator();
         };
 
         that.next = function () {
@@ -552,51 +535,78 @@
         return that;
     };
 
-    collection.gameTree.node.iterable.preorder = function () {
-        return collection.util.iterable.iterator(function () {
-        });
-    };
- 
-    collection.gameTree.node.iterator = function () {
-        var that = collection.util.iterable({});
-
-        that.initialize = function (node) {
-            this.args = arguments;
-            this.length = 0;
-            this.push(node);
-        };
-
-        that.push = Array.prototype.push;
-        that.pop  = Array.prototype.pop;
-
-        that.next = function () {
-            if (this.length) {
-                var node = this.pop();
-                var children = node.children().slice(0);
-                this.push.apply(this, children.reverse());
-                return node;
-            }
-        };
-
-        that.hasNext = function () {
-            return this.length;
-        };
-
-        that.peek = function () {
-            return this[this.length-1];
-        };
+    collection.gameTree.node.iterable.preorder = function (node) {
+        var that = collection.util.iterable([node]);
 
         that.toIterator = function () {
-            var other = SGFGrove.Util.create(this);
-            other.initialize.apply(other, this.args);
+            var other = [this[0]];
+
+            other.next = function () {
+                if (this.length) {
+                    var node = this.pop();
+                    var children = node.children().slice(0);
+                    this.push.apply(this, children.reverse());
+                    return { value: node };
+                }
+                return { done: true };
+            };
+
             return other;
         };
-
-        that.initialize.apply(that, arguments);
 
         return that;
     };
 
+    collection.gameTree.node.iterable.postorder = function (node) {
+        var that = collection.util.iterable([node]);
+
+        that.toIterator = function () {
+            var other = [[this[0], false]];
+
+            other.next = function () {
+                if (this.length) {
+                    while (true) {
+                        var node = this[this.length-1];
+                        if (node[1]) {
+                            return { value: this.pop()[0] };
+                        }
+                        var children = node[0].children();
+                        for (var i = children.length-1; i >= 0; i--) {
+                            this.push([children[i], false]);
+                        }
+                        node[1] = true;
+                    }
+                }
+                return { done: true };
+            };
+
+            return other;
+        };
+
+        return that;
+    };
+
+    collection.gameTree.node.iterable.breadthFirst = function (node) {
+        var that = collection.util.iterable([node]);
+
+        that.toIterator = function () {
+            var other = [this[0]];
+
+            other.next = function () {
+                if (this.length) {
+                    var node = this.shift();
+                    this.push.apply(this, node.children());
+                    return { value: node };
+                }
+                return { done: true };
+            };
+
+            return other;
+        };
+
+        return that;
+    };
+ 
     collection.util = {};
 
     collection.util.accessor = function (that, key) {
@@ -627,11 +637,22 @@
             throw new Error("call to abstract method 'toIterator'");
         };
 
+        if (typeof Symbol === "function" &&
+            typeof Symbol.iterator === "symbol") {
+            that[Symbol.iterator] = function () {
+                return this.toIterator();
+            };
+        }
+
         that.forEach = function (callback, context) {
             var iterator = this.toIterator();
 
-            while (iterator.hasNext()) {
-                callback.call(context, iterator.next());
+            while (true) {
+                var next = iterator.next();
+                if (next.done) {
+                    break;
+                }
+                callback.call(context, next.value);
             }
 
             return this;
@@ -640,10 +661,13 @@
         that.find = function (callback, context) {
             var iterator = this.toIterator();
 
-            while (iterator.hasNext()) {
-                var value = iterator.next();
-                if (callback.call(context, value)) {
-                    return value;
+            while (true) {
+                var next = iterator.next();
+                if (next.done) {
+                    break;
+                }
+                if (callback.call(context, next.value)) {
+                    return next.value;
                 }
             }
 
@@ -654,10 +678,13 @@
             var iterator = this.toIterator();
             var values = [];
 
-            while (iterator.hasNext()) {
-                var value = iterator.next();
-                if (callback.call(context, value)) {
-                    values.push(value);
+            while (true) {
+                var next = iterator.next();
+                if (next.done) {
+                    break;
+                }
+                if (callback.call(context, next.value)) {
+                    values.push(next.value);
                 }
             }
 
