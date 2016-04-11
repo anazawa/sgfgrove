@@ -3,6 +3,8 @@
     "use strict";
 
     var test = require("tape");
+
+    /*
     var SGF = require("../sgfgrove.js");
 
     require("../sgfgrove/collection.js");
@@ -86,5 +88,6 @@
 
         t.end();
     });
+    */
 
 }());
