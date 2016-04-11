@@ -168,57 +168,35 @@
     collection.gameTree.node.mutable = function (that) {
         that = that || {};
 
-        that.prepend = function (node) {
-            this.insertAt(0, node);
-        };
-
-        that.append = function (node) {
-            this.insertAt(this.children().length, node);
-        };
-
-        that.insertAt = function (index, node) {
-            var children = this.children();
-
+        var insertAt = function (index, node) {
             if (node.contains(this)) {
                 throw new Error("Ancestor node given");
             }
-
             node.detach();
             node.parent(this);
-
-            if (!SGFGrove.Util.isInteger(index)) {
-                throw new Error("Not an integer");
-            }
-            else if (index < 0 || index > children.length) {
-                throw new Error("Index out of bounds: "+index);
-            }
-
-            children.splice(index, 0, node);
-
+            this.children().splice(index, 0, node);
             return;
         };
 
-        that.removeAt = function (index) {
-            var children = this.children();
-
-            if (!SGFGrove.Util.isInteger(index)) {
-                throw new Error("Not an integer");
-            }
-            else if (index < 0 || index >= children.length) {
-                throw new Error("Index out of bounds: "+index);
-            }
-
-            var node = children.splice(index, 1)[0];
-                node.parent(null);
-
+        var removeAt = function (index) {
+            var node = this.children().splice(index, 1)[0];
+            node.parent(null);
             return node;
+        };
+
+        that.prepend = function (node) {
+            insertAt.call(this, 0, node);
+        };
+
+        that.append = function (node) {
+            insertAt.call(this, this.children().length, node);
         };
 
         that.detach = function () {
             var parent = this.parent();
 
             if (parent) {
-                parent.removeAt(parent.indexOf(this));
+                removeAt.call(parent, parent.indexOf(this));
             }
 
             return parent;
@@ -241,7 +219,7 @@
                 throw new Error("Has no siblings");
             }
 
-            parent.insertAt(parent.indexOf(this), node);
+            insertAt.call(parent, parent.indexOf(this), node);
 
             return this;
         };
@@ -261,7 +239,7 @@
             }
 
             this.detach();
-            parent.insertAt(index, node);
+            insertAt.call(parent, index, node);
 
             return this;
         };
