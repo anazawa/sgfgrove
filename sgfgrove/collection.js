@@ -3,158 +3,9 @@
 
     var SGFGrove;
 
-    var collection = function () {
-        var that = [];
-        
-        var factoryMethods = [
-            "concat",
-            "slice",
-            "splice",
-            "filter"
-        ];
+    var collection = {};
 
-        var override = function (method) {
-            var body = that[method];
-            if (typeof body === "function") {
-                that[method] = function () {
-                    var that = this.create();
-                    that.push.apply(that, body.apply(this, arguments));
-                    return that;
-                };
-            }
-        };
-
-        for (var i = 0; i < factoryMethods.length; i++) {
-            override(factoryMethods[i]);
-        }
-
-        that.create = function () {
-            var that = [];
-
-            for (var key in this) {
-                if (this.hasOwnProperty(key) && /[^\d]/.test(key)) {
-                    that[key] = this[key];
-                }
-            }
-
-            that.initialize.apply(that, arguments);
-
-            return that;
-        };
-
-        that.initialize = function (text, reviver) {
-            var trees = this.parse(text || "", reviver);
-
-            for (var i = 0; i < trees.length; i++) {
-                this[i] = this.createGameTree(trees[i]);
-            }
-
-            return;
-        };
-
-        that.createGameTree = function (tree) {
-            return collection.gameTree(tree);
-        };
-
-        that.parse = function (text, reviver) {
-            return SGFGrove.parse(text, reviver);
-        };
-
-        /*
-        that.parse = function (text, reviver) {
-            var trees = SGFGrove.parse(text || "", reviver);
-            var other = this.create();
-            var gameTree = this.createGameTree();
-
-            for (var i = 0; i < trees.length; i++) {
-                other[i] = gameTree.parse(trees[i]);
-            }
-
-            return other;
-        };
-        */
-
-        that.toString = function (replacer, space) {
-            return SGFGrove.stringify(this, replacer, space);
-        };
-
-        that.clone = function () {
-            var clone = this.create();
-
-            for (var i = 0; i < this.length; i++) {
-                clone[i] = this[i].clone();
-            }
-
-            return clone;
-        };
-
-        that.initialize.apply(that, arguments);
-
-        return that;
-    };
-
-    var collection = function () {
-        var that = {};
-
-        that.create = function () {
-            var other = SGFGrove.Util.create(this);
-            other.initialize.apply(that, arguments);
-            return other;
-        };
-
-        that.initialize = function () {
-            this.length = 0;
-            this.push.apply(this, arguments);
-        };
-
-        that.createGameTree = function (tree) {
-            return collection.gameTree(tree);
-        };
-
-        that.parse = function (trees) {
-            trees = trees || [];
-
-            var other = this.create();
-            for (var i = 0; i < trees.length; i++) {
-                other.push(this.createGameTree(trees[i]));
-            }
-
-            return other;
-        };
-
-        that.parseString = function (text, reviver) {
-            return this.parse(SGFGrove.parse(text || "", reviver));
-        };
-
-        that.push    = Array.prototype.push;
-        that.toArray = Array.prototype.slice;
-
-        that.toString = function (replacer, space) {
-            return SGFGrove.stringify(this, replacer, space);
-        };
-
-        that.toSGF = function () {
-            return this.toArray();
-        };
-
-        that.toJSON = that.toSGF;
-
-        that.clone = function () {
-            var other = this.create();
-
-            for (var i = 0; i < this.length; i++) {
-                other.push(this[i].clone());
-            }
-
-            return other;
-        };
-
-        that.initialize.apply(that, arguments);
-
-        return that;
-    };
-
-    collection.gameTree = function (tree) {
+    collection.gameTree = function () {
         var that = collection.gameTree.node();
 
         that.parse = function (tree, parent) {
@@ -178,22 +29,20 @@
             return properties;
         };
 
-        //that.parse.apply(that, arguments);
-
-        return that.parse(tree);
+        return that.parse.apply(that, arguments);
     };
 
     collection.gameTree.node = function () {
         var that = {};
 
-        collection.util.accessor(that, "parent");
-        collection.util.accessor(that, "children");
-        collection.util.accessor(that, "properties");
-
         collection.gameTree.node.serializable(that);
         collection.gameTree.node.mutable(that);
         collection.gameTree.node.cloneable(that);
         collection.gameTree.node.iterable(that);
+
+        collection.util.accessor(that, "parent");
+        collection.util.accessor(that, "children");
+        collection.util.accessor(that, "properties");
 
         that.create = function () {
             var other = SGFGrove.Util.create(this);
@@ -202,7 +51,7 @@
         };
 
         that.initialize = function (properties, parent) {
-            if (properties !== undefined) {
+            if (properties) {
                 this.properties(properties);
             }
             if (parent) {
@@ -468,26 +317,33 @@
     collection.gameTree.node.iterable = function (that) {
         that = that || {};
 
-        collection.util.iterable(that);
+        that.forEach = function (preorder, postorder, context) {
+            var children = this.children();
 
-        collection.util.accessor(that, "preorder");
-        collection.util.accessor(that, "postorder");
-        collection.util.accessor(that, "breadthFirst");
+            if (typeof preorder === "function") {
+                preorder.call(context, this);
+            }
 
-        that.buildPreorder = function () {
-            return collection.gameTree.node.iterable.preorder(this);
+            for (var i = 0; i < children.length; i++) {
+                children[i].forEach(preorder, postorder, context);
+            }
+
+            if (typeof postorder === "function") {
+                postorder.call(context, this);
+            }
+
+            return this;
         };
 
-        that.buildPostorder = function () {
-            return collection.gameTree.node.iterable.postorder(this);
-        };
-
-        that.buildBreadthFirst = function () {
-            return collection.gameTree.node.iterable.breadthFirst(this);
-        };
-
-        that.toIterator = function () {
-            return this.preorder().toIterator();
+        that.find = function (criteria, context) {
+            var stack = [this];
+            while (stack.length) {
+                var node = stack.shift();
+                if (criteria.call(context, node)) {
+                    return node;
+                }
+                stack = node.children().concat(stack);
+            }
         };
 
         that.next = function () {
@@ -534,78 +390,6 @@
 
         return that;
     };
-
-    collection.gameTree.node.iterable.preorder = function (node) {
-        var that = collection.util.iterable([node]);
-
-        that.toIterator = function () {
-            var other = [this[0]];
-
-            other.next = function () {
-                if (this.length) {
-                    var node = this.pop();
-                    var children = node.children().slice(0);
-                    this.push.apply(this, children.reverse());
-                    return { value: node };
-                }
-                return { done: true };
-            };
-
-            return other;
-        };
-
-        return that;
-    };
-
-    collection.gameTree.node.iterable.postorder = function (node) {
-        var that = collection.util.iterable([node]);
-
-        that.toIterator = function () {
-            var other = [[this[0], false]];
-
-            other.next = function () {
-                if (this.length) {
-                    while (true) {
-                        var node = this[this.length-1];
-                        if (node[1]) {
-                            return { value: this.pop()[0] };
-                        }
-                        var children = node[0].children();
-                        for (var i = children.length-1; i >= 0; i--) {
-                            this.push([children[i], false]);
-                        }
-                        node[1] = true;
-                    }
-                }
-                return { done: true };
-            };
-
-            return other;
-        };
-
-        return that;
-    };
-
-    collection.gameTree.node.iterable.breadthFirst = function (node) {
-        var that = collection.util.iterable([node]);
-
-        that.toIterator = function () {
-            var other = [this[0]];
-
-            other.next = function () {
-                if (this.length) {
-                    var node = this.shift();
-                    this.push.apply(this, node.children());
-                    return { value: node };
-                }
-                return { done: true };
-            };
-
-            return other;
-        };
-
-        return that;
-    };
  
     collection.util = {};
 
@@ -625,70 +409,6 @@
                 this[_key] = this[builder]();
             }
             return this[_key];
-        };
-
-        return that;
-    };
-
-    collection.util.iterable = function (that) {
-        that = that || {};
-
-        that.toIterator = function () {
-            throw new Error("call to abstract method 'toIterator'");
-        };
-
-        if (typeof Symbol === "function" &&
-            typeof Symbol.iterator === "symbol") {
-            that[Symbol.iterator] = function () {
-                return this.toIterator();
-            };
-        }
-
-        that.forEach = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (true) {
-                var next = iterator.next();
-                if (next.done) {
-                    break;
-                }
-                callback.call(context, next.value);
-            }
-
-            return this;
-        };
-
-        that.find = function (callback, context) {
-            var iterator = this.toIterator();
-
-            while (true) {
-                var next = iterator.next();
-                if (next.done) {
-                    break;
-                }
-                if (callback.call(context, next.value)) {
-                    return next.value;
-                }
-            }
-
-            return;
-        };
-
-        that.filter = function (callback, context) {
-            var iterator = this.toIterator();
-            var values = [];
-
-            while (true) {
-                var next = iterator.next();
-                if (next.done) {
-                    break;
-                }
-                if (callback.call(context, next.value)) {
-                    values.push(next.value);
-                }
-            }
-
-            return values;
         };
 
         return that;
