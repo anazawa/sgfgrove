@@ -11,11 +11,14 @@
         that.parse = function (tree, parent) {
             tree = tree || [[{}], []];
 
-            var other = this.create(this.parseProperties(tree[0][0]), parent);
+            var proto = parent ? parent.root() : this,
+                other = proto.create(this.parseProperties(tree[0][0]), parent);
 
-            var node = other;
+            var node = other,
+                root = parent ? proto : other;
+
             for (var i = 1; i < tree[0].length; i++) {
-                node = this.create(this.parseProperties(tree[0][i]), node);
+                node = root.create(this.parseProperties(tree[0][i]), node);
             }
 
             for (var j = 0; j < tree[1].length; j++) {
