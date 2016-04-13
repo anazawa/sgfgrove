@@ -254,7 +254,7 @@
         that = that || {};
 
         that.clone = function () {
-            var other = this.create(this.cloneProperties());
+            var other = this.root().create(this.cloneProperties());
 
             var children = this.children();
             for (var i = 0; i < children.length; i++) {
@@ -264,10 +264,10 @@
             return other;
         };
 
-        that.cloneProperties = function (value) {
-            value = !arguments.length ? this.properties() : value;
-
+        that.cloneProperties = function () {
+            var value = !arguments.length ? this.properties() : arguments[0];
             var copy;
+
             if (!value || typeof value !== "object") {
                 copy = value;
             }
@@ -377,12 +377,15 @@
     collection.util.accessor = function (that, key) {
         that = that || {};
 
-        var builder = "build"+key.charAt(0).toUpperCase()+key.slice(1),
-            _key    = "_"+key;
+        var _key = "_"+key,
+            Key  = key.charAt(0).toUpperCase()+key.slice(1);
 
-        that[key] = function (value) {
+        var builder = "build"+Key,
+            clearer = "clear"+Key;
+
+        that[key] = function () {
             if (arguments.length) {
-                this[_key] = value;
+                this[_key] = arguments[0];
                 return this;
             }
             if (!this.hasOwnProperty(_key) &&
@@ -390,6 +393,10 @@
                 this[_key] = this[builder]();
             }
             return this[_key];
+        };
+
+        that[clearer] = function () {
+            delete this[_key];
         };
 
         return that;
