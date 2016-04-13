@@ -388,9 +388,14 @@
                 this[_key] = arguments[0];
                 return this;
             }
-            if (!this.hasOwnProperty(_key) &&
-                typeof this[builder] === "function") {
-                this[_key] = this[builder]();
+            if (!this.hasOwnProperty(_key)) {
+                if (typeof this[builder] === "function") {
+                    this[_key] = this[builder]();
+                }
+                else {
+                    this[_key] = undefined;
+                }
+
             }
             return this[_key];
         };
