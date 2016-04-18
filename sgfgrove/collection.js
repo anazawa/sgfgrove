@@ -28,47 +28,36 @@
             return other;
         };
 
-        that.parseProperties = function (properties) {
-            return properties;
+        that.parseProperties = function () {
+            return arguments[0];
         };
 
         return that.parse.apply(that, arguments);
     };
 
     collection.gameTree.node = function () {
-        var that = {};
+        var that = collection.gameTree.node.object();
 
         collection.gameTree.node.serializable(that);
         collection.gameTree.node.mutable(that);
         collection.gameTree.node.cloneable(that);
         collection.gameTree.node.iterable(that);
 
-        collection.util.accessor(that, "parent");
-        collection.util.accessor(that, "children");
-        collection.util.accessor(that, "properties");
+        that.defineAttribute("parent");
+        that.defineAttribute("children");
+        that.defineAttribute("properties");
 
-        that.create = function () {
-            var other = SGFGrove.Util.create(this);
-            other.initialize.apply(other, arguments);
-            return other;
-        };
-
-        that.initialize = function (properties, parent) {
-            if (properties) {
-                this.properties(properties);
-            }
-            if (parent) {
-                parent.append(this);
-            }
-        };
-
-        that.buildParent = function () {
-            return null;
-        };
-
-        that.buildChildren = function () {
-            return [];
-        };
+        that.initialize = (function (superInitialize) {
+            return function (properties, parent) {
+                superInitialize.apply(this, arguments);
+                this.parent(null);
+                this.children([]);
+                this.properties(properties || {});
+                if (parent) {
+                    parent.append(this);
+                }
+            };
+        }(that.initialize));
 
         that.root = function () {
             var root = this;
@@ -85,11 +74,11 @@
         };
 
         that.isRoot = function () {
-            return this.parent() === null;
+            return !this.parent();
         };
 
         that.isLeaf = function () {
-            return this.children().length === 0;
+            return !this.children().length;
         };
 
         that.depth = function () {
@@ -134,9 +123,7 @@
             return false;
         };
 
-        that.initialize.apply(that, arguments);
-
-        return that;
+        return that.create.apply(that, arguments);
     };
 
     collection.gameTree.node.serializable = function (that) {
@@ -371,40 +358,32 @@
 
         return that;
     };
- 
-    collection.util = {};
 
-    collection.util.accessor = function (that, key) {
-        that = that || {};
+    collection.gameTree.node.object = function () {
+        var that = {};
 
-        var _key = "_"+key,
-            Key  = key.charAt(0).toUpperCase()+key.slice(1);
-
-        var builder = "build"+Key,
-            clearer = "clear"+Key;
-
-        that[key] = function () {
-            if (arguments.length) {
-                this[_key] = arguments[0];
-                return this;
-            }
-            if (!this.hasOwnProperty(_key)) {
-                if (typeof this[builder] === "function") {
-                    this[_key] = this[builder]();
-                }
-                else {
-                    this[_key] = undefined;
-                }
-
-            }
-            return this[_key];
+        that.create = function () {
+            var other = SGFGrove.Util.create(this);
+            other.initialize.apply(other, arguments);
+            return other;
         };
 
-        that[clearer] = function () {
-            delete this[_key];
+        that.initialize = function () {
+            this.$attributes = {};
         };
 
-        return that;
+        that.defineAttribute = function (name) {
+            this[name] = function () {
+                if (arguments.length) {
+                    this.$attributes[name] = arguments[0];
+                    return this;
+                }
+                return this.$attributes[name];
+            };
+            return this;
+        };
+
+        return that.create.apply(that, arguments);
     };
 
     if (typeof exports !== "undefined") {
