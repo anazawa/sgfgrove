@@ -52,9 +52,11 @@
                 superInitialize.apply(this, arguments);
                 this.parent(null);
                 this.children([]);
-                this.properties(properties || {});
                 if (parent) {
                     parent.append(this);
+                }
+                if (properties) {
+                    this.properties(properties);
                 }
             };
         }(that.initialize));
@@ -123,7 +125,9 @@
             return false;
         };
 
-        return that.create.apply(that, arguments);
+        that.initialize.apply(that, arguments);
+
+        return that;
     };
 
     collection.gameTree.node.serializable = function (that) {
@@ -369,21 +373,23 @@
         };
 
         that.initialize = function () {
-            this.$attributes = {};
+            this.attributes = {};
         };
 
         that.defineAttribute = function (name) {
             this[name] = function () {
                 if (arguments.length) {
-                    this.$attributes[name] = arguments[0];
+                    this.attributes[name] = arguments[0];
                     return this;
                 }
-                return this.$attributes[name];
+                return this.attributes[name];
             };
             return this;
         };
 
-        return that.create.apply(that, arguments);
+        that.initialize.apply(that, arguments);
+
+        return that;
     };
 
     if (typeof exports !== "undefined") {
