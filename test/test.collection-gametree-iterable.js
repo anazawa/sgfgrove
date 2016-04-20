@@ -3,7 +3,7 @@
     "use strict";
 
     var test = require("tape");
-    var collection = require("../../sgfgrove/collection.js");
+    var collection = require("../sgfgrove/collection.js");
 
     var R = { FF: 4, C: "root" },
         A = { C: "a" },
@@ -75,7 +75,7 @@
             "both of pre-order and post-order callbacks"
         );
 
-        t.end()
+        t.end();
     });
 
     test("SGFGrove.collection.gameTree: #find", function (t) {
@@ -87,7 +87,7 @@
 
         t.equal(node.properties(), C);
 
-        t.end()
+        t.end();
     });
 
     test("SGFGrove.collection.gameTree: #next", function (t) {
