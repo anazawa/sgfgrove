@@ -3,10 +3,10 @@
     "use strict";
 
     var test = require("tape");
-    var collection = require("../sgfgrove/collection.js");
+    var gameTree = require("../sgfgrove/gametree.js");
 
-    test("SGFGrove.collection.gameTree: #clone", function (t) {
-        var gameTree = collection.gameTree([
+    test("SGFGrove.gameTree: #clone", function (t) {
+        var tree = gameTree([
             [{
                 FF: 4,
                 C: {
@@ -18,7 +18,7 @@
             []
         ]);
 
-        var clone = gameTree.clone();
+        var clone = tree.clone();
 
         t.deepEqual(
             clone.properties(), 

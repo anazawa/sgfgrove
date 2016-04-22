@@ -16,7 +16,7 @@
         "jshint": "^2.5.8"
     },
     "scripts": {
-        "test": "node node_modules/argg test/test.*.js && node node_modules/jshint/bin/jshint sgfgrove.js sgfgrove/*.js test/*.js"
+        "test": "node node_modules/argg test/test.*.js test/*/test.*.js && node node_modules/jshint/bin/jshint sgfgrove.js sgfgrove/*.js test/*.js test/*/*.js"
     },
     "license": "MIT",
     "engines": {
