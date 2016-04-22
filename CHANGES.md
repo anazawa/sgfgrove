@@ -1,5 +1,8 @@
 Revision history for SGFGrove.js.
 
+- sgfgrove/collection.js is obsolete, will be remove in 1.0.6.
+  Use gametree.js instead.
+
 ## 1.0.4
 
 - fix PropIdent regular expression bug (thanks to @yewang)
