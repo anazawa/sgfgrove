@@ -3,10 +3,8 @@
 
     var SGFGrove;
 
-    var collection = {};
-
-    collection.gameTree = function () {
-        var that = collection.gameTree.node();
+    var gameTree = function () {
+        var that = gameTree.node();
 
         that.parse = function (tree, parent) {
             tree = tree || [[{}], []];
@@ -35,13 +33,13 @@
         return that.parse.apply(that, arguments);
     };
 
-    collection.gameTree.node = function () {
-        var that = collection.gameTree.node.object();
+    gameTree.node = function () {
+        var that = gameTree.node.object();
 
-        collection.gameTree.node.serializable(that);
-        collection.gameTree.node.mutable(that);
-        collection.gameTree.node.cloneable(that);
-        collection.gameTree.node.iterable(that);
+        gameTree.node.serializable(that);
+        gameTree.node.mutable(that);
+        gameTree.node.cloneable(that);
+        gameTree.node.iterable(that);
 
         that.defineAttribute("parent");
         that.defineAttribute("children");
@@ -126,7 +124,7 @@
         return that.create.apply(that, arguments);
     };
 
-    collection.gameTree.node.serializable = function (that) {
+    gameTree.node.serializable = function (that) {
         that = that || {};
 
         that.toSGF = function () {
@@ -155,7 +153,7 @@
         return that;
     };
 
-    collection.gameTree.node.mutable = function (that) {
+    gameTree.node.mutable = function (that) {
         that = that || {};
 
         var insertAt = function (index, node) {
@@ -237,7 +235,7 @@
         return that;
     };
 
-    collection.gameTree.node.cloneable = function (that) {
+    gameTree.node.cloneable = function (that) {
         that = that || {};
 
         that.clone = function () {
@@ -282,7 +280,7 @@
         return that;
     };
 
-    collection.gameTree.node.iterable = function (that) {
+    gameTree.node.iterable = function (that) {
         that = that || {};
 
         that.forEach = function (preorder, postorder, context) {
@@ -359,7 +357,7 @@
         return that;
     };
 
-    collection.gameTree.node.object = function () {
+    gameTree.node.object = function () {
         var that = {};
 
         that.create = function () {
@@ -388,11 +386,11 @@
 
     if (typeof exports !== "undefined") {
         SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
-        module.exports = collection; // jshint ignore:line
+        module.exports = gameTree; // jshint ignore:line
     }
     else {
         SGFGrove = window.SGFGrove;
-        SGFGrove.collection = collection;
+        SGFGrove.gameTree = gameTree;
     }
 
 }());

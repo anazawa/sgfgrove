@@ -3,7 +3,7 @@
     "use strict";
 
     var test = require("tape");
-    var collection = require("../sgfgrove/collection.js");
+    var gameTree = require("../sgfgrove/gametree.js");
 
     var R = { FF: 4, C: "root" },
         A = { C: "a" },
@@ -34,11 +34,11 @@
         ]]
     ];
 
-    test("SGFGrove.collection.gameTree: #forEach", function (t) {
-        var gameTree = collection.gameTree(GAME_TREE);
+    test("SGFGrove.gameTree: #forEach", function (t) {
+        var tree = gameTree(GAME_TREE);
 
         var preorder = [];
-        gameTree.forEach(function (node) {
+        tree.forEach(function (node) {
             preorder.push(node.properties());
         });
 
@@ -49,7 +49,7 @@
         );
 
         var postorder = [];
-        gameTree.forEach(null, function (node) {
+        tree.forEach(null, function (node) {
             postorder.push(node.properties());
         });
 
@@ -60,7 +60,7 @@
         );
 
         var str = "";
-        gameTree.forEach(
+        tree.forEach(
             function (node) {
                 str += "(;"+node.properties().C;
             },
@@ -78,10 +78,10 @@
         t.end();
     });
 
-    test("SGFGrove.collection.gameTree: #find", function (t) {
-        var gameTree = collection.gameTree(GAME_TREE);
+    test("SGFGrove.gameTree: #find", function (t) {
+        var tree = gameTree(GAME_TREE);
         
-        var node = gameTree.find(function (n) {
+        var node = tree.find(function (n) {
             return n.isLeaf();
         });
 
@@ -90,9 +90,9 @@
         t.end();
     });
 
-    test("SGFGrove.collection.gameTree: #next", function (t) {
-        var gameTree = collection.gameTree(GAME_TREE),
-            node = gameTree,
+    test("SGFGrove.gameTree: #next", function (t) {
+        var tree = gameTree(GAME_TREE),
+            node = tree,
             order = [];
 
         while (node) {
@@ -108,10 +108,10 @@
         t.end();
     });
 
-    test("SGFGrove.collection.gameTree: #previous", function (t) {
-        var gameTree = collection.gameTree(GAME_TREE);
+    test("SGFGrove.gameTree: #previous", function (t) {
+        var tree = gameTree(GAME_TREE);
 
-        var node = gameTree;
+        var node = tree;
         while (node.next()) {
             node = node.next();
         }
