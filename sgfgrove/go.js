@@ -1,14 +1,16 @@
+/*jshint bitwise: false*/
 (function () {
     "use strict";
 
-    var SGFGrove;
+    var SGFGrove,
+        Go = {};
 
-    var goBoard = function () {
-        var that = goBoard.object();
+    Go.board = function () {
+        var that = Go.board.object();
 
-        var EMPTY = goBoard.EMPTY,
-            BLACK = goBoard.BLACK,
-            WHITE = goBoard.WHITE;
+        var EMPTY = Go.board.EMPTY,
+            BLACK = Go.board.BLACK,
+            WHITE = Go.board.WHITE;
 
         that.defineAttribute("system");
         that.defineAttribute("board");
@@ -114,11 +116,11 @@
         return that.create.apply(that, arguments);
     };
 
-    goBoard.EMPTY = 0;
-    goBoard.BLACK = 1;
-    goBoard.WHITE = 2;
+    Go.board.EMPTY = 0;
+    Go.board.BLACK = 1;
+    Go.board.WHITE = 2;
 
-    goBoard.object = function () {
+    Go.board.object = function () {
         var that = {};
 
         that.create = function () {
@@ -147,11 +149,11 @@
 
     if (typeof exports !== "undefined") {
         SGFGrove = require("../sgfgrove.js"); // jshint ignore:line
-        module.exports = goBoard; // jshint ignore:line
+        module.exports = Go; // jshint ignore:line
     }
     else {
         SGFGrove = window.SGFGrove;
-        SGFGrove.goBoard = goBoard;
+        SGFGrove.Go = Go;
     }
 
 }());
