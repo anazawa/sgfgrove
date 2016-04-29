@@ -25,12 +25,6 @@
             return Object.prototype.toString.call(value) === "[object Array]";
         };
 
-        Util.create = Object.create || function (obj) {
-            var Ctor = function () {};
-            Ctor.prototype = obj;
-            return new Ctor();
-        };
-
         return Util;
     }());
 
@@ -508,7 +502,7 @@
     // http://www.red-bean.com/sgf/sgf4.html
     // http://www.red-bean.com/sgf/properties.html
     SGFGrove.fileFormat({ FF: 4 }, function (FF) {
-        var Types = SGFGrove.Util.create(FF.Types);
+        var Types = Object.create(FF.Types);
         var isArray = SGFGrove.Util.isArray;
 
         Types.compose = function (left, right) {
@@ -576,7 +570,7 @@
                     return result;
                 },
                 toElist: function () {
-                    var other = SGFGrove.Util.create(this);
+                    var other = Object.create(this);
                     other.canBeEmpty = true;
                     return other;
                 }
@@ -757,7 +751,7 @@
     // Go (;FF[4]GM[1]) specific properties
     // http://www.red-bean.com/sgf/go.html
     SGFGrove.fileFormat({ FF: 4, GM: 1 }, function (FF) {
-        var Types = SGFGrove.Util.create(FF[4].Types);
+        var Types = Object.create(FF[4].Types);
 
         var expandPointList = (function () {
             var coord2char = "abcdefghijklmnopqrstuvwxyz";

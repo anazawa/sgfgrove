@@ -30,19 +30,5 @@
         t.end();
     });
 
-    test("SGFGrove.Util.create", function (t) {
-        var create = SGF.Util.create;
-
-        var Parent = function () {};
-            Parent.prototype = { foo: function () {}, bar: 2 };
-
-        var Child = function () {};
-            Child.prototype = create(Parent.prototype);
-
-        t.ok(new Child() instanceof Parent, "object should inherit prototype");
-
-        t.end();
-    });
-
 }());
 

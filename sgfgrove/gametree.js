@@ -361,7 +361,7 @@
         var that = {};
 
         that.create = function () {
-            var other = SGFGrove.Util.create(this);
+            var other = Object.create(this);
             other.initialize.apply(other, arguments);
             return other;
         };

@@ -13,7 +13,7 @@
     // Original File Format
     // http://www.red-bean.com/sgf/ff1_3/ff1.html
     SGFGrove.fileFormat({ FF: 1 }, function (FF) {
-        var Types = SGFGrove.Util.create(FF.Types);
+        var Types = Object.create(FF.Types);
 
         Types.listOf  = FF[4].Types.listOf;
         Types.elistOf = FF[4].Types.elistOf;
@@ -102,7 +102,7 @@
     // Go (;GM[1]) specific properties
     // http://www.red-bean.com/sgf/ff1_3/ff1.html
     SGFGrove.fileFormat({ FF: 1, GM: 1 }, function (FF) {
-        var Types = SGFGrove.Util.create(FF[1].Types);
+        var Types = Object.create(FF[1].Types);
 
         Types.Point = Types.scalar({
             like: /^[a-s]{2}$/
@@ -147,7 +147,7 @@
     // http://www.red-bean.com/sgf/ff1_3/ff3.html
     // http://www.red-bean.com/sgf/ff1_3/sgfhistory.html
     SGFGrove.fileFormat({ FF: 3 }, function (FF) {
-        var Types = SGFGrove.Util.create(FF[1].Types);
+        var Types = Object.create(FF[1].Types);
 
         Types.compose = FF[4].Types.compose;
 
@@ -237,7 +237,7 @@
 
     // Go (;FF[3]GM[1]) specific properties
     SGFGrove.fileFormat({ FF: 3, GM: 1 }, function (FF) {
-        var Types = SGFGrove.Util.create(FF[3].Types);
+        var Types = Object.create(FF[3].Types);
 
         Types.Point = FF[1].GM[1].Types.Point;
         Types.Move  = FF[1].GM[1].Types.Move;
