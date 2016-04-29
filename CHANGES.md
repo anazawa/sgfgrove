@@ -1,5 +1,7 @@
 Revision history for SGFGrove.js.
 
+- add sgfgrove/gametree.js and gametree.md
+- add tests for sgfgrove/gametree.js
 - sgfgrove/collection.js is obsolete, will be remove in 1.0.6.
   Use gametree.js instead.
 
