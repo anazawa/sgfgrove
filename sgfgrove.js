@@ -1,5 +1,5 @@
 /**
- * @license SGFGrove.js 1.0.4
+ * @license SGFGrove.js 1.0.5
  * (c) 2015-2016 Ryo Anazawa https://github.com/anazawa/sgfgrove
  * Licence: MIT
  */
@@ -7,7 +7,7 @@
     "use strict";
 
     var SGFGrove = {
-        VERSION: "1.0.4"
+        VERSION: "1.0.5"
     };
 
     SGFGrove.Util = (function () {

@@ -2,7 +2,7 @@
     "name": "sgfgrove",
     "author": "anazawa <anazawa@cpan.org>",
     "description": "Type-aware SGF parser/composer intended for the browser",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "homepage": "https://github.com/anazawa/sgfgrove",
     "repository": {
         "type": "git",
@@ -17,7 +17,7 @@
     "scripts": {
         "lint": "jshint sgfgrove.js sgfgrove/*.js test/*.js test/*/*.js",
         "pretest": "npm run lint",
-        "test": "tape 'test/**/test.*.js' | tap-spec"
+        "test": "tape 'test/**/test.*.js'"
     },
     "license": "MIT",
     "engines": {
