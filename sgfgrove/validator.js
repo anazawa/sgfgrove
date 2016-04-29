@@ -308,7 +308,7 @@
         };
 
         that.FF4_checkBoardSize = function (c, size) {
-            if ( SGFGrove.Util.isArray(size) ) {
+            if ( Array.isArray(size) ) {
                 if ( size[0] === size[1] ) {
                     return false;
                 }
@@ -319,7 +319,7 @@
 
         that.FF4_GM1_checkBoardSize = function (c, size) {
             if ( this.FF4_checkBoardSize(c, size) ) {
-                if ( SGFGrove.Util.isArray(size) ) {
+                if ( Array.isArray(size) ) {
                     return size[0] <= 52 && size[1] <= 52;
                 }
                 return size <= 52;

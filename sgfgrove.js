@@ -21,10 +21,6 @@
             return Util.isNumber(value) && Math.floor(value) === value;
         };
 
-        Util.isArray = Array.isArray || function (value) {
-            return Object.prototype.toString.call(value) === "[object Array]";
-        };
-
         return Util;
     }());
 
@@ -209,7 +205,7 @@
     }());
 
     SGFGrove.stringify = (function () {
-        var isArray = SGFGrove.Util.isArray;
+        var isArray = Array.isArray;
         var replacer, selected, indent, gap;
 
         var createProperties = function (root) {
@@ -436,7 +432,7 @@
                 return result;
             },
             stringify: function (values) {
-                if (SGFGrove.Util.isArray(values)) {
+                if (Array.isArray(values)) {
                     var result = [];
 
                     for (var i = 0; i < values.length; i++) {
@@ -503,7 +499,7 @@
     // http://www.red-bean.com/sgf/properties.html
     SGFGrove.fileFormat({ FF: 4 }, function (FF) {
         var Types = Object.create(FF.Types);
-        var isArray = SGFGrove.Util.isArray;
+        var isArray = Array.isArray;
 
         Types.compose = function (left, right) {
             return left && right && {

@@ -259,7 +259,7 @@
             else if (typeof value.clone === "function") {
                 copy = value.clone();
             }
-            else if (SGFGrove.Util.isArray(value)) {
+            else if (Array.isArray(value)) {
                 copy = [];
                 for (var i = 0; i < value.length; i++) {
                     copy[i] = this.cloneProperties(value[i]);
