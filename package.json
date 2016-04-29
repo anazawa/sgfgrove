@@ -12,13 +12,12 @@
     "dependencies": {},
     "devDependencies": {
         "tape": "^3.0.3",
-        "argg": "0.0.1",
         "jshint": "^2.5.8"
     },
     "scripts": {
         "lint": "jshint sgfgrove.js sgfgrove/*.js test/*.js test/*/*.js",
         "pretest": "npm run lint",
-        "test": "node node_modules/argg test/test.*.js test/*/test.*.js"
+        "test": "tape 'test/**/test.*.js' | tap-spec"
     },
     "license": "MIT",
     "engines": {
