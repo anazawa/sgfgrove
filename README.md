@@ -15,7 +15,7 @@ Type-aware SGF parser/composer intended for the browser
 - [Exapmles](#examples)
 - [Extensions](#extensions)
     - [sgfgrove/ff123.js](#sgfgroveff123js)
-    - [sgfgrove/collection.js](#sgfgrovecollectionjs)
+    - [sgfgrove/gametree.js](#sgfgrovegametreejs)
     - [sgfgrove/validator.js](#sgfgrovevalidatorjs)
 - [Limitations](#limitations)
 - [Versioning](#versioning)
@@ -629,42 +629,6 @@ Adds FF[1]-FF[3] properties and their Go (GM[1]) specific properties
 to SGFGrove. Note that FF[2] is simply treated as FF[1]. See the test cases
 for details.
 
-### sgfgrove/collection.js
-
-Given a SGF collection, constructs the iterator/mutator object.
-See `sgfgrove/collection.md` for details.
-
-```js
-var collection = SGFGrove.collection("(;FF[4];B[pd])");
-var gameTree = collection[0];
-
-gameTree.next(); // => { FF: 4 }
-gameTree.next(); // => { B: "pd" }
-
-gameTree.appendChild({ W: "qp" });
-collection.toString(); // => "(;FF[4];B[pd];W[qp])"
-```
-
-### sgfgrove/validator.js
-
-```js
-var collection = SGFGrove.parse("(;FF[4])");
-var validator = SGFGrove.validator(...);
-
-validator.validate(collection, {
-    onRootPropNotInRootNodeError: function (error) {
-        delete this.node[this.propIdent]; // this error is acceptable, so fix it
-    },
-    onTwoMovesInNodeError: function (error) {
-        throw error; // this SGF does not make sense, so reject it
-    },
-    onGameInfoAlreadySetError: function (error) {
-        // do nothing (ignore this error)
-    },
-    ...
-});
-```
-
 ## Limitations
 
 - FF[3] and FF[4] specs do not allow duplicate PropIdents in a Node.
@@ -705,44 +669,6 @@ module's author but this module's author.
 
 - [SGF File Format FF\[4\]](http://www.red-bean.com/sgf/)
 - [JSON - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
-
-### Other SGF Parsers
-
-#### [smartgame](https://github.com/neagle/smartgame)
-
-This module comes with "smartgamer" that allows you to edit/iterate through
-the smartgame data structure. It seems very handy. SGFGrove.js is not
-compatible with this module.
-
-#### [GO Tools](http://gotools.sourceforge.net/)
-
-Includes sgflib.py, a Python SGF parser. The source code is well documented.
-`SGFGrove.collection.gameTree` behaves like the `Cursor` object defined by
-this module.
-
-#### [WGo.js](https://github.com/waltheri/wgo.js)
-
-Provides an HTML5 go board that comes with a simple SGF parser which is
-required by the SGF player. The `SHELL` texture of white stones is quite
-beautiful.
-
-#### [SGFC](http://www.red-bean.com/sgf/sgfc/index.html)
-
-SGF syntax checker & converter written by the author of FF[4].
-Includes a SGF parser/composer written in C. The SGFGrove's internal subroutine
-`expandPointList` is based on the `ExpandPointList` function defined by
-this library.
-
-#### [MultiGo](http://www.ruijiang.com/multigo/)
-
-While the source is not open, the iterator behavior of
-`SGFGrove.collection.gameTree` is based on this GUI application
-(depth-first search).
-
-#### [jGoBoard](https://github.com/jokkebk/jgoboard)
-
-Provides a beautiful HTML5 go board that comes with a JavaScript SGF parser.
-The version 3.3.3 was released in March 2015.
 
 ## Acknowledgements
 

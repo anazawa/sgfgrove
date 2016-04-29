@@ -1,5 +1,8 @@
 Revision history for SGFGrove.js.
 
+- remove "Other SGF Parsers" from README (it's not up to date anymore)
+- remove sgfgrove/collection.js
+
 ## 1.0.5
 
 - add sgfgrove/gametree.js and gametree.md
