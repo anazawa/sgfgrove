@@ -15,7 +15,7 @@
         "jshint": "^2.5.8"
     },
     "scripts": {
-        "lint": "jshint sgfgrove.js sgfgrove/*.js test/*.js test/*/*.js",
+        "lint": "jshint sgfgrove.js sgfgrove/*.js test/*.js",
         "pretest": "npm run lint",
         "test": "tape 'test/**/test.*.js'"
     },
