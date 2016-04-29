@@ -629,6 +629,16 @@ Adds FF[1]-FF[3] properties and their Go (GM[1]) specific properties
 to SGFGrove. Note that FF[2] is simply treated as FF[1]. See the test cases
 for details.
 
+## Requirements
+
+This module depends on the following methods introduced in ES5:
+
+- `Object.create`
+- `Array.isArray`
+
+You can include [es5-shim](https://github.com/es-shims/es5-shim)
+to satisfy the requirements (if necessary).
+
 ## Limitations
 
 - FF[3] and FF[4] specs do not allow duplicate PropIdents in a Node.
