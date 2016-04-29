@@ -750,22 +750,16 @@
         var Types = Object.create(FF[4].Types);
 
         var expandPointList = (function () {
-            var coord2char = "abcdefghijklmnopqrstuvwxyz";
-                coord2char = (coord2char+coord2char.toUpperCase()).split("");
-
-            var char2coord = {};
-            for (var i = 0; i < coord2char.length; i++) {
-                char2coord[coord2char[i]] = i;
-            }
+            var coord = "abcdefghijklmnopqrstuvwxyz";
+                coord += coord.toUpperCase();
 
             return function (p1, p2) {
-                var x1 = char2coord[p1.charAt(0)],
-                    y1 = char2coord[p1.charAt(1)],
-                    x2 = char2coord[p2.charAt(0)],
-                    y2 = char2coord[p2.charAt(1)];
+                var x1 = coord.indexOf(p1.charAt(0)),
+                    y1 = coord.indexOf(p1.charAt(1)),
+                    x2 = coord.indexOf(p2.charAt(0)),
+                    y2 = coord.indexOf(p2.charAt(1));
 
                 var h; 
-
                 if (x1 > x2) {
                     h = x1; x1 = x2; x2 = h;
                 }
@@ -774,10 +768,9 @@
                 }
 
                 var points = [];
-
                 for (var y = y1; y <= y2; y++) {
                     for (var x = x1; x <= x2; x++) {
-                        points.push(coord2char[x]+coord2char[y]);
+                        points.push(coord.charAt(x)+coord.charAt(y));
                     }
                 }
 
