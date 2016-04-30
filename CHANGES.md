@@ -1,5 +1,7 @@
 Revision history for SGFGrove.js.
 
+- remove gametree.js and ff123.js from this repository
+
 ## 1.0.6
 
 - requires ES5 or higher

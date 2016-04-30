@@ -13,8 +13,6 @@ Type-aware SGF parser/composer intended for the browser
     - [SGF File Format Detection](#sgf-file-format-detection)
 - [Diagnostics](#diagnostics)
 - [Exapmles](#examples)
-- [Extensions](#extensions)
-    - [sgfgrove/ff123.js](#sgfgroveff123js)
 - [Requirements](#requirements)
 - [Limitations](#limitations)
 - [Versioning](#versioning)
@@ -118,7 +116,7 @@ See the source code for details.
 
 This module only comes with the FF[4] definition and the default game type
 GM[1] \(Go). Other file formats or game types are provided by the SGFGrove
-extensions, such as `sgfgrove/ff123.js` that defines FF[1]-FF[3] properties.
+extensions, such as [sgfgrove-ff123](https://github.com/anazawa/sgfgrove-ff123) that defines FF[1]-FF[3] properties.
 
 #### SGFGrove.define( ff, gm, function (FF) {...} )
 
@@ -619,14 +617,6 @@ var othello = SGFGrove.parse("(;FF[4]GM[2];B[a1])");
 SGFGrove.parse("(;FF[4]GM[2];B[i9])"); // => SyntaxError
 ```
 
-## Extensions
-
-### sgfgrove/ff123.js
-
-Adds FF[1]-FF[3] properties and their Go (GM[1]) specific properties
-to SGFGrove. Note that FF[2] is simply treated as FF[1]. See the test cases
-for details.
-
 ## Requirements
 
 This module depends on the following methods introduced in ES5:
@@ -677,6 +667,8 @@ module's author but this module's author.
 
 - [SGF File Format FF\[4\]](http://www.red-bean.com/sgf/)
 - [JSON - JavaScript | MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON)
+- [sgfgrove-gametree](https://github.com/anazawa/sgfgrove-gametree)
+- [sgfgrove-ff123](https://github.com/anazawa/sgfgrove-ff123)
 
 ## Acknowledgements
 
