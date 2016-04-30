@@ -5,8 +5,6 @@
     var test = require("tape");
     var SGF = require("../lib/sgfgrove.js");
 
-    require("../lib/sgfgrove/ff123.js");
-
     test("SGFGrove.parse", function (t) {
         t.deepEqual(
             SGF.parse(" (\n ;\t FF\r\n [4]  \n\r)\v"),
