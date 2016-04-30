@@ -1,5 +1,7 @@
 Revision history for SGFGrove.js.
 
+## 1.0.6
+
 - requires ES5 or higher
 - remove "Other SGF Parsers" from README (it's not up to date anymore)
 - remove sgfgrove/collection.js
