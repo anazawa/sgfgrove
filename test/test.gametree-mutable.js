@@ -3,8 +3,8 @@
     "use strict";
 
     var test = require("tape");
-    var SGF = require("../sgfgrove.js");
-    var gameTree = require("../sgfgrove/gametree.js");
+    var SGF = require("../lib/sgfgrove.js");
+    var gameTree = require("../lib/sgfgrove/gametree.js");
 
     var fromString = function (text) {
         return gameTree(SGF.parse(text)[0]);

@@ -3,7 +3,7 @@
     "use strict";
 
     var test = require('tape');
-    var SGF = require('../sgfgrove.js');
+    var SGF = require('../lib/sgfgrove.js');
 
     test('basic', function (t) {
         var text

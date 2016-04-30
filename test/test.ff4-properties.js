@@ -3,7 +3,7 @@
     "use strict";
 
     var test = require("tape");
-    var SGFGrove = require("../sgfgrove.js");
+    var SGFGrove = require("../lib/sgfgrove.js");
     var properties = SGFGrove.fileFormat({ FF: 4 }).properties();
 
     test("FF[4] AP", function (t) {

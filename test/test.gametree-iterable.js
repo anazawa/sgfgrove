@@ -3,7 +3,7 @@
     "use strict";
 
     var test = require("tape");
-    var gameTree = require("../sgfgrove/gametree.js");
+    var gameTree = require("../lib/sgfgrove/gametree.js");
 
     var R = { FF: 4, C: "root" },
         A = { C: "a" },
