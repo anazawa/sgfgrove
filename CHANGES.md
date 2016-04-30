@@ -3,6 +3,8 @@ Revision history for SGFGrove.js.
 - requires ES5 or higher
 - remove "Other SGF Parsers" from README (it's not up to date anymore)
 - remove sgfgrove/collection.js
+- sgfgrove/ff123.js and gametree.js will be removed from this repository
+  in 1.0.6. They will be provided by their own repositories.
 
 ## 1.0.5
 

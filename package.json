@@ -8,7 +8,7 @@
         "type": "git",
         "url": "git://github.com/anazawa/sgfgrove.git"
     },
-    "main": "sgfgrove.js",
+    "main": "lib/sgfgrove.js",
     "dependencies": {},
     "devDependencies": {
         "tape": "^3.0.3",
