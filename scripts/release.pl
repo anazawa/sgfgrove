@@ -10,7 +10,7 @@ my %filters = (
     './package.json' => sub {
         s/("version"\s*:\s*)"[^"]*"/$1"$version"/; # "version": "1.2.3"
     },
-    './sgfgrove.js' => sub {
+    './lib/sgfgrove.js' => sub {
            s/(\@license [^\d]*).*/$1$version/ # @license SGFGrove.js 1.2.3
         || s/(VERSION\s*:\s*)"[^"]*"/$1"$version"/; # VERSION: "1.2.3"
     },
