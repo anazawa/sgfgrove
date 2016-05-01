@@ -1,5 +1,9 @@
 Revision history for SGFGrove.js.
 
+## 1.0.8
+
+- (internal) add "npm run build" command"
+
 ## 1.0.7
 
 - remove gametree.js and ff123.js from this repository
