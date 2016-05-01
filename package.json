@@ -1,6 +1,10 @@
 {
     "name": "sgfgrove",
     "author": "anazawa <anazawa@cpan.org>",
+    "author": {
+        "name": "Ryo Anazawa",
+        "email": "anazawa@cpan.org"
+    },
     "description": "Type-aware SGF parser/composer intended for the browser",
     "version": "1.0.7",
     "homepage": "https://github.com/anazawa/sgfgrove",
@@ -15,9 +19,15 @@
         "jshint": "^2.5.8"
     },
     "scripts": {
+        "clean": "rm -r dist",
         "lint": "jshint lib/sgfgrove.js test/*.js",
         "pretest": "npm run lint",
-        "test": "tape 'test/test.*.js'"
+        "test": "tape 'test/test.*.js'",
+        "prebuild": "npm run clean",
+        "build": "node ./scripts/build.js",
+        "preversion": "npm test",
+        "version": "npm run build && git add -A dist",
+        "postversion": "git push && git push --tags"
     },
     "license": "MIT",
     "engines": {
